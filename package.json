@@ -12,6 +12,9 @@
     "fix-unused-imports": "node scripts/fix-unused-imports.js",
     "fix-basic-errors": "node scripts/fix-basic-errors.js",
     "fix-remaining-any": "node scripts/fix-remaining-any.js",
+    "fix-deploy-errors": "node scripts/fix-deploy-errors.js",
+    "fix-final-errors": "node scripts/fix-final-errors.js",
+    "fix-ts-errors": "node scripts/fix-ts-errors.js",
     "create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {

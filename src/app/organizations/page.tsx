@@ -209,11 +209,13 @@ export default function OrganizationsPage() {
             });
 
             fetchOrganizations();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error deleting organization:", error);
+            const deleteErrorMessage =
+                error instanceof Error ? error.message : "Không thể xóa đơn vị";
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể xóa đơn vị",
+                description: deleteErrorMessage,
                 variant: "destructive",
             });
         }
