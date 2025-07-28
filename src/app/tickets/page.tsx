@@ -114,6 +114,9 @@ export default function TicketsPage() {
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(
+        null
+    );
     const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
     const [formData, setFormData] = useState<TicketFormData>({
         title: "",
@@ -1450,8 +1453,16 @@ export default function TicketsPage() {
                                                     Sửa
                                                 </Button>
                                                 <AlertDialog
+                                                    open={
+                                                        deleteDialogOpen ===
+                                                        ticket.id
+                                                    }
                                                     onOpenChange={(open) => {
-                                                        setIsDialogOpen(open);
+                                                        setDeleteDialogOpen(
+                                                            open
+                                                                ? ticket.id
+                                                                : null
+                                                        );
                                                     }}
                                                 >
                                                     <AlertDialogTrigger asChild>
