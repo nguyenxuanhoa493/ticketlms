@@ -139,10 +139,10 @@ export async function GET(
         }));
 
         return NextResponse.json({ comments: commentsWithUsers });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error fetching comments:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to fetch comments" },
+            { error: error instanceof Error ? error.message : "Failed to fetch comments" },
             { status: 500 }
         );
     }
@@ -413,10 +413,10 @@ export async function POST(
             comment: commentWithUser,
             message: "Comment created successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error creating comment:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to create comment" },
+            { error: error instanceof Error ? error.message : "Failed to create comment" },
             { status: 500 }
         );
     }

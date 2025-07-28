@@ -17,15 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import ImageCropper from "@/components/ImageCropper";
-import {
-    User,
-    Mail,
-    Phone,
-    Building,
-    Shield,
-    Calendar,
-    Save,
-} from "lucide-react";
+import { User, Save } from "lucide-react";
 
 interface Profile {
     id: string;

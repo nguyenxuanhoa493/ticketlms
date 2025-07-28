@@ -131,10 +131,10 @@ export async function PUT(
             comment: commentWithUser,
             message: "Comment updated successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating comment:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to update comment" },
+            { error: error instanceof Error ? error.message : "Failed to update comment" },
             { status: 500 }
         );
     }
@@ -245,10 +245,10 @@ export async function DELETE(
         return NextResponse.json({
             message: "Comment deleted successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error deleting comment:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to delete comment" },
+            { error: error instanceof Error ? error.message : "Failed to delete comment" },
             { status: 500 }
         );
     }

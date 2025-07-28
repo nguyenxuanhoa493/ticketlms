@@ -111,10 +111,10 @@ export async function GET() {
             }) || [];
 
         return NextResponse.json({ users: usersWithEmails });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error fetching users:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to fetch users" },
+            { error: error instanceof Error ? error.message : "Failed to fetch users" },
             { status: 500 }
         );
     }
@@ -222,10 +222,10 @@ export async function POST(request: NextRequest) {
             message: "User created successfully",
             user: authData.user,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error creating user:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to create user" },
+            { error: error instanceof Error ? error.message : "Failed to create user" },
             { status: 500 }
         );
     }
@@ -354,10 +354,10 @@ export async function PUT(request: NextRequest) {
             success: true,
             message: "User updated successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating user:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to update user" },
+            { error: error instanceof Error ? error.message : "Failed to update user" },
             { status: 500 }
         );
     }
@@ -403,10 +403,10 @@ export async function DELETE(request: NextRequest) {
             success: true,
             message: "User deleted successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error deleting user:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to delete user" },
+            { error: error instanceof Error ? error.message : "Failed to delete user" },
             { status: 500 }
         );
     }

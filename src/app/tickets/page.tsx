@@ -276,11 +276,15 @@ export default function TicketsPage() {
             }
 
             setTickets(data.tickets);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error fetching tickets:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Failed to fetch tickets";
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể tải danh sách tickets",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {

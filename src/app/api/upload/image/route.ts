@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         const fileBuffer = await file.arrayBuffer();
 
         // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
             .from("ticket-attachments")
             .upload(filePath, fileBuffer, {
                 contentType: file.type,

@@ -69,11 +69,12 @@ export async function GET() {
         });
 
         return NextResponse.json(responseData);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error getting current user:", error);
-        return NextResponse.json(
-            { error: error.message || "Failed to get current user" },
-            { status: 500 }
-        );
+        const errorMessage =
+            error instanceof Error
+                ? error.message
+                : "Failed to get current user";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

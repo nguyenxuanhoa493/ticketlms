@@ -73,12 +73,16 @@ export default function OrganizationsPage() {
             }
 
             setOrganizations(data.organizations || []);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error fetching organizations:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Failed to fetch organizations";
             setOrganizations([]); // Ensure empty array on error
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể tải danh sách đơn vị",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {
@@ -170,11 +174,15 @@ export default function OrganizationsPage() {
 
             handleCloseDialog();
             fetchOrganizations();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error saving organization:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Không thể lưu thông tin đơn vị";
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể lưu thông tin đơn vị",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {

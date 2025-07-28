@@ -152,12 +152,12 @@ export default function ImageCropper({
                 "image/png",
                 0.9
             );
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Upload error:", error);
 
             // Show more detailed error message
             let errorMessage = "Không thể upload ảnh";
-            if (error.message) {
+            if (error instanceof Error && error.message) {
                 errorMessage = error.message;
             }
 

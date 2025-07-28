@@ -95,7 +95,7 @@ async function DashboardContent() {
             .eq("id", user.id)
             .single();
         profile = data;
-    } catch (error) {
+    } catch {
         console.log("Profile not found, will create during next operation");
     }
 
@@ -200,12 +200,12 @@ async function DashboardContent() {
             .order("created_at", { ascending: false })
             .limit(5);
 
-        recentTickets = (data || []).map((ticket: any) => ({
+        recentTickets = (data || []).map((ticket: Record<string, unknown>) => ({
             ...ticket,
             organizations: Array.isArray(ticket.organizations)
                 ? ticket.organizations[0]
                 : ticket.organizations,
-        }));
+        })) as Ticket[];
     } catch (error) {
         console.log("Recent tickets loading error:", error);
     }
@@ -300,44 +300,44 @@ async function DashboardContent() {
         }
     };
 
-    const getTicketTypeIcon = (type: string) => {
-        switch (type) {
-            case "bug":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-                        />
-                    </svg>
-                );
-            case "task":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                );
-            default:
-                return null;
-        }
-    };
+    // const getTicketTypeIcon = (type: string) => {
+    //     switch (type) {
+    //         case "bug":
+    //             return (
+    //                 <svg
+    //                     className="w-4 h-4"
+    //                     fill="none"
+    //                     stroke="currentColor"
+    //                     viewBox="0 0 24 24"
+    //                 >
+    //                     <path
+    //                         strokeLinecap="round"
+    //                         strokeLinejoin="round"
+    //                         strokeWidth="2"
+    //                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+    //                     />
+    //                 </svg>
+    //             );
+    //         case "task":
+    //             return (
+    //                 <svg
+    //                     className="w-4 h-4"
+    //                     fill="none"
+    //                     stroke="currentColor"
+    //                     viewBox="0 0 24 24"
+    //                 >
+    //                     <path
+    //                         strokeLinecap="round"
+    //                         strokeLinejoin="round"
+    //                         strokeWidth="2"
+    //                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+    //                     />
+    //                 </svg>
+    //             );
+    //         default:
+    //             return null;
+    //     }
+    // };
 
     const getNotificationType = (type: string) => {
         switch (type) {

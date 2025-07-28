@@ -96,7 +96,7 @@ const LinkModal: React.FC<LinkModalProps> = ({
                         />
                         {selectedText && (
                             <p className="text-xs text-gray-500">
-                                Văn bản đã chọn: "{selectedText}"
+                                Văn bản đã chọn: &quot;{selectedText}&quot;
                             </p>
                         )}
                     </div>

@@ -106,10 +106,10 @@ export async function GET(
         }
 
         return NextResponse.json({ ticket: ticketWithUser });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error fetching ticket:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to fetch ticket" },
+            { error: error instanceof Error ? error.message : "Failed to fetch ticket" },
             { status: 500 }
         );
     }

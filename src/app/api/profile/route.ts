@@ -57,7 +57,12 @@ export async function PUT(request: NextRequest) {
         console.log("Current profile:", currentProfile);
 
         // Prepare update data
-        const updateData: any = {
+        const updateData: {
+            avatar_url: string | null;
+            full_name?: string;
+            role?: string;
+            organization_id?: string;
+        } = {
             avatar_url: avatar_url || null,
         };
 

@@ -7,6 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check-errors": "node scripts/check-errors.js",
+    "fix-any-errors": "node scripts/fix-any-errors.js",
+    "fix-unused-imports": "node scripts/fix-unused-imports.js",
+    "fix-basic-errors": "node scripts/fix-basic-errors.js",
+    "fix-remaining-any": "node scripts/fix-remaining-any.js",
     "create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {

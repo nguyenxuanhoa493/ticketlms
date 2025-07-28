@@ -127,7 +127,7 @@ export default function UsersPage() {
             }
 
             setCurrentUser(data); // Fix: API returns data directly, not data.user
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error fetching current user:", error);
             toast({
                 title: "Lỗi",
@@ -151,6 +151,7 @@ export default function UsersPage() {
             setUsers(data.users);
         } catch (error: any) {
             console.error("Error fetching users:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch users";
             toast({
                 title: "Lỗi",
                 description:

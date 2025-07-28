@@ -167,11 +167,15 @@ export default function TicketDetailPage() {
                     ticketData.expected_completion_date || "",
                 closed_at: formatDateTimeForDisplay(ticketData.closed_at || ""),
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error fetching ticket:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Không thể tải thông tin ticket";
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể tải thông tin ticket",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {

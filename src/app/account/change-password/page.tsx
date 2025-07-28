@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
-import { Lock, Eye, EyeOff, Save, ArrowLeft } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import { signOut } from "@/lib/auth";
 
 export default function ChangePasswordPage() {
@@ -89,11 +89,15 @@ export default function ChangePasswordPage() {
                     router.push("/login?message=password-changed");
                 }
             }, 1500);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error changing password:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Đổi mật khẩu thất bại";
             toast({
                 title: "Lỗi",
-                description: error.message || "Đổi mật khẩu thất bại",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {

@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { canAccessOrganizationData } from "@/lib/permissions";
 
 export async function GET() {
     try {
@@ -89,12 +88,11 @@ export async function GET() {
         }));
 
         return NextResponse.json({ tickets: data || [] });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error fetching tickets:", error);
-        return NextResponse.json(
-            { error: error.message || "Failed to fetch tickets" },
-            { status: 500 }
-        );
+        const errorMessage =
+            error instanceof Error ? error.message : "Failed to fetch tickets";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
 
@@ -234,12 +232,11 @@ export async function POST(request: NextRequest) {
             success: true,
             message: "Ticket created successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error creating ticket:", error);
-        return NextResponse.json(
-            { error: error.message || "Failed to create ticket" },
-            { status: 500 }
-        );
+        const errorMessage =
+            error instanceof Error ? error.message : "Failed to create ticket";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
 
@@ -279,7 +276,16 @@ export async function PUT(request: NextRequest) {
         );
 
         // Prepare update data
-        const updateData: any = {
+        const updateData: {
+            title: string;
+            description: string | null;
+            ticket_type: string;
+            priority: string;
+            platform: string;
+            status: string;
+            expected_completion_date: string | null;
+            closed_at?: string;
+        } = {
             title: title.trim(),
             description: description?.trim() || null,
             ticket_type: ticket_type || "task",
@@ -424,12 +430,11 @@ export async function PUT(request: NextRequest) {
             success: true,
             message: "Ticket updated successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating ticket:", error);
-        return NextResponse.json(
-            { error: error.message || "Failed to update ticket" },
-            { status: 500 }
-        );
+        const errorMessage =
+            error instanceof Error ? error.message : "Failed to update ticket";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
 
@@ -467,11 +472,10 @@ export async function DELETE(request: NextRequest) {
             success: true,
             message: "Ticket deleted successfully",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error deleting ticket:", error);
-        return NextResponse.json(
-            { error: error.message || "Failed to delete ticket" },
-            { status: 500 }
-        );
+        const errorMessage =
+            error instanceof Error ? error.message : "Failed to delete ticket";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

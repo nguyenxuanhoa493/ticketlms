@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
         // Upload to Supabase Storage
         console.log(`Uploading to: ${filePath}`);
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from("ticket-attachments")
             .upload(filePath, buffer, {
                 contentType: file.type,
@@ -105,10 +105,15 @@ export async function POST(request: NextRequest) {
             url: publicUrlData.publicUrl,
             path: filePath,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Avatar upload error:", error);
         return NextResponse.json(
-            { error: error.message || "Internal server error" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Internal server error",
+            },
             { status: 500 }
         );
     }
