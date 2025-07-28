@@ -133,6 +133,13 @@ export default function TicketsPage() {
     const [filterOrganization, setFilterOrganization] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [searchText, setSearchText] = useState<string>("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+    });
 
     // Helper function to format datetime for timestamptz (GMT+7 to UTC)
     const formatDateTimeForDB = (datetimeLocal: string) => {
@@ -207,49 +214,17 @@ export default function TicketsPage() {
     const router = useRouter();
 
     useEffect(() => {
-        fetchTickets();
+        const filters: any = {};
+        if (filterStatus !== "all") filters.status = filterStatus;
+        if (searchText) filters.search = searchText;
+
+        fetchTickets(currentPage, filters);
         fetchOrganizations();
-        // Removed fetchUsers as we don't need assigned_to anymore
         getCurrentUser();
-    }, []);
+    }, [currentPage, filterStatus, searchText]);
 
-    // Filter tickets based on filters
-    const filteredTickets = tickets.filter((ticket) => {
-        // Organization filter (admin only)
-        if (
-            filterOrganization &&
-            filterOrganization !== "all" &&
-            ticket.organization_id !== filterOrganization
-        ) {
-            return false;
-        }
-
-        // Status filter
-        if (
-            filterStatus &&
-            filterStatus !== "all" &&
-            ticket.status !== filterStatus
-        ) {
-            return false;
-        }
-
-        // Text search in title, description, response
-        if (searchText) {
-            const searchLower = searchText.toLowerCase();
-            const matchTitle = ticket.title
-                ?.toLowerCase()
-                .includes(searchLower);
-            const matchDescription = ticket.description
-                ?.toLowerCase()
-                .includes(searchLower);
-
-            if (!matchTitle && !matchDescription) {
-                return false;
-            }
-        }
-
-        return true;
-    });
+    // Server-side filtering is now handled by the API
+    const filteredTickets = tickets;
 
     const getCurrentUser = async () => {
         try {
@@ -264,11 +239,18 @@ export default function TicketsPage() {
         }
     };
 
-    const fetchTickets = async () => {
+    const fetchTickets = async (page = 1, filters = {}) => {
         try {
             setLoading(true);
 
-            const response = await fetch("/api/tickets");
+            // Build query parameters
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: "20",
+                ...filters,
+            });
+
+            const response = await fetch(`/api/tickets?${params}`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -276,6 +258,9 @@ export default function TicketsPage() {
             }
 
             setTickets(data.tickets);
+            if (data.pagination) {
+                setPagination(data.pagination);
+            }
         } catch (error: unknown) {
             console.error("Error fetching tickets:", error);
             const errorMessage =
@@ -1521,6 +1506,51 @@ export default function TicketsPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6">
+                        <div className="text-sm text-gray-700">
+                            Hiển thị{" "}
+                            {(pagination.page - 1) * pagination.limit + 1} -{" "}
+                            {Math.min(
+                                pagination.page * pagination.limit,
+                                pagination.total
+                            )}{" "}
+                            của {pagination.total} tickets
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setCurrentPage(Math.max(1, currentPage - 1))
+                                }
+                                disabled={currentPage === 1}
+                            >
+                                Trước
+                            </Button>
+                            <span className="text-sm text-gray-700">
+                                Trang {currentPage} của {pagination.totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setCurrentPage(
+                                        Math.min(
+                                            pagination.totalPages,
+                                            currentPage + 1
+                                        )
+                                    )
+                                }
+                                disabled={currentPage === pagination.totalPages}
+                            >
+                                Sau
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>

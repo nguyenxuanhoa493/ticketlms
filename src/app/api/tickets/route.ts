@@ -2,9 +2,25 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const cookieStore = await cookies();
+        const { searchParams } = new URL(request.url);
+
+        // Pagination parameters
+        const page = parseInt(searchParams.get("page") || "1");
+        const limit = parseInt(searchParams.get("limit") || "20");
+        const offset = (page - 1) * limit;
+
+        // Filtering parameters
+        const status = searchParams.get("status");
+        const priority = searchParams.get("priority");
+        const ticketType = searchParams.get("ticket_type");
+        const search = searchParams.get("search");
+
+        // Sorting parameters
+        const sortBy = searchParams.get("sort_by") || "created_at";
+        const sortOrder = searchParams.get("sort_order") || "desc";
 
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,10 +55,28 @@ export async function GET() {
 
         if (profileError) throw profileError;
 
-        // Get tickets với filter theo quyền của user
-        let ticketsQuery = supabase.from("tickets").select("*");
+        // Build optimized query with JOINs
+        let ticketsQuery = supabase.from("tickets").select(`
+                id,
+                title,
+                description,
+                status,
+                priority,
+                ticket_type,
+                platform,
+                created_at,
+                updated_at,
+                expected_completion_date,
+                closed_at,
+                organization_id,
+                assigned_to,
+                created_by,
+                organizations!inner(id, name),
+                created_user:profiles!created_by(id, full_name, avatar_url),
+                assigned_user:profiles!assigned_to(id, full_name, avatar_url)
+            `);
 
-        // Nếu không phải admin, chỉ lấy tickets của organization mình
+        // Apply organization filter based on user role
         if (profile.role !== "admin") {
             if (profile.organization_id) {
                 ticketsQuery = ticketsQuery.eq(
@@ -50,44 +84,50 @@ export async function GET() {
                     profile.organization_id
                 );
             } else {
-                // User không có organization thì không thấy ticket nào
-                return NextResponse.json({ tickets: [] });
+                return NextResponse.json({
+                    tickets: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 },
+                });
             }
         }
 
-        const { data: ticketsData, error: ticketsError } =
-            await ticketsQuery.order("created_at", { ascending: false });
+        // Apply filters
+        if (status) {
+            ticketsQuery = ticketsQuery.eq("status", status);
+        }
+        if (priority) {
+            ticketsQuery = ticketsQuery.eq("priority", priority);
+        }
+        if (ticketType) {
+            ticketsQuery = ticketsQuery.eq("ticket_type", ticketType);
+        }
+        if (search) {
+            ticketsQuery = ticketsQuery.or(
+                `title.ilike.%${search}%,description.ilike.%${search}%`
+            );
+        }
+
+        // Get total count for pagination
+        const { count } = await ticketsQuery.count();
+        const total = count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Apply pagination and sorting
+        const { data: ticketsData, error: ticketsError } = await ticketsQuery
+            .order(sortBy, { ascending: sortOrder === "asc" })
+            .range(offset, offset + limit - 1);
 
         if (ticketsError) throw ticketsError;
 
-        // Get organizations
-        const { data: orgsData, error: orgsError } = await supabase
-            .from("organizations")
-            .select("id, name");
-
-        if (orgsError) throw orgsError;
-
-        // Get profiles
-        const { data: profilesData, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url");
-
-        if (profilesError) throw profilesError;
-
-        // Combine data manually
-        const data = ticketsData?.map((ticket) => ({
-            ...ticket,
-            organizations: ticket.organization_id
-                ? orgsData?.find((org) => org.id === ticket.organization_id)
-                : null,
-            created_user: ticket.created_by
-                ? profilesData?.find(
-                      (profile) => profile.id === ticket.created_by
-                  )
-                : null,
-        }));
-
-        return NextResponse.json({ tickets: data || [] });
+        return NextResponse.json({
+            tickets: ticketsData || [],
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+            },
+        });
     } catch (error: unknown) {
         console.error("Error fetching tickets:", error);
         const errorMessage =
