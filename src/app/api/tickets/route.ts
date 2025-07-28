@@ -213,6 +213,14 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Ensure organization_id is not null
+        if (!finalOrgId) {
+            return NextResponse.json(
+                { error: "Organization ID is required" },
+                { status: 400 }
+            );
+        }
+
         const { error } = await supabase.from("tickets").insert({
             title: title.trim(),
             description: description?.trim() || null,
@@ -220,7 +228,7 @@ export async function POST(request: NextRequest) {
             priority: priority || "medium",
             platform: platform || "all",
             status: "open",
-            organization_id: finalOrgId || null,
+            organization_id: finalOrgId,
             expected_completion_date: expected_completion_date || null,
             closed_at: formattedClosedAt,
             created_by: user.id,
