@@ -169,10 +169,13 @@ export async function GET(request: NextRequest) {
                 .in("id", userIds);
 
             if (users) {
-                userData = users.reduce((acc, user) => {
-                    acc[user.id] = user;
-                    return acc;
-                }, {});
+                userData = users.reduce(
+                    (acc: Record<string, any>, user: any) => {
+                        acc[user.id] = user;
+                        return acc;
+                    },
+                    {}
+                );
             }
         }
 
