@@ -1445,6 +1445,9 @@ export default function TicketsPage() {
                                                             variant="outline"
                                                             size="sm"
                                                             className="text-red-600 hover:text-red-700"
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
                                                         >
                                                             <svg
                                                                 className="w-4 h-4"
@@ -1487,12 +1490,15 @@ export default function TicketsPage() {
                                                                 Hủy
                                                             </AlertDialogCancel>
                                                             <AlertDialogAction
-                                                                onClick={() =>
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e.stopPropagation();
                                                                     handleDelete(
                                                                         ticket.id,
                                                                         ticket.title
-                                                                    )
-                                                                }
+                                                                    );
+                                                                }}
                                                                 className="bg-red-600 hover:bg-red-700"
                                                             >
                                                                 Xóa

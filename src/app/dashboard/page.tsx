@@ -105,6 +105,7 @@ async function DashboardContent() {
         totalUsers: 0,
         totalTickets: 0,
         openTickets: 0,
+        inProgressTickets: 0,
     };
 
     try {
@@ -115,6 +116,7 @@ async function DashboardContent() {
                 { count: totalUsers },
                 { count: totalTickets },
                 { count: openTickets },
+                { count: inProgressTickets },
             ] = await Promise.all([
                 supabase
                     .from("organizations")
@@ -129,6 +131,10 @@ async function DashboardContent() {
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
                     .eq("status", "open"),
+                supabase
+                    .from("tickets")
+                    .select("*", { count: "exact", head: true })
+                    .eq("status", "in_progress"),
             ]);
 
             stats = {
@@ -136,6 +142,7 @@ async function DashboardContent() {
                 totalUsers: totalUsers || 0,
                 totalTickets: totalTickets || 0,
                 openTickets: openTickets || 0,
+                inProgressTickets: inProgressTickets || 0,
             };
         } else {
             // User và Manager chỉ thấy data của organization mình
@@ -145,6 +152,7 @@ async function DashboardContent() {
                 { count: totalUsers },
                 { count: totalTickets },
                 { count: openTickets },
+                { count: inProgressTickets },
             ] = await Promise.all([
                 supabase
                     .from("profiles")
@@ -159,6 +167,11 @@ async function DashboardContent() {
                     .select("*", { count: "exact", head: true })
                     .eq("organization_id", orgFilter)
                     .eq("status", "open"),
+                supabase
+                    .from("tickets")
+                    .select("*", { count: "exact", head: true })
+                    .eq("organization_id", orgFilter)
+                    .eq("status", "in_progress"),
             ]);
 
             stats = {
@@ -166,6 +179,7 @@ async function DashboardContent() {
                 totalUsers: totalUsers || 0,
                 totalTickets: totalTickets || 0,
                 openTickets: openTickets || 0,
+                inProgressTickets: inProgressTickets || 0,
             };
         }
     } catch (error) {
@@ -364,35 +378,42 @@ async function DashboardContent() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Tổng Đơn vị
-                        </CardTitle>
-                        <svg
-                            className="h-4 w-4 text-muted-foreground"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                            />
-                        </svg>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {stats.totalOrganizations}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Đơn vị trong hệ thống
-                        </p>
-                    </CardContent>
-                </Card>
+            <div
+                className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${
+                    profile?.role === "admin" ? "4" : "3"
+                } gap-6`}
+            >
+                {/* Chỉ hiển thị thống kê đơn vị cho admin */}
+                {profile?.role === "admin" && (
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Tổng Đơn vị
+                            </CardTitle>
+                            <svg
+                                className="h-4 w-4 text-muted-foreground"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                />
+                            </svg>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {stats.totalOrganizations}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Đơn vị trong hệ thống
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -477,6 +498,35 @@ async function DashboardContent() {
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Cần xử lý
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Đang Xử Lý
+                        </CardTitle>
+                        <svg
+                            className="h-4 w-4 text-muted-foreground"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-yellow-600">
+                            {stats.inProgressTickets}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Đang được xử lý
                         </p>
                     </CardContent>
                 </Card>
