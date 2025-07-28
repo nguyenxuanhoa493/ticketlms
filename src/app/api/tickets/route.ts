@@ -108,7 +108,8 @@ export async function GET(request: NextRequest) {
         }
 
         // Get total count for pagination
-        const { count } = await ticketsQuery.count();
+        const { count, error: countError } = await ticketsQuery.count();
+        if (countError) throw countError;
         const total = count || 0;
         const totalPages = Math.ceil(total / limit);
 
