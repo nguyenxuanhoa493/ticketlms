@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
             ]),
         ];
 
-        let userData = {};
+        let userData: Record<string, any> = {};
         if (userIds.length > 0) {
             const { data: users } = await supabase
                 .from("profiles")
