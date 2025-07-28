@@ -1213,9 +1213,13 @@ export default function TicketsPage() {
                                     <TableRow
                                         key={ticket.id}
                                         className="cursor-pointer hover:bg-gray-50"
-                                        onClick={() =>
-                                            router.push(`/tickets/${ticket.id}`)
-                                        }
+                                        onClick={() => {
+                                            if (!isDialogOpen) {
+                                                router.push(
+                                                    `/tickets/${ticket.id}`
+                                                );
+                                            }
+                                        }}
                                     >
                                         <TableCell className="text-center">
                                             {index + 1}
@@ -1445,7 +1449,11 @@ export default function TicketsPage() {
                                                     </svg>
                                                     Sửa
                                                 </Button>
-                                                <AlertDialog>
+                                                <AlertDialog
+                                                    onOpenChange={(open) => {
+                                                        setIsDialogOpen(open);
+                                                    }}
+                                                >
                                                     <AlertDialogTrigger asChild>
                                                         <Button
                                                             variant="outline"
@@ -1471,7 +1479,11 @@ export default function TicketsPage() {
                                                             Xóa
                                                         </Button>
                                                     </AlertDialogTrigger>
-                                                    <AlertDialogContent>
+                                                    <AlertDialogContent
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                    >
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>
                                                                 Xác nhận xóa
@@ -1492,7 +1504,11 @@ export default function TicketsPage() {
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
-                                                            <AlertDialogCancel>
+                                                            <AlertDialogCancel
+                                                                onClick={(e) =>
+                                                                    e.stopPropagation()
+                                                                }
+                                                            >
                                                                 Hủy
                                                             </AlertDialogCancel>
                                                             <AlertDialogAction

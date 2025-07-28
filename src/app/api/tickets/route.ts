@@ -499,19 +499,63 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
+        const cookieStore = await cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
-                    get() {
-                        return undefined;
+                    get(name: string) {
+                        return cookieStore.get(name)?.value;
                     },
-                    set() {},
-                    remove() {},
                 },
             }
         );
+
+        // Lấy thông tin user hiện tại
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json(
+                { error: "User not authenticated" },
+                { status: 401 }
+            );
+        }
+
+        // Lấy profile của user để biết role và organization
+        const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role, organization_id")
+            .eq("id", user.id)
+            .single();
+
+        if (profileError) throw profileError;
+
+        // Kiểm tra quyền xóa ticket
+        if (profile.role !== "admin") {
+            // User/Manager chỉ có thể xóa ticket của organization mình
+            const { data: ticket, error: ticketError } = await supabase
+                .from("tickets")
+                .select("organization_id")
+                .eq("id", id)
+                .single();
+
+            if (ticketError) {
+                return NextResponse.json(
+                    { error: "Ticket not found" },
+                    { status: 404 }
+                );
+            }
+
+            if (ticket.organization_id !== profile.organization_id) {
+                return NextResponse.json(
+                    { error: "Access denied" },
+                    { status: 403 }
+                );
+            }
+        }
 
         const { error } = await supabase.from("tickets").delete().eq("id", id);
 
