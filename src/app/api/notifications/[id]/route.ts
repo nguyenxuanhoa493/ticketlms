@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const cookieStore = await cookies();
@@ -32,7 +32,8 @@ export async function PUT(
             );
         }
 
-        const notificationId = params.id;
+        const { id } = await params;
+        const notificationId = id;
         const body = await request.json();
         const { is_read } = body;
 
@@ -75,7 +76,7 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const cookieStore = await cookies();
@@ -103,7 +104,8 @@ export async function DELETE(
             );
         }
 
-        const notificationId = params.id;
+        const { id } = await params;
+        const notificationId = id;
 
         // Delete notification (RLS will ensure user can only delete their own)
         const { error } = await supabase

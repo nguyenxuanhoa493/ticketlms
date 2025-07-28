@@ -4,11 +4,12 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const cookieStore = await cookies();
-        const ticketId = params.id;
+        const { id } = await params;
+        const ticketId = id;
 
         if (!ticketId) {
             return NextResponse.json(
@@ -109,7 +110,12 @@ export async function GET(
     } catch (error: unknown) {
         console.error("Error fetching ticket:", error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to fetch ticket" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to fetch ticket",
+            },
             { status: 500 }
         );
     }

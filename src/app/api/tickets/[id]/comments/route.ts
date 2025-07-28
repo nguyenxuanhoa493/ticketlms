@@ -28,11 +28,12 @@ function stripHtmlAndLimit(
 // GET /api/tickets/[id]/comments - Get comments for a ticket
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const cookieStore = await cookies();
-        const ticketId = params.id;
+        const { id } = await params;
+        const ticketId = id;
 
         if (!ticketId) {
             return NextResponse.json(
@@ -142,7 +143,12 @@ export async function GET(
     } catch (error: unknown) {
         console.error("Error fetching comments:", error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to fetch comments" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to fetch comments",
+            },
             { status: 500 }
         );
     }
@@ -151,11 +157,12 @@ export async function GET(
 // POST /api/tickets/[id]/comments - Create a new comment
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const cookieStore = await cookies();
-        const ticketId = params.id;
+        const { id } = await params;
+        const ticketId = id;
         const body = await request.json();
         const { content, parent_id } = body;
 
@@ -416,7 +423,12 @@ export async function POST(
     } catch (error: unknown) {
         console.error("Error creating comment:", error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to create comment" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to create comment",
+            },
             { status: 500 }
         );
     }

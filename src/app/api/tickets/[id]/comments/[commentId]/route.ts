@@ -5,12 +5,12 @@ import { createServerClient } from "@supabase/ssr";
 // PUT /api/tickets/[id]/comments/[commentId] - Update a comment
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string; commentId: string } }
+    { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
     try {
         const cookieStore = await cookies();
-        const ticketId = params.id;
-        const commentId = params.commentId;
+        const { id, commentId } = await params;
+        const ticketId = id;
         const body = await request.json();
         const { content } = body;
 
@@ -134,7 +134,12 @@ export async function PUT(
     } catch (error: unknown) {
         console.error("Error updating comment:", error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to update comment" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to update comment",
+            },
             { status: 500 }
         );
     }
@@ -143,12 +148,12 @@ export async function PUT(
 // DELETE /api/tickets/[id]/comments/[commentId] - Delete a comment
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string; commentId: string } }
+    { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
     try {
         const cookieStore = await cookies();
-        const ticketId = params.id;
-        const commentId = params.commentId;
+        const { id, commentId } = await params;
+        const ticketId = id;
 
         if (!ticketId || !commentId) {
             return NextResponse.json(
@@ -248,7 +253,12 @@ export async function DELETE(
     } catch (error: unknown) {
         console.error("Error deleting comment:", error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to delete comment" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to delete comment",
+            },
             { status: 500 }
         );
     }
