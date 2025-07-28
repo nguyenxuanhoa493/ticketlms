@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "node scripts/update-version.js && next build",
+    "build:version": "node scripts/update-version.js",
     "start": "next start",
     "lint": "next lint",
     "check-errors": "node scripts/check-errors.js",
