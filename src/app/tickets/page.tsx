@@ -1414,15 +1414,21 @@ export default function TicketsPage() {
                                                 : "Chưa hoàn thành"}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end space-x-2">
+                                            <div
+                                                className="flex items-center justify-end space-x-2"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() =>
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         router.push(
                                                             `/tickets/${ticket.id}`
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                 >
                                                     <svg
                                                         className="w-4 h-4"
