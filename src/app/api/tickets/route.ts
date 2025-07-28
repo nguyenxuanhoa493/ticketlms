@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
         if (profileError) throw profileError;
 
-        // Build optimized query with JOINs
+        // Build optimized query with basic JOINs
         let ticketsQuery = supabase.from("tickets").select(`
                 id,
                 title,
@@ -71,9 +71,7 @@ export async function GET(request: NextRequest) {
                 organization_id,
                 assigned_to,
                 created_by,
-                organizations!inner(id, name),
-                created_user:profiles!created_by(id, full_name, avatar_url),
-                assigned_user:profiles!assigned_to(id, full_name, avatar_url)
+                organizations(id, name)
             `);
 
         // Apply organization filter based on user role
@@ -107,8 +105,42 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Get total count for pagination
-        const { count, error: countError } = await ticketsQuery.count();
+        // Get total count for pagination (without JOINs)
+        let countQuery = supabase
+            .from("tickets")
+            .select("*", { count: "exact", head: true });
+
+        // Apply the same filters to count query
+        if (profile.role !== "admin") {
+            if (profile.organization_id) {
+                countQuery = countQuery.eq(
+                    "organization_id",
+                    profile.organization_id
+                );
+            } else {
+                return NextResponse.json({
+                    tickets: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 },
+                });
+            }
+        }
+
+        if (status) {
+            countQuery = countQuery.eq("status", status);
+        }
+        if (priority) {
+            countQuery = countQuery.eq("priority", priority);
+        }
+        if (ticketType) {
+            countQuery = countQuery.eq("ticket_type", ticketType);
+        }
+        if (search) {
+            countQuery = countQuery.or(
+                `title.ilike.%${search}%,description.ilike.%${search}%`
+            );
+        }
+
+        const { count, error: countError } = await countQuery;
         if (countError) throw countError;
         const total = count || 0;
         const totalPages = Math.ceil(total / limit);
@@ -120,8 +152,42 @@ export async function GET(request: NextRequest) {
 
         if (ticketsError) throw ticketsError;
 
+        // Get user data separately if needed
+        const userIds = [
+            ...new Set([
+                ...(ticketsData?.map((t) => t.created_by) || []),
+                ...(ticketsData?.map((t) => t.assigned_to).filter(Boolean) ||
+                    []),
+            ]),
+        ];
+
+        let userData = {};
+        if (userIds.length > 0) {
+            const { data: users } = await supabase
+                .from("profiles")
+                .select("id, full_name, avatar_url")
+                .in("id", userIds);
+
+            if (users) {
+                userData = users.reduce((acc, user) => {
+                    acc[user.id] = user;
+                    return acc;
+                }, {});
+            }
+        }
+
+        // Combine data
+        const ticketsWithUsers =
+            ticketsData?.map((ticket) => ({
+                ...ticket,
+                created_user: userData[ticket.created_by] || null,
+                assigned_user: ticket.assigned_to
+                    ? userData[ticket.assigned_to] || null
+                    : null,
+            })) || [];
+
         return NextResponse.json({
-            tickets: ticketsData || [],
+            tickets: ticketsWithUsers,
             pagination: {
                 page,
                 limit,

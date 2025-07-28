@@ -379,19 +379,24 @@ async function DashboardContent() {
 
             {/* Stats Cards */}
             <div
-                className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${
+                className={`grid grid-cols-3 md:grid-cols-${
                     profile?.role === "admin" ? "4" : "3"
-                } gap-6`}
+                } gap-4`}
             >
                 {/* Chỉ hiển thị thống kê đơn vị cho admin */}
                 {profile?.role === "admin" && (
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Tổng Đơn vị
-                            </CardTitle>
+                    <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Tổng Đơn vị
+                                </p>
+                                <p className="text-2xl font-bold">
+                                    {stats.totalOrganizations}
+                                </p>
+                            </div>
                             <svg
-                                className="h-4 w-4 text-muted-foreground"
+                                className="h-8 w-8 text-muted-foreground"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -403,25 +408,22 @@ async function DashboardContent() {
                                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                                 />
                             </svg>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.totalOrganizations}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Đơn vị trong hệ thống
-                            </p>
-                        </CardContent>
+                        </div>
                     </Card>
                 )}
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Tổng Users
-                        </CardTitle>
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Tổng Users
+                            </p>
+                            <p className="text-2xl font-bold">
+                                {stats.totalUsers}
+                            </p>
+                        </div>
                         <svg
-                            className="h-4 w-4 text-muted-foreground"
+                            className="h-8 w-8 text-muted-foreground"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -433,24 +435,21 @@ async function DashboardContent() {
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
                             />
                         </svg>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {stats.totalUsers}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Người dùng đã đăng ký
-                        </p>
-                    </CardContent>
+                    </div>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Tổng Tickets
-                        </CardTitle>
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Tổng Tickets
+                            </p>
+                            <p className="text-2xl font-bold">
+                                {stats.totalTickets}
+                            </p>
+                        </div>
                         <svg
-                            className="h-4 w-4 text-muted-foreground"
+                            className="h-8 w-8 text-muted-foreground"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -462,24 +461,21 @@ async function DashboardContent() {
                                 d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a1 1 0 001 1h1a1 1 0 001-1V7a2 2 0 00-2-2H5zM5 14H4a1 1 0 00-1 1v3a2 2 0 002 2h1a2 2 0 002-2v-3a1 1 0 00-1-1H5z"
                             />
                         </svg>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {stats.totalTickets}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Tickets đã tạo
-                        </p>
-                    </CardContent>
+                    </div>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Tickets Mở
-                        </CardTitle>
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Tickets Mở
+                            </p>
+                            <p className="text-2xl font-bold text-red-600">
+                                {stats.openTickets}
+                            </p>
+                        </div>
                         <svg
-                            className="h-4 w-4 text-muted-foreground"
+                            className="h-8 w-8 text-muted-foreground"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -491,24 +487,21 @@ async function DashboardContent() {
                                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
                             />
                         </svg>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-600">
-                            {stats.openTickets}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Cần xử lý
-                        </p>
-                    </CardContent>
+                    </div>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Đang Xử Lý
-                        </CardTitle>
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Đang Xử Lý
+                            </p>
+                            <p className="text-2xl font-bold text-yellow-600">
+                                {stats.inProgressTickets}
+                            </p>
+                        </div>
                         <svg
-                            className="h-4 w-4 text-muted-foreground"
+                            className="h-8 w-8 text-muted-foreground"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -520,15 +513,7 @@ async function DashboardContent() {
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                         </svg>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-yellow-600">
-                            {stats.inProgressTickets}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Đang được xử lý
-                        </p>
-                    </CardContent>
+                    </div>
                 </Card>
             </div>
 
