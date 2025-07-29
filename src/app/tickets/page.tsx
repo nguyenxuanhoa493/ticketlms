@@ -108,6 +108,69 @@ interface TicketFormData {
 }
 
 export default function TicketsPage() {
+    // Cấu hình tỉ lệ độ rộng các cột
+    const columnConfig = [
+        { key: "stt", label: "STT", width: "w-10", align: "text-center" },
+        {
+            key: "organization",
+            label: "Đơn vị",
+            width: "w-18",
+            align: "text-left",
+            adminOnly: true,
+        },
+        { key: "type", label: "Loại", width: "w-16", align: "text-left" },
+        {
+            key: "platform",
+            label: "Nền tảng",
+            width: "w-24",
+            align: "text-left",
+        },
+        { key: "title", label: "Tiêu đề", width: "flex-1", align: "text-left" },
+        {
+            key: "priority",
+            label: "Ưu tiên",
+            width: "w-16",
+            align: "text-left",
+        },
+        {
+            key: "deadline",
+            label: "Thời hạn",
+            width: "w-20",
+            align: "text-left",
+        },
+        {
+            key: "creator",
+            label: "Người tạo",
+            width: "w-20",
+            align: "text-left",
+            hidden: true,
+        },
+        {
+            key: "status",
+            label: "Trạng thái",
+            width: "w-30",
+            align: "text-left",
+        },
+        {
+            key: "closedAt",
+            label: "Đóng lúc",
+            width: "w-20",
+            align: "text-left",
+        },
+        {
+            key: "processingTime",
+            label: "Thời lượng",
+            width: "w-22",
+            align: "text-left",
+        },
+        {
+            key: "actions",
+            label: "Thao tác",
+            width: "w-20",
+            align: "text-left",
+        },
+    ];
+
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [users, setUsers] = useState<Profile[]>([]);
@@ -1175,47 +1238,34 @@ export default function TicketsPage() {
                         <Table>
                             <TableHeader className="bg-gray-50">
                                 <TableRow>
-                                    <TableHead className="w-12">STT</TableHead>
-                                    {currentUser?.role === "admin" && (
-                                        <TableHead className="w-32">
-                                            Đơn vị
-                                        </TableHead>
-                                    )}
-                                    <TableHead className="w-20">Loại</TableHead>
-                                    <TableHead className="w-24">
-                                        Nền tảng
-                                    </TableHead>
-                                    <TableHead className="w-48">
-                                        Tiêu đề
-                                    </TableHead>
-                                    <TableHead className="w-24">
-                                        Ưu tiên
-                                    </TableHead>
-                                    <TableHead className="w-28">
-                                        Thời hạn
-                                    </TableHead>
-                                    <TableHead className="w-32">
-                                        Người tạo
-                                    </TableHead>
-                                    <TableHead className="w-36">
-                                        Trạng thái
-                                    </TableHead>
-                                    <TableHead className="w-40">
-                                        Thời gian đóng
-                                    </TableHead>
-                                    <TableHead className="w-32">
-                                        T.gian xử lý
-                                    </TableHead>
-                                    <TableHead className="w-24 text-right">
-                                        Thao tác
-                                    </TableHead>
+                                    {columnConfig.map((column) => {
+                                        // Bỏ qua cột có thuộc tính hidden
+                                        if (column.hidden) {
+                                            return null;
+                                        }
+                                        // Bỏ qua cột "Đơn vị" nếu không phải admin
+                                        if (
+                                            column.adminOnly &&
+                                            currentUser?.role !== "admin"
+                                        ) {
+                                            return null;
+                                        }
+                                        return (
+                                            <TableHead
+                                                key={column.key}
+                                                className={`${column.width} ${column.align}`}
+                                            >
+                                                {column.label}
+                                            </TableHead>
+                                        );
+                                    })}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredTickets.map((ticket, index) => (
                                     <TableRow
                                         key={ticket.id}
-                                        className="cursor-pointer hover:bg-gray-50"
+                                        className="cursor-pointer hover:bg-gray-50 py-2"
                                         onClick={() => {
                                             if (!isDialogOpen) {
                                                 router.push(
@@ -1224,16 +1274,16 @@ export default function TicketsPage() {
                                             }
                                         }}
                                     >
-                                        <TableCell className="text-center">
+                                        <TableCell className="text-center py-2">
                                             {index + 1}
                                         </TableCell>
                                         {currentUser?.role === "admin" && (
-                                            <TableCell>
+                                            <TableCell className="py-2">
                                                 {ticket.organizations?.name ||
                                                     "Không xác định"}
                                             </TableCell>
                                         )}
-                                        <TableCell>
+                                        <TableCell className="py-2">
                                             <Badge
                                                 variant={getTicketTypeBadgeVariant(
                                                     ticket.ticket_type
@@ -1255,7 +1305,7 @@ export default function TicketsPage() {
                                                 </div>
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2">
                                             <Badge
                                                 variant="outline"
                                                 className={
@@ -1274,12 +1324,12 @@ export default function TicketsPage() {
                                                     : "Tất cả"}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="font-bold">
-                                            <div className="max-w-48 break-words">
+                                        <TableCell className="font-medium py-2">
+                                            <div className="break-words">
                                                 {ticket.title}
                                             </div>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2">
                                             <Badge
                                                 variant={getPriorityBadgeVariant(
                                                     ticket.priority
@@ -1295,46 +1345,15 @@ export default function TicketsPage() {
                                                 )}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2">
                                             {ticket.expected_completion_date
                                                 ? new Date(
                                                       ticket.expected_completion_date
                                                   ).toLocaleDateString("vi-VN")
                                                 : "Chưa đặt"}
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 overflow-hidden">
-                                                    {ticket.created_user
-                                                        ?.avatar_url ? (
-                                                        <img
-                                                            src={
-                                                                ticket
-                                                                    .created_user
-                                                                    .avatar_url
-                                                            }
-                                                            alt={
-                                                                ticket
-                                                                    .created_user
-                                                                    .full_name ||
-                                                                "User"
-                                                            }
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        ticket.created_user?.full_name?.charAt(
-                                                            0
-                                                        ) || "U"
-                                                    )}
-                                                </div>
-                                                <span className="text-sm">
-                                                    {ticket.created_user
-                                                        ?.full_name ||
-                                                        "Không xác định"}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
+
+                                        <TableCell className="py-2">
                                             <Badge
                                                 variant={getStatusBadgeVariant(
                                                     ticket.status
@@ -1352,7 +1371,7 @@ export default function TicketsPage() {
                                                 {getStatusLabel(ticket.status)}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2">
                                             {ticket.closed_at
                                                 ? new Date(
                                                       ticket.closed_at
@@ -1367,7 +1386,7 @@ export default function TicketsPage() {
                                                   })
                                                 : "Chưa đóng"}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="py-2">
                                             {ticket.closed_at &&
                                             ticket.created_at
                                                 ? (() => {
@@ -1418,9 +1437,9 @@ export default function TicketsPage() {
                                                           return `${diffMinutes}m`;
                                                       }
                                                   })()
-                                                : "Chưa hoàn thành"}
+                                                : ""}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right py-2">
                                             <div
                                                 className="flex items-center justify-end space-x-2"
                                                 onClick={(e) =>
@@ -1450,7 +1469,6 @@ export default function TicketsPage() {
                                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                                                         />
                                                     </svg>
-                                                    Sửa
                                                 </Button>
                                                 <AlertDialog
                                                     open={
@@ -1487,7 +1505,6 @@ export default function TicketsPage() {
                                                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                                                 />
                                                             </svg>
-                                                            Xóa
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent

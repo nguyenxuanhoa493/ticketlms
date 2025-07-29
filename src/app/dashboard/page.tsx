@@ -106,6 +106,7 @@ async function DashboardContent() {
         totalTickets: 0,
         openTickets: 0,
         inProgressTickets: 0,
+        closedTickets: 0,
     };
 
     try {
@@ -117,6 +118,7 @@ async function DashboardContent() {
                 { count: totalTickets },
                 { count: openTickets },
                 { count: inProgressTickets },
+                { count: closedTickets },
             ] = await Promise.all([
                 supabase
                     .from("organizations")
@@ -135,6 +137,10 @@ async function DashboardContent() {
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
                     .eq("status", "in_progress"),
+                supabase
+                    .from("tickets")
+                    .select("*", { count: "exact", head: true })
+                    .eq("status", "closed"),
             ]);
 
             stats = {
@@ -143,6 +149,7 @@ async function DashboardContent() {
                 totalTickets: totalTickets || 0,
                 openTickets: openTickets || 0,
                 inProgressTickets: inProgressTickets || 0,
+                closedTickets: closedTickets || 0,
             };
         } else {
             // User và Manager chỉ thấy data của organization mình
@@ -153,6 +160,7 @@ async function DashboardContent() {
                 { count: totalTickets },
                 { count: openTickets },
                 { count: inProgressTickets },
+                { count: closedTickets },
             ] = await Promise.all([
                 supabase
                     .from("profiles")
@@ -172,6 +180,11 @@ async function DashboardContent() {
                     .select("*", { count: "exact", head: true })
                     .eq("organization_id", orgFilter)
                     .eq("status", "in_progress"),
+                supabase
+                    .from("tickets")
+                    .select("*", { count: "exact", head: true })
+                    .eq("organization_id", orgFilter)
+                    .eq("status", "closed"),
             ]);
 
             stats = {
@@ -180,6 +193,7 @@ async function DashboardContent() {
                 totalTickets: totalTickets || 0,
                 openTickets: openTickets || 0,
                 inProgressTickets: inProgressTickets || 0,
+                closedTickets: closedTickets || 0,
             };
         }
     } catch (error) {
@@ -380,7 +394,7 @@ async function DashboardContent() {
             {/* Stats Cards */}
             <div
                 className={`grid grid-cols-3 md:grid-cols-${
-                    profile?.role === "admin" ? "4" : "3"
+                    profile?.role === "admin" ? "5" : "4"
                 } gap-4`}
             >
                 {/* Chỉ hiển thị thống kê đơn vị cho admin */}
@@ -515,6 +529,32 @@ async function DashboardContent() {
                         </svg>
                     </div>
                 </Card>
+
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Đã Đóng
+                            </p>
+                            <p className="text-2xl font-bold text-green-600">
+                                {stats.closedTickets}
+                            </p>
+                        </div>
+                        <svg
+                            className="h-8 w-8 text-muted-foreground"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                    </div>
+                </Card>
             </div>
 
             {/* Recent Activity - 2 Columns */}
@@ -537,10 +577,12 @@ async function DashboardContent() {
                                         className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 px-2 -mx-2 rounded transition-colors cursor-pointer"
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-sm font-medium text-gray-900 truncate">
+                                            <div className="mb-1">
+                                                <span className="text-sm font-medium text-gray-900 truncate block">
                                                     {ticket.title}
                                                 </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-gray-500">
                                                 <Badge
                                                     variant={getTicketTypeBadgeVariant(
                                                         ticket.ticket_type
@@ -556,8 +598,7 @@ async function DashboardContent() {
                                                         ticket.ticket_type
                                                     )}
                                                 </Badge>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                <span>•</span>
                                                 <span>
                                                     {ticket.organizations
                                                         ?.name ||
