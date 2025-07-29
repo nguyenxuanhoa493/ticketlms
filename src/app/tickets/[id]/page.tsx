@@ -642,12 +642,12 @@ export default function TicketDetailPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div
-                                    className="text-sm text-gray-700 break-words leading-relaxed"
-                                    dangerouslySetInnerHTML={{
-                                        __html: comment.content,
-                                    }}
-                                />
+                                <div className="text-sm text-gray-700 break-words leading-relaxed">
+                                    <HtmlContent
+                                        content={comment.content}
+                                        className="text-sm text-gray-700"
+                                    />
+                                </div>
                             )}
 
                             {/* Reply Form */}

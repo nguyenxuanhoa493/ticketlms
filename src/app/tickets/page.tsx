@@ -282,12 +282,14 @@ export default function TicketsPage() {
     useEffect(() => {
         const filters: any = {};
         if (filterStatus !== "all") filters.status = filterStatus;
+        if (filterOrganization !== "all")
+            filters.organization = filterOrganization;
         if (searchText) filters.search = searchText;
 
         fetchTickets(currentPage, filters);
         fetchOrganizations();
         getCurrentUser();
-    }, [currentPage, filterStatus, searchText]);
+    }, [currentPage, filterStatus, filterOrganization, searchText]);
 
     // Server-side filtering is now handled by the API
     const filteredTickets = tickets;

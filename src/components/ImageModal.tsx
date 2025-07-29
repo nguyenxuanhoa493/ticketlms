@@ -30,7 +30,7 @@ export default function ImageModal({
             className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
             onClick={handleBackdropClick}
         >
-            <div className="relative max-w-4xl max-h-full">
+            <div className="relative w-[70vw] max-h-full">
                 <Button
                     variant="ghost"
                     size="sm"

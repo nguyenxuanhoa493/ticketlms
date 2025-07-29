@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
         const priority = searchParams.get("priority");
         const ticketType = searchParams.get("ticket_type");
         const search = searchParams.get("search");
+        const organization = searchParams.get("organization");
 
         // Sorting parameters
         const sortBy = searchParams.get("sort_by") || "created_at";
@@ -99,6 +100,9 @@ export async function GET(request: NextRequest) {
         if (ticketType) {
             ticketsQuery = ticketsQuery.eq("ticket_type", ticketType);
         }
+        if (organization) {
+            ticketsQuery = ticketsQuery.eq("organization_id", organization);
+        }
         if (search) {
             ticketsQuery = ticketsQuery.or(
                 `title.ilike.%${search}%,description.ilike.%${search}%`
@@ -133,6 +137,9 @@ export async function GET(request: NextRequest) {
         }
         if (ticketType) {
             countQuery = countQuery.eq("ticket_type", ticketType);
+        }
+        if (organization) {
+            countQuery = countQuery.eq("organization_id", organization);
         }
         if (search) {
             countQuery = countQuery.or(
