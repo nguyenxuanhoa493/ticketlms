@@ -52,6 +52,8 @@ import {
     User,
     Building,
     Shield,
+    Filter,
+    X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -89,8 +91,15 @@ interface UserFormData {
     password: string;
 }
 
+interface FilterState {
+    search: string;
+    role: string;
+    organization: string;
+}
+
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
+    const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [loading, setLoading] = useState(true);
@@ -109,6 +118,12 @@ export default function UsersPage() {
     });
     const [newPassword, setNewPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [filters, setFilters] = useState<FilterState>({
+        search: "",
+        role: "",
+        organization: "all",
+    });
+    const [showFilters, setShowFilters] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -116,6 +131,49 @@ export default function UsersPage() {
         fetchUsers();
         fetchOrganizations();
     }, []);
+
+    // Filter users whenever users or filters change
+    useEffect(() => {
+        let filtered = [...users];
+
+        // Search filter
+        if (filters.search.trim()) {
+            const searchTerm = filters.search.toLowerCase();
+            filtered = filtered.filter(
+                (user) =>
+                    user.full_name?.toLowerCase().includes(searchTerm) ||
+                    user.email?.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // Organization filter
+        if (filters.organization && filters.organization !== "all") {
+            if (filters.organization === "none") {
+                filtered = filtered.filter((user) => !user.organization_id);
+            } else {
+                filtered = filtered.filter(
+                    (user) => user.organization_id === filters.organization
+                );
+            }
+        }
+
+        setFilteredUsers(filtered);
+    }, [users, filters.search, filters.organization]);
+
+    const clearFilters = () => {
+        setFilters({
+            search: "",
+            role: "",
+            organization: "all",
+        });
+    };
+
+    const hasActiveFilters = () => {
+        return (
+            filters.search.trim() !== "" ||
+            (filters.organization !== "" && filters.organization !== "all")
+        );
+    };
 
     const fetchCurrentUser = async () => {
         try {
@@ -151,7 +209,10 @@ export default function UsersPage() {
             setUsers(data.users);
         } catch (error: any) {
             console.error("Error fetching users:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to fetch users";
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Failed to fetch users";
             toast({
                 title: "Lỗi",
                 description:
@@ -645,8 +706,8 @@ export default function UsersPage() {
                                     {submitting
                                         ? "Đang lưu..."
                                         : editingUser
-                                        ? "Cập nhật"
-                                        : "Tạo mới"}
+                                          ? "Cập nhật"
+                                          : "Tạo mới"}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -700,9 +761,56 @@ export default function UsersPage() {
             {/* Users Table */}
             <div className="bg-white shadow-sm rounded-lg border">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900">
-                        Danh sách người dùng ({users.length})
-                    </h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-medium text-gray-900">
+                                Danh sách người dùng ({filteredUsers.length}/
+                                {users.length})
+                            </h2>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <div className="relative w-full sm:w-80">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="Tìm kiếm theo tên hoặc email..."
+                                    value={filters.search}
+                                    onChange={(e) =>
+                                        setFilters((prev) => ({
+                                            ...prev,
+                                            search: e.target.value,
+                                        }))
+                                    }
+                                    className="pl-10"
+                                />
+                            </div>
+                            <Select
+                                value={filters.organization}
+                                onValueChange={(value) =>
+                                    setFilters((prev) => ({
+                                        ...prev,
+                                        organization: value,
+                                    }))
+                                }
+                            >
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <SelectValue placeholder="Tất cả đơn vị" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        Tất cả đơn vị
+                                    </SelectItem>
+                                    <SelectItem value="none">
+                                        Không thuộc đơn vị nào
+                                    </SelectItem>
+                                    {organizations.map((org) => (
+                                        <SelectItem key={org.id} value={org.id}>
+                                            {org.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -721,7 +829,20 @@ export default function UsersPage() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                                d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"
+                            />
+                            <circle cx="9" cy="7" r="4" />
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M23 21v-2a4 4 0 00-3-3.87"
+                            />
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M16 3.13a4 4 0 010 7.75"
                             />
                         </svg>
                         <h3 className="mt-2 text-sm font-medium text-gray-900">
@@ -730,6 +851,24 @@ export default function UsersPage() {
                         <p className="mt-1 text-sm text-gray-500">
                             Bắt đầu bằng cách tạo người dùng đầu tiên.
                         </p>
+                    </div>
+                ) : filteredUsers.length === 0 && hasActiveFilters() ? (
+                    <div className="text-center py-12">
+                        <Search className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">
+                            Không tìm thấy kết quả
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc đơn vị.
+                        </p>
+                        <Button
+                            variant="outline"
+                            onClick={clearFilters}
+                            className="mt-4"
+                        >
+                            <X className="w-4 h-4 mr-2" />
+                            Xóa bộ lọc
+                        </Button>
                     </div>
                 ) : (
                     <Table>
@@ -746,7 +885,7 @@ export default function UsersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {users.map((user) => (
+                            {filteredUsers.map((user) => (
                                 <TableRow key={user.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
