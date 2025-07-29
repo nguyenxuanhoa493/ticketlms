@@ -135,7 +135,7 @@ export default function TicketsPage() {
         {
             key: "deadline",
             label: "Thời hạn",
-            width: "w-20",
+            width: "w-24",
             align: "text-left",
         },
         {
