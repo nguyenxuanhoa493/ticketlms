@@ -1074,8 +1074,8 @@ export default function TicketsPage() {
                                     {submitting
                                         ? "Đang lưu..."
                                         : editingTicket
-                                        ? "Cập nhật"
-                                        : "Tạo mới"}
+                                          ? "Cập nhật"
+                                          : "Tạo mới"}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -1312,16 +1312,16 @@ export default function TicketsPage() {
                                                     ticket.platform === "web"
                                                         ? "bg-green-100 text-green-800 border-green-200"
                                                         : ticket.platform ===
-                                                          "app"
-                                                        ? "bg-purple-100 text-purple-800 border-purple-200"
-                                                        : "bg-gray-100 text-gray-800 border-gray-200"
+                                                            "app"
+                                                          ? "bg-purple-100 text-purple-800 border-purple-200"
+                                                          : "bg-gray-100 text-gray-800 border-gray-200"
                                                 }
                                             >
                                                 {ticket.platform === "web"
                                                     ? "Web"
                                                     : ticket.platform === "app"
-                                                    ? "App"
-                                                    : "Tất cả"}
+                                                      ? "App"
+                                                      : "Tất cả"}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="font-medium py-2">
@@ -1363,9 +1363,9 @@ export default function TicketsPage() {
                                                     "in_progress"
                                                         ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
                                                         : ticket.status ===
-                                                          "closed"
-                                                        ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-                                                        : ""
+                                                            "closed"
+                                                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
+                                                          : ""
                                                 }
                                             >
                                                 {getStatusLabel(ticket.status)}

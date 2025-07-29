@@ -7,16 +7,7 @@
     "build": "node scripts/update-version.js && next build",
     "build:version": "node scripts/update-version.js",
     "start": "next start",
-    "lint": "next lint",
-    "check-errors": "node scripts/check-errors.js",
-    "fix-any-errors": "node scripts/fix-any-errors.js",
-    "fix-unused-imports": "node scripts/fix-unused-imports.js",
-    "fix-basic-errors": "node scripts/fix-basic-errors.js",
-    "fix-remaining-any": "node scripts/fix-remaining-any.js",
-    "fix-deploy-errors": "node scripts/fix-deploy-errors.js",
-    "fix-final-errors": "node scripts/fix-final-errors.js",
-    "fix-ts-errors": "node scripts/fix-ts-errors.js",
-    "create-admin": "node scripts/create-admin.js"
+    "lint": "next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
