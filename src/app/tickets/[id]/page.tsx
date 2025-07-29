@@ -30,6 +30,7 @@ import {
     Check,
     X,
     Eye,
+    Calendar,
 } from "lucide-react";
 
 interface Ticket {
@@ -129,6 +130,7 @@ export default function TicketDetailPage() {
         ticket_type: "task" as "bug" | "task",
         status: "open" as "open" | "in_progress" | "closed",
         priority: "medium" as "low" | "medium" | "high",
+        platform: "all" as "web" | "app" | "all",
         organization_id: "",
         expected_completion_date: "",
         closed_at: "",
@@ -162,6 +164,7 @@ export default function TicketDetailPage() {
                 ticket_type: ticketData.ticket_type || "task",
                 status: ticketData.status || "open",
                 priority: ticketData.priority || "medium",
+                platform: ticketData.platform || "all",
                 organization_id: ticketData.organization_id || "",
                 expected_completion_date:
                     ticketData.expected_completion_date || "",
@@ -519,6 +522,7 @@ export default function TicketDetailPage() {
                 ticket_type: ticket.ticket_type,
                 status: ticket.status,
                 priority: ticket.priority,
+                platform: ticket.platform,
                 organization_id: ticket.organization_id,
                 expected_completion_date: ticket.expected_completion_date
                     ? ticket.expected_completion_date.split("T")[0]
@@ -760,6 +764,7 @@ export default function TicketDetailPage() {
                     description: formData.description,
                     ticket_type: formData.ticket_type,
                     priority: formData.priority,
+                    platform: formData.platform,
                     status: formData.status,
                     expected_completion_date:
                         formData.expected_completion_date || null,
@@ -943,18 +948,18 @@ export default function TicketDetailPage() {
                                                             "high"
                                                                 ? "bg-red-100 text-red-800 border-red-200"
                                                                 : ticket?.priority ===
-                                                                  "medium"
-                                                                ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                                                : "bg-green-100 text-green-800 border-green-200"
+                                                                    "medium"
+                                                                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                                                  : "bg-green-100 text-green-800 border-green-200"
                                                         }
                                                     >
                                                         {ticket?.priority ===
                                                         "high"
                                                             ? "Cao"
                                                             : ticket?.priority ===
-                                                              "medium"
-                                                            ? "T.bình"
-                                                            : "Thấp"}
+                                                                "medium"
+                                                              ? "T.bình"
+                                                              : "Thấp"}
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -988,18 +993,18 @@ export default function TicketDetailPage() {
                                                             "web"
                                                                 ? "bg-green-100 text-green-800 border-green-200"
                                                                 : ticket?.platform ===
-                                                                  "app"
-                                                                ? "bg-purple-100 text-purple-800 border-purple-200"
-                                                                : "bg-gray-100 text-gray-800 border-gray-200"
+                                                                    "app"
+                                                                  ? "bg-purple-100 text-purple-800 border-purple-200"
+                                                                  : "bg-gray-100 text-gray-800 border-gray-200"
                                                         }
                                                     >
                                                         {ticket?.platform ===
                                                         "web"
                                                             ? "Web"
                                                             : ticket?.platform ===
-                                                              "app"
-                                                            ? "App"
-                                                            : "Tất cả"}
+                                                                "app"
+                                                              ? "App"
+                                                              : "Tất cả"}
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -1015,18 +1020,18 @@ export default function TicketDetailPage() {
                                                             "open"
                                                                 ? ""
                                                                 : ticket?.status ===
-                                                                  "in_progress"
-                                                                ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                                                : "bg-green-100 text-green-800 border-green-200"
+                                                                    "in_progress"
+                                                                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                                                  : "bg-green-100 text-green-800 border-green-200"
                                                         }
                                                     >
                                                         {ticket?.status ===
                                                         "open"
                                                             ? "Mở"
                                                             : ticket?.status ===
-                                                              "in_progress"
-                                                            ? "Đang xử lý"
-                                                            : "Đã đóng"}
+                                                                "in_progress"
+                                                              ? "Đang xử lý"
+                                                              : "Đã đóng"}
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -1257,25 +1262,81 @@ export default function TicketDetailPage() {
                                                 <Label htmlFor="expected_completion_date">
                                                     Thời hạn
                                                 </Label>
-                                                <Input
-                                                    id="expected_completion_date"
-                                                    type="date"
-                                                    value={
-                                                        formData.expected_completion_date
-                                                    }
-                                                    onChange={(e) =>
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            expected_completion_date:
-                                                                e.target.value,
-                                                        }))
-                                                    }
-                                                />
+                                                <div className="relative">
+                                                    <Input
+                                                        id="expected_completion_date"
+                                                        type="date"
+                                                        value={
+                                                            formData.expected_completion_date
+                                                        }
+                                                        onChange={(e) =>
+                                                            setFormData(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    expected_completion_date:
+                                                                        e.target
+                                                                            .value,
+                                                                })
+                                                            )
+                                                        }
+                                                        className="pr-10 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:pr-0"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                                        onClick={() => {
+                                                            const input =
+                                                                document.getElementById(
+                                                                    "expected_completion_date"
+                                                                ) as HTMLInputElement;
+                                                            if (input) {
+                                                                input.showPicker();
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Calendar className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Row 3 - Trạng thái và Thời gian đóng */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Row 3 - Nền tảng, Trạng thái và Thời gian đóng */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="platform">
+                                                    Nền tảng
+                                                </Label>
+                                                <Select
+                                                    value={formData.platform}
+                                                    onValueChange={(
+                                                        value:
+                                                            | "web"
+                                                            | "app"
+                                                            | "all"
+                                                    ) =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            platform: value,
+                                                        }))
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="web">
+                                                            Web
+                                                        </SelectItem>
+                                                        <SelectItem value="app">
+                                                            App
+                                                        </SelectItem>
+                                                        <SelectItem value="all">
+                                                            Tất cả
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
                                             <div className="space-y-2">
                                                 <Label htmlFor="status">
                                                     Trạng thái
@@ -1376,70 +1437,101 @@ export default function TicketDetailPage() {
                                                 <Label htmlFor="closed_at">
                                                     Thời gian đóng
                                                 </Label>
-                                                <Input
-                                                    id="closed_at"
-                                                    type="datetime-local"
-                                                    value={formData.closed_at}
-                                                    onChange={(e) =>
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            closed_at:
-                                                                e.target.value,
-                                                        }))
-                                                    }
-                                                    onFocus={(e) => {
-                                                        if (
-                                                            !formData.closed_at
-                                                        ) {
-                                                            const now =
-                                                                new Date();
-                                                            const utcNow =
-                                                                now.getTime();
-                                                            const gmt7Now =
-                                                                new Date(
-                                                                    utcNow +
-                                                                        7 *
-                                                                            60 *
-                                                                            60 *
-                                                                            1000
-                                                                );
-
-                                                            const year =
-                                                                gmt7Now.getUTCFullYear();
-                                                            const month =
-                                                                String(
-                                                                    gmt7Now.getUTCMonth() +
-                                                                        1
-                                                                ).padStart(
-                                                                    2,
-                                                                    "0"
-                                                                );
-                                                            const day = String(
-                                                                gmt7Now.getUTCDate()
-                                                            ).padStart(2, "0");
-                                                            const hour = String(
-                                                                gmt7Now.getUTCHours()
-                                                            ).padStart(2, "0");
-                                                            const minute =
-                                                                String(
-                                                                    gmt7Now.getUTCMinutes()
-                                                                ).padStart(
-                                                                    2,
-                                                                    "0"
-                                                                );
-
-                                                            const formattedTime = `${year}-${month}-${day}T${hour}:${minute}`;
-
+                                                <div className="relative">
+                                                    <Input
+                                                        id="closed_at"
+                                                        type="datetime-local"
+                                                        value={
+                                                            formData.closed_at
+                                                        }
+                                                        onChange={(e) =>
                                                             setFormData(
                                                                 (prev) => ({
                                                                     ...prev,
                                                                     closed_at:
-                                                                        formattedTime,
+                                                                        e.target
+                                                                            .value,
                                                                 })
-                                                            );
+                                                            )
                                                         }
-                                                    }}
-                                                />
+                                                        onFocus={(e) => {
+                                                            if (
+                                                                !formData.closed_at
+                                                            ) {
+                                                                const now =
+                                                                    new Date();
+                                                                const utcNow =
+                                                                    now.getTime();
+                                                                const gmt7Now =
+                                                                    new Date(
+                                                                        utcNow +
+                                                                            7 *
+                                                                                60 *
+                                                                                60 *
+                                                                                1000
+                                                                    );
+
+                                                                const year =
+                                                                    gmt7Now.getUTCFullYear();
+                                                                const month =
+                                                                    String(
+                                                                        gmt7Now.getUTCMonth() +
+                                                                            1
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0"
+                                                                    );
+                                                                const day =
+                                                                    String(
+                                                                        gmt7Now.getUTCDate()
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0"
+                                                                    );
+                                                                const hour =
+                                                                    String(
+                                                                        gmt7Now.getUTCHours()
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0"
+                                                                    );
+                                                                const minute =
+                                                                    String(
+                                                                        gmt7Now.getUTCMinutes()
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0"
+                                                                    );
+
+                                                                const formattedTime = `${year}-${month}-${day}T${hour}:${minute}`;
+
+                                                                setFormData(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        closed_at:
+                                                                            formattedTime,
+                                                                    })
+                                                                );
+                                                            }
+                                                        }}
+                                                        className="pr-10 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:pr-0"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                                        onClick={() => {
+                                                            const input =
+                                                                document.getElementById(
+                                                                    "closed_at"
+                                                                ) as HTMLInputElement;
+                                                            if (input) {
+                                                                input.showPicker();
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Calendar className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                                 <p className="text-xs text-gray-500">
                                                     Thời gian ticket được đóng
                                                     (tùy chọn)
