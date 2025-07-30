@@ -153,18 +153,42 @@ export async function GET(request: NextRequest) {
         const totalPages = Math.ceil(total / limit);
 
         // Apply pagination and sorting
-        const { data: ticketsData, error: ticketsError } = await ticketsQuery
-            .order(sortBy, { ascending: sortOrder === "asc" })
-            .range(offset, offset + limit - 1);
+        const { data: ticketsData, error: ticketsError } =
+            await ticketsQuery.range(offset, offset + limit - 1);
+
+        if (ticketsError) throw ticketsError;
+
+        // Sort tickets by status priority: open > in_progress > closed
+        const statusPriority = { open: 1, in_progress: 2, closed: 3 };
+        const sortedTicketsData =
+            ticketsData?.sort((a, b) => {
+                const priorityA =
+                    statusPriority[a.status as keyof typeof statusPriority] ||
+                    4;
+                const priorityB =
+                    statusPriority[b.status as keyof typeof statusPriority] ||
+                    4;
+
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+
+                // If same status, sort by created_at desc (newest first)
+                return (
+                    new Date(b.created_at).getTime() -
+                    new Date(a.created_at).getTime()
+                );
+            }) || [];
 
         if (ticketsError) throw ticketsError;
 
         // Get user data separately if needed
         const userIds = [
             ...new Set([
-                ...(ticketsData?.map((t) => t.created_by) || []),
-                ...(ticketsData?.map((t) => t.assigned_to).filter(Boolean) ||
-                    []),
+                ...(sortedTicketsData?.map((t) => t.created_by) || []),
+                ...(sortedTicketsData
+                    ?.map((t) => t.assigned_to)
+                    .filter(Boolean) || []),
             ]),
         ];
 
@@ -188,7 +212,7 @@ export async function GET(request: NextRequest) {
 
         // Combine data
         const ticketsWithUsers =
-            ticketsData?.map((ticket) => ({
+            sortedTicketsData?.map((ticket) => ({
                 ...ticket,
                 created_user: userData[ticket.created_by] || null,
                 assigned_user: ticket.assigned_to
