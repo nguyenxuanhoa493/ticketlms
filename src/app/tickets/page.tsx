@@ -154,7 +154,7 @@ export default function TicketsPage() {
         {
             key: "closedAt",
             label: "Đóng lúc",
-            width: "w-20",
+            width: "w-28",
             align: "text-left",
         },
         {
