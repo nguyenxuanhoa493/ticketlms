@@ -146,8 +146,12 @@ export default function UsersPage() {
             );
         }
 
-        // Organization filter
-        if (filters.organization && filters.organization !== "all") {
+        // Organization filter (only for admin)
+        if (
+            currentUser?.role === "admin" &&
+            filters.organization &&
+            filters.organization !== "all"
+        ) {
             if (filters.organization === "none") {
                 filtered = filtered.filter((user) => !user.organization_id);
             } else {
@@ -169,10 +173,13 @@ export default function UsersPage() {
     };
 
     const hasActiveFilters = () => {
-        return (
-            filters.search.trim() !== "" ||
-            (filters.organization !== "" && filters.organization !== "all")
-        );
+        const hasSearchFilter = filters.search.trim() !== "";
+        const hasOrgFilter =
+            currentUser?.role === "admin" &&
+            filters.organization !== "" &&
+            filters.organization !== "all";
+
+        return hasSearchFilter || hasOrgFilter;
     };
 
     const fetchCurrentUser = async () => {
@@ -783,32 +790,37 @@ export default function UsersPage() {
                                     className="pl-10"
                                 />
                             </div>
-                            <Select
-                                value={filters.organization}
-                                onValueChange={(value) =>
-                                    setFilters((prev) => ({
-                                        ...prev,
-                                        organization: value,
-                                    }))
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-48">
-                                    <SelectValue placeholder="Tất cả đơn vị" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Tất cả đơn vị
-                                    </SelectItem>
-                                    <SelectItem value="none">
-                                        Không thuộc đơn vị nào
-                                    </SelectItem>
-                                    {organizations.map((org) => (
-                                        <SelectItem key={org.id} value={org.id}>
-                                            {org.name}
+                            {currentUser?.role === "admin" && (
+                                <Select
+                                    value={filters.organization}
+                                    onValueChange={(value) =>
+                                        setFilters((prev) => ({
+                                            ...prev,
+                                            organization: value,
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger className="w-full sm:w-48">
+                                        <SelectValue placeholder="Tất cả đơn vị" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Tất cả đơn vị
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        <SelectItem value="none">
+                                            Không thuộc đơn vị nào
+                                        </SelectItem>
+                                        {organizations.map((org) => (
+                                            <SelectItem
+                                                key={org.id}
+                                                value={org.id}
+                                            >
+                                                {org.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -859,7 +871,9 @@ export default function UsersPage() {
                             Không tìm thấy kết quả
                         </h3>
                         <p className="mt-1 text-sm text-gray-500">
-                            Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc đơn vị.
+                            {currentUser?.role === "admin"
+                                ? "Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc đơn vị."
+                                : "Thử thay đổi từ khóa tìm kiếm."}
                         </p>
                         <Button
                             variant="outline"
