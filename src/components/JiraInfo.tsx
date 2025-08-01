@@ -166,6 +166,13 @@ export default function JiraInfo({ jiraLink }: JiraInfoProps) {
                     </a>
                 </div>
 
+                {/* Issue Title */}
+                <div className="mb-3">
+                    <h3 className="text-base font-medium text-gray-900">
+                        {jiraIssue.fields.summary}
+                    </h3>
+                </div>
+
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {jiraIssue.fields.assignee ? (
