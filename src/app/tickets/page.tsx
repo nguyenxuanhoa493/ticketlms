@@ -133,7 +133,7 @@ export default function TicketsPage() {
             align: "text-left",
             adminOnly: true,
         },
-        { key: "type", label: "Loại", width: "w-16", align: "text-left" },
+        { key: "type", label: "Loại", width: "w-18", align: "text-left" },
         {
             key: "platform",
             label: "Nền tảng",
@@ -1270,10 +1270,11 @@ export default function TicketsPage() {
                                                         : ""
                                                 }
                                             >
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-2">
                                                     {getTicketTypeIcon(
                                                         ticket.ticket_type
                                                     )}
+
                                                     {getTicketTypeLabel(
                                                         ticket.ticket_type
                                                     )}

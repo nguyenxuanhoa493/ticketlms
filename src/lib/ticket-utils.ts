@@ -139,13 +139,13 @@ export function getPriorityBadgeClasses(priority: TicketPriority): string {
 export function getTicketTypeIcon(type: TicketType): string {
     switch (type) {
         case "bug":
-            return "🐛";
+            return "⚠️ ";
         case "task":
-            return "📋";
+            return "✅ ";
         case "feature":
-            return "✨";
+            return "🚀 ";
         default:
-            return "📄";
+            return "📄 ";
     }
 }
 
