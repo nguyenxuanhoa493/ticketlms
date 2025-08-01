@@ -11,6 +11,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
+import { 
+    getStatusBadgeVariant,
+    getPriorityBadgeVariant,
+    getTicketTypeBadgeVariant,
+    getStatusLabel,
+    getPriorityLabel,
+    getTicketTypeLabel,
+    getTicketTypeIcon,
+    getStatusBadgeClasses,
+    getPriorityBadgeClasses
+} from "@/lib/utils";
 
 export const metadata: Metadata = {
     title: "Tổng quan - TicketLMS",
@@ -253,119 +264,7 @@ async function DashboardContent() {
         console.log("Recent notifications loading error:", error);
     }
 
-    // Helper functions for badges (matching tickets page)
-    const getStatusBadgeVariant = (status: string) => {
-        switch (status) {
-            case "open":
-                return "default";
-            case "in_progress":
-                return "secondary";
-            case "closed":
-                return "outline";
-            default:
-                return "default";
-        }
-    };
-
-    const getPriorityBadgeVariant = (priority: string) => {
-        switch (priority) {
-            case "high":
-                return "destructive";
-            case "medium":
-                return "default";
-            case "low":
-                return "secondary";
-            default:
-                return "default";
-        }
-    };
-
-    const getTicketTypeBadgeVariant = (type: string) => {
-        switch (type) {
-            case "bug":
-                return "destructive";
-            case "task":
-                return "secondary";
-            default:
-                return "outline";
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case "open":
-                return "Mở";
-            case "in_progress":
-                return "Đang làm";
-            case "closed":
-                return "Đã đóng";
-            default:
-                return status;
-        }
-    };
-
-    const getPriorityLabel = (priority: string) => {
-        switch (priority) {
-            case "high":
-                return "Cao";
-            case "medium":
-                return "T.bình";
-            case "low":
-                return "Thấp";
-            default:
-                return priority;
-        }
-    };
-
-    const getTicketTypeLabel = (type: string) => {
-        switch (type) {
-            case "bug":
-                return "Bug";
-            case "task":
-                return "Task";
-            default:
-                return type;
-        }
-    };
-
-    const getTicketTypeIcon = (type: string) => {
-        switch (type) {
-            case "bug":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-                        />
-                    </svg>
-                );
-            case "task":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                );
-            default:
-                return null;
-        }
-    };
+    // Using utility functions for badges and labels
 
     const getNotificationType = (type: string) => {
         switch (type) {
@@ -599,7 +498,7 @@ async function DashboardContent() {
                                                 <Badge
                                                     variant={getTicketTypeBadgeVariant(
                                                         ticket.ticket_type
-                                                    )}
+                                                    ) as any}
                                                     className={`text-xs flex items-center gap-1 ${
                                                         ticket.ticket_type ===
                                                         "task"
@@ -634,7 +533,7 @@ async function DashboardContent() {
                                             <Badge
                                                 variant={getPriorityBadgeVariant(
                                                     ticket.priority
-                                                )}
+                                                ) as any}
                                                 className="text-xs"
                                             >
                                                 {getPriorityLabel(
@@ -644,16 +543,8 @@ async function DashboardContent() {
                                             <Badge
                                                 variant={getStatusBadgeVariant(
                                                     ticket.status
-                                                )}
-                                                className={`text-xs ${
-                                                    ticket.status ===
-                                                    "in_progress"
-                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
-                                                        : ticket.status ===
-                                                            "closed"
-                                                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-                                                          : ""
-                                                }`}
+                                                ) as any}
+                                                className={`text-xs ${getStatusBadgeClasses(ticket.status)}`}
                                             >
                                                 {getStatusLabel(ticket.status)}
                                             </Badge>

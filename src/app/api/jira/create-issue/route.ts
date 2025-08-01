@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { convertHtmlToJiraADF } from "@/lib/jira-adf-converter";
 
 export async function POST(request: NextRequest) {
     try {
@@ -134,8 +135,8 @@ export async function POST(request: NextRequest) {
                     .replace(/<\/ol>/gi, "\n")
                     .replace(/<li[^>]*>/gi, "* ")
                     .replace(/<\/li>/gi, "\n")
-                    .replace(/<div[^>]*>/gi, "")
-                    .replace(/<\/div>/gi, "\n")
+                    .replace(/<div[^>]*>/gi, "\n") // Add newline before div
+                    .replace(/<\/div>/gi, "\n") // Add newline after div
                     .replace(/<span[^>]*>/gi, "")
                     .replace(/<\/span>/gi, "")
                     .replace(/<(strong|b)[^>]*>/gi, "*")
@@ -152,7 +153,7 @@ export async function POST(request: NextRequest) {
                 // Step 4: Remove any remaining HTML tags
                 result = result.replace(/<[^>]*>/g, "");
 
-                // Step 5: Clean HTML entities
+                // Step 5: Clean HTML entities and spacing
                 result = result
                     .replace(/&nbsp;/g, " ")
                     .replace(/&amp;/g, "&")
@@ -163,14 +164,16 @@ export async function POST(request: NextRequest) {
                     .replace(/&apos;/g, "'")
                     .replace(/\n\s*\n/g, "\n") // Remove multiple newlines
                     .replace(/[ \t]+/g, " ") // Replace multiple spaces/tabs with single space, but keep \n
+                    .replace(/\n\s+/g, "\n") // Remove leading spaces after newlines
+                    .replace(/\s+\n/g, "\n") // Remove trailing spaces before newlines
                     .trim();
 
                 return result;
             };
 
             // Step 2: Convert HTML to plain text (including image URLs)
-            const plainText = convertHtmlToPlainText(html);
-            console.log("Plain text:", plainText);
+            const plainTextResult = convertHtmlToPlainText(html);
+            console.log("Plain text:", plainTextResult);
 
             // Step 3: Extract images and links from plain text
             const images: string[] = [];
@@ -180,7 +183,7 @@ export async function POST(request: NextRequest) {
             const imgUrlRegex =
                 /https?:\/\/[^\s]+\.(png|jpg|jpeg|gif|webp|svg)/gi;
             let imgMatch;
-            while ((imgMatch = imgUrlRegex.exec(plainText)) !== null) {
+            while ((imgMatch = imgUrlRegex.exec(plainTextResult)) !== null) {
                 images.push(imgMatch[0]);
                 console.log("Found image URL:", imgMatch[0]);
             }
@@ -188,7 +191,7 @@ export async function POST(request: NextRequest) {
             // Extract link URLs from plain text
             const linkUrlRegex = /https?:\/\/[^\s]+/gi;
             let linkMatch;
-            while ((linkMatch = linkUrlRegex.exec(plainText)) !== null) {
+            while ((linkMatch = linkUrlRegex.exec(plainTextResult)) !== null) {
                 const url = linkMatch[0];
                 // Skip if it's already an image URL
                 if (!images.includes(url)) {
@@ -197,53 +200,49 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // Step 4: Split text by lines and process
-            const lines = plainText.split("\n");
-            let currentText = "";
+            // Step 4: Process the plain text to create ADF content
+            const lines = plainTextResult.split("\n");
+            let currentParagraph = "";
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
 
                 if (!line) {
-                    // Empty line - add accumulated text if any
-                    if (currentText.trim()) {
+                    // Empty line - add accumulated paragraph if any
+                    if (currentParagraph.trim()) {
                         content.push({
                             type: "paragraph",
                             content: [
                                 {
                                     type: "text",
-                                    text: currentText.trim(),
+                                    text: currentParagraph.trim(),
                                 },
                             ],
                         });
-                        currentText = "";
+                        currentParagraph = "";
                     }
                     continue;
                 }
 
-                // Check if line contains image URL
-                const isImageUrl = images.some((imgUrl) =>
-                    line.includes(imgUrl)
-                );
-                if (isImageUrl) {
-                    // Add accumulated text first
-                    if (currentText.trim()) {
+                // Check if line contains only image URL
+                const isOnlyImageUrl = images.some((imgUrl) => line === imgUrl);
+                if (isOnlyImageUrl) {
+                    // Add accumulated paragraph first
+                    if (currentParagraph.trim()) {
                         content.push({
                             type: "paragraph",
                             content: [
                                 {
                                     type: "text",
-                                    text: currentText.trim(),
+                                    text: currentParagraph.trim(),
                                 },
                             ],
                         });
-                        currentText = "";
+                        currentParagraph = "";
                     }
 
                     // Add image as inlineCard
-                    const imgUrl = images.find((imgUrl) =>
-                        line.includes(imgUrl)
-                    );
+                    const imgUrl = images.find((imgUrl) => line === imgUrl);
                     if (imgUrl) {
                         content.push({
                             type: "paragraph",
@@ -260,29 +259,25 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // Check if line contains link URL
-                const isLinkUrl = links.some((linkUrl) =>
-                    line.includes(linkUrl)
-                );
-                if (isLinkUrl) {
-                    // Add accumulated text first
-                    if (currentText.trim()) {
+                // Check if line contains only link URL
+                const isOnlyLinkUrl = links.some((linkUrl) => line === linkUrl);
+                if (isOnlyLinkUrl) {
+                    // Add accumulated paragraph first
+                    if (currentParagraph.trim()) {
                         content.push({
                             type: "paragraph",
                             content: [
                                 {
                                     type: "text",
-                                    text: currentText.trim(),
+                                    text: currentParagraph.trim(),
                                 },
                             ],
                         });
-                        currentText = "";
+                        currentParagraph = "";
                     }
 
                     // Add link as inlineCard
-                    const linkUrl = links.find((linkUrl) =>
-                        line.includes(linkUrl)
-                    );
+                    const linkUrl = links.find((linkUrl) => line === linkUrl);
                     if (linkUrl) {
                         content.push({
                             type: "paragraph",
@@ -299,22 +294,102 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                // Regular text line
-                if (currentText) {
-                    currentText += "\n" + line;
-                } else {
-                    currentText = line;
+                // Check if line contains text with embedded URLs
+                let processedLine = line;
+                const paragraphContent = [];
+
+                // Process image URLs in the line
+                for (const imgUrl of images) {
+                    if (line.includes(imgUrl)) {
+                        // Split the line by image URL
+                        const parts = line.split(imgUrl);
+                        for (let j = 0; j < parts.length; j++) {
+                            if (parts[j].trim()) {
+                                paragraphContent.push({
+                                    type: "text",
+                                    text: parts[j].trim(),
+                                });
+                            }
+                            if (j < parts.length - 1) {
+                                paragraphContent.push({
+                                    type: "inlineCard",
+                                    attrs: {
+                                        url: imgUrl,
+                                    },
+                                });
+                            }
+                        }
+                        processedLine = "";
+                        break;
+                    }
+                }
+
+                // Process link URLs in the line (if no images were found)
+                if (processedLine) {
+                    for (const linkUrl of links) {
+                        if (line.includes(linkUrl)) {
+                            // Split the line by link URL
+                            const parts = line.split(linkUrl);
+                            for (let j = 0; j < parts.length; j++) {
+                                if (parts[j].trim()) {
+                                    paragraphContent.push({
+                                        type: "text",
+                                        text: parts[j].trim(),
+                                    });
+                                }
+                                if (j < parts.length - 1) {
+                                    paragraphContent.push({
+                                        type: "inlineCard",
+                                        attrs: {
+                                            url: linkUrl,
+                                        },
+                                    });
+                                }
+                            }
+                            processedLine = "";
+                            break;
+                        }
+                    }
+                }
+
+                // If no URLs found in the line, treat as regular text
+                if (processedLine) {
+                    if (currentParagraph) {
+                        currentParagraph += "\n" + processedLine;
+                    } else {
+                        currentParagraph = processedLine;
+                    }
+                } else if (paragraphContent.length > 0) {
+                    // Add accumulated paragraph first
+                    if (currentParagraph.trim()) {
+                        content.push({
+                            type: "paragraph",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: currentParagraph.trim(),
+                                },
+                            ],
+                        });
+                        currentParagraph = "";
+                    }
+
+                    // Add the paragraph with mixed content
+                    content.push({
+                        type: "paragraph",
+                        content: paragraphContent,
+                    });
                 }
             }
 
-            // Add any remaining text
-            if (currentText.trim()) {
+            // Add any remaining paragraph
+            if (currentParagraph.trim()) {
                 content.push({
                     type: "paragraph",
                     content: [
                         {
                             type: "text",
-                            text: currentText.trim(),
+                            text: currentParagraph.trim(),
                         },
                     ],
                 });
@@ -350,7 +425,7 @@ export async function POST(request: NextRequest) {
                     key: "CLD",
                 },
                 summary: title.trim(),
-                description: convertToJiraADF(description || ""),
+                description: convertHtmlToJiraADF(description || ""),
                 issuetype: {
                     name: "Task",
                 },

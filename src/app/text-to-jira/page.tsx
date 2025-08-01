@@ -4,271 +4,33 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RichTextEditor from "@/components/RichTextEditor";
+import {
+    convertHtmlToJiraADF,
+    convertHtmlToPlainText,
+} from "@/lib/jira-adf-converter";
 
 export default function TextToJiraPage() {
     const [htmlInput, setHtmlInput] = useState(
-        `<img src="https://kffuylebxyifkimtcvxh.supabase.co/storage/v1/object/public/ticket-attachments/images/88578f89-b87b-4d88-b58b-e2c1ea0e10f5_1753956948278.png" alt="CleanShot 2025-07-31 at 17.15.43@2x.png" style="max-width: 100%; height: auto; margin: 8px 0px; border-radius: 4px;"><div>tich<br><a href="https://localhost:3000/tickets" target="_blank" rel="noopener noreferrer" style="color: rgb(37, 99, 235); text-decoration: underline;">https://localhost:3000/tickets</a><br><ul><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;">Điều 1</span></li><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;">điều 2</span></li><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;">điều 3</span></li><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;"><a href="http://localhost:3000/tickets/3e06e16e-7312-4ede-8db8-2bdfea7eb7b2" target="_blank" rel="noopener noreferrer" style="color: rgb(37, 99, 235); text-decoration: underline;">http://localhost:3000/tickets/3e06e16e-7312-4ede-8db8-2bdfea7eb7b2</a><br></span></li></ul><img src="https://kffuylebxyifkimtcvxh.supabase.co/storage/v1/object/public/ticket-attachments/images/3403c560-3892-442c-bd60-c84b65e8ef22_1754033858869.png" alt="CleanShot 2025-08-01 at 14.37.18@2x.png" style="max-width: 250px; max-height: 250px; width: auto; height: auto; margin: 8px 0px; border-radius: 4px; border: 1px solid rgb(229, 231, 235); object-fit: contain;"><br></div>`
+        `Khi bấm mở modal/dropdown để lựa chọn (những modal không có nút close), sau đó bấm ra ngoài hoặc lựa chọn khác thì modal/dropdown không tự động đóng lại<div>Video :&nbsp;<a href="https://drive.google.com/file/d/1QNrzk-3WOah15tLE5MwNcyk6QyCfss0h/view?usp=drive_link" target="_blank" rel="noopener noreferrer" style="color: rgb(37, 99, 235); text-decoration: underline;">https://drive.google.com/file/d/1QNrzk-3WOah15tLE5MwNcyk6QyCfss0h/view?usp=drive_link</a></div><div>Hình ảnh:</div><div><img src="https://i.ibb.co/N6CgCryF/0-Jh35z-PAo1.png" alt="Pasted Image" style="max-width: 250px; max-height: 250px; width: auto; height: auto; margin: 8px 0px; border-radius: 4px; border: 1px solid rgb(229, 231, 235); object-fit: contain;"></div>`
     );
+
+    // Sample templates for testing
+    const sampleTemplates = {
+        current: `Khi bấm mở modal/dropdown để lựa chọn (những modal không có nút close), sau đó bấm ra ngoài hoặc lựa chọn khác thì modal/dropdown không tự động đóng lại<div>Video :&nbsp;<a href="https://drive.google.com/file/d/1QNrzk-3WOah15tLE5MwNcyk6QyCfss0h/view?usp=drive_link" target="_blank" rel="noopener noreferrer" style="color: rgb(37, 99, 235); text-decoration: underline;">https://drive.google.com/file/d/1QNrzk-3WOah15tLE5MwNcyk6QyCfss0h/view?usp=drive_link</a></div><div>Hình ảnh:</div><div><img src="https://i.ibb.co/N6CgCryF/0-Jh35z-PAo1.png" alt="Pasted Image" style="max-width: 250px; max-height: 250px; width: auto; height: auto; margin: 8px 0px; border-radius: 4px; border: 1px solid rgb(229, 231, 235); object-fit: contain;"></div>`,
+        old: `<img src="https://kffuylebxyifkimtcvxh.supabase.co/storage/v1/object/public/ticket-attachments/images/88578f89-b87b-4d88-b58b-e2c1ea0e10f5_1753956948278.png" alt="CleanShot 2025-07-31 at 17.15.43@2x.png" style="max-width: 100%; height: auto; margin: 8px 0px; border-radius: 4px;"><div>tich<br><a href="https://localhost:3000/tickets" target="_blank" rel="noopener noreferrer" style="color: rgb(37, 99, 235); text-decoration: underline;">https://localhost:3000/tickets</a><br><ul><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;">Điều 1</span></li><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;">điều 2</span></li><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;">điều 3</span></li><li><span style="color: rgb(10, 10, 10); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Noto Sans&quot;, Ubuntu, Cantarell, &quot;Helvetica Neue&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;;"><a href="http://localhost:3000/tickets/3e06e16e-7312-4ede-8db8-2bdfea7eb7b2" target="_blank" rel="noopener noreferrer" style="color: rgb(37, 99, 235); text-decoration: underline;">http://localhost:3000/tickets/3e06e16e-7312-4ede-8db8-2bdfea7eb7b2</a><br></span></li></ul><img src="https://kffuylebxyifkimtcvxh.supabase.co/storage/v1/object/public/ticket-attachments/images/3403c560-3892-442c-bd60-c84b65e8ef22_1754033858869.png" alt="CleanShot 2025-08-01 at 14.37.18@2x.png" style="max-width: 250px; max-height: 250px; width: auto; height: auto; margin: 8px 0px; border-radius: 4px; border: 1px solid rgb(229, 231, 235); object-fit: contain;"><br></div>`,
+    };
     const [jiraOutput, setJiraOutput] = useState("");
     const [plainText, setPlainText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const convertHtmlToJiraADF = (html: string) => {
-        if (!html) {
-            return {
-                type: "doc",
-                version: 1,
-                content: [
-                    {
-                        type: "paragraph",
-                        content: [
-                            {
-                                type: "text",
-                                text: "",
-                            },
-                        ],
-                    },
-                ],
-            };
-        }
-
-        const content: any[] = [];
-
-        // Step 1: Convert HTML to plain text first
-        const convertHtmlToPlainText = (htmlContent: string) => {
-            console.log("Original HTML:", htmlContent);
-
-            // Step 1: Convert img tags to URLs FIRST (before any other processing)
-            let result = htmlContent.replace(
-                /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi,
-                "$1"
-            );
-            console.log("After img conversion:", result);
-
-            // Step 2: Convert link tags to URLs
-            result = result.replace(
-                /<a[^>]+href\s*=\s*["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi,
-                "$1"
-            );
-            console.log("After link conversion:", result);
-
-            // Step 3: Clean other HTML tags
-            result = result
-                .replace(/<br\s*\/?>/gi, "\n") // Convert <br> to \n
-                .replace(/<p[^>]*>/gi, "")
-                .replace(/<\/p>/gi, "\n\n")
-                .replace(/<ul[^>]*>/gi, "")
-                .replace(/<\/ul>/gi, "\n")
-                .replace(/<ol[^>]*>/gi, "")
-                .replace(/<\/ol>/gi, "\n")
-                .replace(/<li[^>]*>/gi, "* ")
-                .replace(/<\/li>/gi, "\n")
-                .replace(/<div[^>]*>/gi, "")
-                .replace(/<\/div>/gi, "\n")
-                .replace(/<span[^>]*>/gi, "")
-                .replace(/<\/span>/gi, "")
-                .replace(/<(strong|b)[^>]*>/gi, "*")
-                .replace(/<\/(strong|b)>/gi, "*")
-                .replace(/<(em|i)[^>]*>/gi, "_")
-                .replace(/<\/(em|i)>/gi, "_")
-                .replace(/<h1[^>]*>/gi, "h1. ")
-                .replace(/<\/h1>/gi, "\n")
-                .replace(/<h2[^>]*>/gi, "h2. ")
-                .replace(/<\/h2>/gi, "\n")
-                .replace(/<h3[^>]*>/gi, "h3. ")
-                .replace(/<\/h3>/gi, "\n");
-
-            console.log("After basic HTML cleaning:", result);
-
-            // Step 4: Remove any remaining HTML tags
-            result = result.replace(/<[^>]*>/g, "");
-            console.log("After removing remaining HTML:", result);
-
-            // Step 5: Clean HTML entities
-            result = result
-                .replace(/&nbsp;/g, " ")
-                .replace(/&amp;/g, "&")
-                .replace(/&lt;/g, "<")
-                .replace(/&gt;/g, ">")
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&apos;/g, "'")
-                .replace(/\n\s*\n/g, "\n") // Remove multiple newlines
-                .replace(/[ \t]+/g, " ") // Replace multiple spaces/tabs with single space, but keep \n
-                .trim();
-
-            console.log("Final plain text:", result);
-            return result;
-        };
-
-        // Step 2: Convert HTML to plain text (including image URLs)
-        const plainTextResult = convertHtmlToPlainText(html);
-        setPlainText(plainTextResult);
-
-        // Step 3: Extract images and links from plain text
-        const images: string[] = [];
-        const links: string[] = [];
-
-        // Extract image URLs from plain text
-        const imgUrlRegex = /https?:\/\/[^\s]+\.(png|jpg|jpeg|gif|webp|svg)/gi;
-        let imgMatch;
-        while ((imgMatch = imgUrlRegex.exec(plainTextResult)) !== null) {
-            images.push(imgMatch[0]);
-            console.log("Found image URL:", imgMatch[0]);
-        }
-
-        // Extract link URLs from plain text
-        const linkUrlRegex = /https?:\/\/[^\s]+/gi;
-        let linkMatch;
-        while ((linkMatch = linkUrlRegex.exec(plainTextResult)) !== null) {
-            const url = linkMatch[0];
-            // Skip if it's already an image URL
-            if (!images.includes(url)) {
-                links.push(url);
-                console.log("Found link URL:", url);
-            }
-        }
-
-        // Step 4: Split text by lines and process
-        const lines = plainTextResult.split("\n");
-        let currentText = "";
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-
-            if (!line) {
-                // Empty line - add accumulated text if any
-                if (currentText.trim()) {
-                    content.push({
-                        type: "paragraph",
-                        content: [
-                            {
-                                type: "text",
-                                text: currentText.trim(),
-                            },
-                        ],
-                    });
-                    currentText = "";
-                }
-                continue;
-            }
-
-            // Check if line contains image URL
-            const isImageUrl = images.some((imgUrl) => line.includes(imgUrl));
-            if (isImageUrl) {
-                // Add accumulated text first
-                if (currentText.trim()) {
-                    content.push({
-                        type: "paragraph",
-                        content: [
-                            {
-                                type: "text",
-                                text: currentText.trim(),
-                            },
-                        ],
-                    });
-                    currentText = "";
-                }
-
-                // Add image as inlineCard
-                const imgUrl = images.find((imgUrl) => line.includes(imgUrl));
-                if (imgUrl) {
-                    content.push({
-                        type: "paragraph",
-                        content: [
-                            {
-                                type: "inlineCard",
-                                attrs: {
-                                    url: imgUrl,
-                                },
-                            },
-                        ],
-                    });
-                }
-                continue;
-            }
-
-            // Check if line contains link URL
-            const isLinkUrl = links.some((linkUrl) => line.includes(linkUrl));
-            if (isLinkUrl) {
-                // Add accumulated text first
-                if (currentText.trim()) {
-                    content.push({
-                        type: "paragraph",
-                        content: [
-                            {
-                                type: "text",
-                                text: currentText.trim(),
-                            },
-                        ],
-                    });
-                    currentText = "";
-                }
-
-                // Add link as inlineCard
-                const linkUrl = links.find((linkUrl) => line.includes(linkUrl));
-                if (linkUrl) {
-                    content.push({
-                        type: "paragraph",
-                        content: [
-                            {
-                                type: "inlineCard",
-                                attrs: {
-                                    url: linkUrl,
-                                },
-                            },
-                        ],
-                    });
-                }
-                continue;
-            }
-
-            // Regular text line
-            if (currentText) {
-                currentText += "\n" + line;
-            } else {
-                currentText = line;
-            }
-        }
-
-        // Add any remaining text
-        if (currentText.trim()) {
-            content.push({
-                type: "paragraph",
-                content: [
-                    {
-                        type: "text",
-                        text: currentText.trim(),
-                    },
-                ],
-            });
-        }
-
-        const result = {
-            type: "doc",
-            version: 1,
-            content:
-                content.length > 0
-                    ? content
-                    : [
-                          {
-                              type: "paragraph",
-                              content: [
-                                  {
-                                      type: "text",
-                                      text: "",
-                                  },
-                              ],
-                          },
-                      ],
-        };
-
-        return result;
-    };
-
     const handleConvert = () => {
         setIsLoading(true);
         try {
+            // Get plain text for debug display
+            const plainTextResult = convertHtmlToPlainText(htmlInput);
+            setPlainText(plainTextResult);
+
+            // Convert to JIRA ADF using shared utility
             const result = convertHtmlToJiraADF(htmlInput);
             setJiraOutput(JSON.stringify(result, null, 2));
         } catch (error) {
@@ -292,6 +54,26 @@ export default function TextToJiraPage() {
                         <CardTitle>HTML Input</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="flex gap-2 mb-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setHtmlInput(sampleTemplates.current)
+                                }
+                            >
+                                Load Current Sample
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setHtmlInput(sampleTemplates.old)
+                                }
+                            >
+                                Load Old Sample
+                            </Button>
+                        </div>
                         <div className="min-h-[400px] border rounded-md">
                             <RichTextEditor
                                 value={htmlInput}

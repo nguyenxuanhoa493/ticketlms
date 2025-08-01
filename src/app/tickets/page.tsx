@@ -46,6 +46,19 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import RichTextEditor from "@/components/RichTextEditor";
+import {
+    formatDateTimeForDB,
+    formatDateTimeForDisplay,
+    getStatusBadgeVariant,
+    getPriorityBadgeVariant,
+    getStatusLabel,
+    getPriorityLabel,
+    getTicketTypeIcon,
+    getTicketTypeBadgeVariant,
+    getTicketTypeLabel,
+    getStatusBadgeClasses,
+    getPriorityBadgeClasses,
+} from "@/lib/utils";
 
 import {
     Plus,
@@ -219,76 +232,7 @@ export default function TicketsPage() {
         totalPages: 0,
     });
 
-    // Helper function to format datetime for timestamptz (GMT+7 to UTC)
-    const formatDateTimeForDB = (datetimeLocal: string) => {
-        if (!datetimeLocal || datetimeLocal.trim() === "") return null;
-
-        try {
-            // datetime-local format: "2024-01-15T14:30"
-            // Validate format first
-            if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(datetimeLocal)) {
-                console.warn("Invalid datetime format:", datetimeLocal);
-                return null;
-            }
-
-            // Treat as GMT+7 and convert to UTC
-            const dateTime = datetimeLocal + ":00"; // Add seconds
-            const localDate = new Date(dateTime); // Browser interprets as local time
-
-            // Check if date is valid
-            if (isNaN(localDate.getTime())) {
-                console.warn("Invalid date value:", datetimeLocal);
-                return null;
-            }
-
-            // Subtract 7 hours to convert GMT+7 to UTC
-            const utcDate = new Date(localDate.getTime() - 7 * 60 * 60 * 1000);
-
-            return utcDate.toISOString();
-        } catch (error) {
-            console.error(
-                "Error formatting datetime for DB:",
-                error,
-                datetimeLocal
-            );
-            return null;
-        }
-    };
-
-    // Helper function to format datetime from DB for display (UTC to GMT+7)
-    const formatDateTimeForDisplay = (isoString: string) => {
-        if (!isoString || isoString.trim() === "") return "";
-
-        try {
-            // Parse UTC datetime from database
-            const utcDate = new Date(isoString);
-
-            // Check if date is valid
-            if (isNaN(utcDate.getTime())) {
-                console.warn("Invalid ISO string:", isoString);
-                return "";
-            }
-
-            // Add 7 hours to convert UTC to GMT+7
-            const gmt7Date = new Date(utcDate.getTime() + 7 * 60 * 60 * 1000);
-
-            // Format for datetime-local input (use regular methods, not UTC methods)
-            const year = gmt7Date.getFullYear();
-            const month = String(gmt7Date.getMonth() + 1).padStart(2, "0");
-            const day = String(gmt7Date.getDate()).padStart(2, "0");
-            const hour = String(gmt7Date.getHours()).padStart(2, "0");
-            const minute = String(gmt7Date.getMinutes()).padStart(2, "0");
-
-            return `${year}-${month}-${day}T${hour}:${minute}`;
-        } catch (error) {
-            console.error(
-                "Error formatting datetime for display:",
-                error,
-                isoString
-            );
-            return "";
-        }
-    };
+    // Using utility functions for date formatting
     const router = useRouter();
 
     useEffect(() => {
@@ -557,118 +501,9 @@ export default function TicketsPage() {
         }
     };
 
-    const getStatusBadgeVariant = (status: string) => {
-        switch (status) {
-            case "open":
-                return "default";
-            case "in_progress":
-                return "secondary";
-            case "closed":
-                return "outline";
-            default:
-                return "default";
-        }
-    };
+    // Using utility functions for badge and label logic
 
-    const getPriorityBadgeVariant = (priority: string) => {
-        switch (priority) {
-            case "high":
-                return "destructive";
-            case "medium":
-                return "default";
-            case "low":
-                return "secondary";
-            default:
-                return "default";
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case "open":
-                return "Mở";
-            case "in_progress":
-                return "Đang làm";
-            case "closed":
-                return "Đã đóng";
-            default:
-                return status;
-        }
-    };
-
-    const getPriorityLabel = (priority: string) => {
-        switch (priority) {
-            case "high":
-                return "Cao";
-            case "medium":
-                return "T.bình";
-            case "low":
-                return "Thấp";
-            default:
-                return priority;
-        }
-    };
-
-    const getTicketTypeIcon = (type: string) => {
-        switch (type) {
-            case "bug":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-                        />
-                    </svg>
-                );
-            case "task":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                );
-            default:
-                return null;
-        }
-    };
-
-    const getTicketTypeBadgeVariant = (type: string) => {
-        switch (type) {
-            case "bug":
-                return "destructive";
-            case "task":
-                return "secondary";
-            default:
-                return "outline";
-        }
-    };
-
-    const getTicketTypeLabel = (type: string) => {
-        switch (type) {
-            case "bug":
-                return "Bug";
-            case "task":
-                return "Task";
-            default:
-                return type;
-        }
-    };
+    // Using utility functions for ticket type logic
 
     // Helper function to calculate deadline countdown
     const getDeadlineCountdown = (
@@ -1423,9 +1258,11 @@ export default function TicketsPage() {
                                         )}
                                         <TableCell className="py-2">
                                             <Badge
-                                                variant={getTicketTypeBadgeVariant(
-                                                    ticket.ticket_type
-                                                )}
+                                                variant={
+                                                    getTicketTypeBadgeVariant(
+                                                        ticket.ticket_type
+                                                    ) as any
+                                                }
                                                 className={
                                                     ticket.ticket_type ===
                                                     "task"
@@ -1529,14 +1366,14 @@ export default function TicketsPage() {
                                         )}
                                         <TableCell className="py-2">
                                             <Badge
-                                                variant={getPriorityBadgeVariant(
+                                                variant={
+                                                    getPriorityBadgeVariant(
+                                                        ticket.priority
+                                                    ) as any
+                                                }
+                                                className={getPriorityBadgeClasses(
                                                     ticket.priority
                                                 )}
-                                                className={
-                                                    ticket.priority === "medium"
-                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
-                                                        : ""
-                                                }
                                             >
                                                 {getPriorityLabel(
                                                     ticket.priority
@@ -1612,18 +1449,14 @@ export default function TicketsPage() {
 
                                         <TableCell className="py-2">
                                             <Badge
-                                                variant={getStatusBadgeVariant(
+                                                variant={
+                                                    getStatusBadgeVariant(
+                                                        ticket.status
+                                                    ) as any
+                                                }
+                                                className={getStatusBadgeClasses(
                                                     ticket.status
                                                 )}
-                                                className={
-                                                    ticket.status ===
-                                                    "in_progress"
-                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
-                                                        : ticket.status ===
-                                                            "closed"
-                                                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-                                                          : ""
-                                                }
                                             >
                                                 {getStatusLabel(ticket.status)}
                                             </Badge>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, User, Clock } from "lucide-react";
+import { getJiraStatusColor } from "@/lib/utils";
 
 interface JiraInfoProps {
     jiraLink: string;
@@ -116,23 +117,7 @@ export default function JiraInfo({ jiraLink }: JiraInfoProps) {
         );
     }
 
-    const getStatusColor = (statusName: string) => {
-        switch (statusName.toLowerCase()) {
-            case "done":
-            case "closed":
-            case "resolved":
-                return "bg-green-100 text-green-800 border-green-200";
-            case "in progress":
-            case "in review":
-                return "bg-yellow-100 text-yellow-800 border-yellow-200";
-            case "to do":
-            case "open":
-            case "backlog":
-                return "bg-gray-100 text-gray-800 border-gray-200";
-            default:
-                return "bg-blue-100 text-blue-800 border-blue-200";
-        }
-    };
+    // Using utility function for JIRA status color
 
     return (
         <Card className="mb-6">
@@ -148,7 +133,7 @@ export default function JiraInfo({ jiraLink }: JiraInfoProps) {
                         <span className="text-sm text-gray-600">•</span>
                         <Badge
                             variant="outline"
-                            className={getStatusColor(
+                            className={getJiraStatusColor(
                                 jiraIssue.fields.status.name
                             )}
                         >

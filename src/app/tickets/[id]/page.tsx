@@ -20,6 +20,12 @@ import { Toaster } from "@/components/ui/toaster";
 import RichTextEditor from "@/components/RichTextEditor";
 import HtmlContent from "@/components/HtmlContent";
 import JiraInfo from "@/components/JiraInfo";
+import { 
+    formatDateTimeForDisplay,
+    getTicketTypeIcon,
+    getTicketTypeBadgeVariant,
+    getTicketTypeLabel
+} from "@/lib/utils";
 import {
     ArrowLeft,
     Save,
@@ -272,67 +278,7 @@ export default function TicketDetailPage() {
         return rootComments;
     };
 
-    // Helper functions for ticket type display
-    const getTicketTypeIcon = (type: string) => {
-        switch (type) {
-            case "bug":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-                        />
-                    </svg>
-                );
-            case "task":
-                return (
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                );
-            default:
-                return null;
-        }
-    };
-
-    const getTicketTypeBadgeVariant = (type: string) => {
-        switch (type) {
-            case "bug":
-                return "destructive" as const;
-            case "task":
-                return "outline" as const;
-            default:
-                return "outline" as const;
-        }
-    };
-
-    const getTicketTypeLabel = (type: string) => {
-        switch (type) {
-            case "bug":
-                return "Bug";
-            case "task":
-                return "Task";
-            default:
-                return "Unknown";
-        }
-    };
+    // Using utility functions for ticket type display
 
     const handleAddComment = async (e: React.FormEvent, parentId?: string) => {
         e.preventDefault();
@@ -777,40 +723,7 @@ export default function TicketDetailPage() {
         );
     };
 
-    // Helper function to format datetime from DB for display (UTC to GMT+7)
-    const formatDateTimeForDisplay = (isoString: string) => {
-        if (!isoString || isoString.trim() === "") return "";
-
-        try {
-            // Parse UTC datetime from database
-            const utcDate = new Date(isoString);
-
-            // Check if date is valid
-            if (isNaN(utcDate.getTime())) {
-                console.warn("Invalid ISO string:", isoString);
-                return "";
-            }
-
-            // Add 7 hours to convert UTC to GMT+7
-            const gmt7Date = new Date(utcDate.getTime() + 7 * 60 * 60 * 1000);
-
-            // Format for datetime-local input (use regular methods, not UTC methods)
-            const year = gmt7Date.getFullYear();
-            const month = String(gmt7Date.getMonth() + 1).padStart(2, "0");
-            const day = String(gmt7Date.getDate()).padStart(2, "0");
-            const hour = String(gmt7Date.getHours()).padStart(2, "0");
-            const minute = String(gmt7Date.getMinutes()).padStart(2, "0");
-
-            return `${year}-${month}-${day}T${hour}:${minute}`;
-        } catch (error) {
-            console.error(
-                "Error formatting datetime for display:",
-                error,
-                isoString
-            );
-            return "";
-        }
-    };
+    // Using utility function for date formatting
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -991,7 +904,7 @@ export default function TicketDetailPage() {
                                                         variant={getTicketTypeBadgeVariant(
                                                             ticket?.ticket_type ||
                                                                 ""
-                                                        )}
+                                                        ) as any}
                                                         className={
                                                             ticket?.ticket_type ===
                                                             "task"

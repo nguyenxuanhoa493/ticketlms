@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { convertToUTCISO } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
     try {
@@ -347,40 +348,14 @@ export async function POST(request: NextRequest) {
             }
         );
 
-        // Handle closed_at for new tickets (nếu có)
+        // Handle closed_at for new tickets using utility function
         let formattedClosedAt = null;
         if (closed_at && closed_at.trim() !== "") {
             try {
-                let utcDate: Date;
-
-                // Check if it's already an ISO string (ends with Z or has timezone)
-                if (
-                    closed_at.includes("Z") ||
-                    /\+\d{2}:\d{2}$/.test(closed_at)
-                ) {
-                    // Already UTC ISO string, use directly
-                    utcDate = new Date(closed_at);
-                    if (isNaN(utcDate.getTime())) {
-                        throw new Error(`Invalid ISO date: ${closed_at}`);
-                    }
-                } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(closed_at)) {
-                    // datetime-local format: "2024-01-15T14:30" - treat as GMT+7
-                    const dateTime = closed_at + ":00"; // Add seconds
-                    const localDate = new Date(dateTime); // Browser treats as local time
-
-                    if (isNaN(localDate.getTime())) {
-                        throw new Error(`Invalid date value: ${closed_at}`);
-                    }
-
-                    // Convert GMT+7 to UTC by subtracting 7 hours
-                    utcDate = new Date(
-                        localDate.getTime() - 7 * 60 * 60 * 1000
-                    );
-                } else {
+                formattedClosedAt = convertToUTCISO(closed_at);
+                if (!formattedClosedAt) {
                     throw new Error(`Invalid datetime format: ${closed_at}`);
                 }
-
-                formattedClosedAt = utcDate.toISOString();
             } catch (error) {
                 console.error(
                     "Error formatting closed_at for new ticket:",
@@ -484,39 +459,14 @@ export async function PUT(request: NextRequest) {
             jira_link: jira_link?.trim() || null,
         };
 
-        // Handle closed_at logic - format for timestamptz (GMT+7 to UTC)
+        // Handle closed_at logic using utility function
         if (closed_at && closed_at.trim() !== "") {
             try {
-                let utcDate: Date;
-
-                // Check if it's already an ISO string (ends with Z or has timezone)
-                if (
-                    closed_at.includes("Z") ||
-                    /\+\d{2}:\d{2}$/.test(closed_at)
-                ) {
-                    // Already UTC ISO string, use directly
-                    utcDate = new Date(closed_at);
-                    if (isNaN(utcDate.getTime())) {
-                        throw new Error(`Invalid ISO date: ${closed_at}`);
-                    }
-                } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(closed_at)) {
-                    // datetime-local format: "2024-01-15T14:30" - treat as GMT+7
-                    const dateTime = closed_at + ":00"; // Add seconds
-                    const localDate = new Date(dateTime); // Browser treats as local time
-
-                    if (isNaN(localDate.getTime())) {
-                        throw new Error(`Invalid date value: ${closed_at}`);
-                    }
-
-                    // Convert GMT+7 to UTC by subtracting 7 hours
-                    utcDate = new Date(
-                        localDate.getTime() - 7 * 60 * 60 * 1000
-                    );
-                } else {
+                const formattedClosedAt = convertToUTCISO(closed_at);
+                if (!formattedClosedAt) {
                     throw new Error(`Invalid datetime format: ${closed_at}`);
                 }
-
-                updateData.closed_at = utcDate.toISOString();
+                updateData.closed_at = formattedClosedAt;
             } catch (error) {
                 console.error("Error formatting closed_at for update:", error);
                 throw new Error(`Invalid closed_at value: ${closed_at}`);
