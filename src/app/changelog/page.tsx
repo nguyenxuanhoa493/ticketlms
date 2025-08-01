@@ -28,6 +28,42 @@ interface ChangelogEntry {
 
 const changelogData: ChangelogEntry[] = [
     {
+        version: "1.2.2",
+        date: "2025-08-02",
+        type: "improvement",
+        title: "Tách component Dashboard",
+        description:
+            "Tối ưu hóa cấu trúc code bằng cách tách trang dashboard thành các component nhỏ hơn: DashboardStats, RecentTickets, RecentNotifications, DashboardHeader và dashboard-utils",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.2",
+        date: "2025-08-02",
+        type: "improvement",
+        title: "Tách component Tickets",
+        description:
+            "Tối ưu hóa cấu trúc code bằng cách tách trang tickets thành các component: TicketTable, TicketFilters, TicketDialog, TicketDetailView, TicketComments, TicketEditForm và các hooks tương ứng",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.2",
+        date: "2025-08-02",
+        type: "improvement",
+        title: "Cải thiện khả năng bảo trì",
+        description:
+            "Code được tổ chức rõ ràng hơn, dễ test và tái sử dụng, giảm kích thước file chính từ 647 dòng xuống còn 80 dòng",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.2",
+        date: "2025-08-02",
+        type: "improvement",
+        title: "Tối ưu performance",
+        description:
+            "Các component có thể được lazy load khi cần thiết, cải thiện hiệu suất tải trang",
+        author: "Development Team",
+    },
+    {
         version: "1.2.1",
         date: "2025-08-01",
         type: "feature",

@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import HtmlContent from "@/components/HtmlContent";
 import RichTextEditor from "@/components/RichTextEditor";
+import { StatusBadgeDemo } from "@/components/StatusBadgeDemo";
+import { TicketBadgeUsageDemo } from "@/components/TicketBadgeUsageDemo";
 
 export default function TestHtmlPage() {
     const [content, setContent] = useState(`
@@ -55,6 +57,10 @@ export default function TestHtmlPage() {
                 <pre className="bg-gray-100 p-4 rounded-md text-xs overflow-auto max-h-64">
                     {content}
                 </pre>
+            </div>
+            <StatusBadgeDemo />
+            <div className="mt-12">
+                <TicketBadgeUsageDemo />
             </div>
         </div>
     );

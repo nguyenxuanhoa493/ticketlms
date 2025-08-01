@@ -15,13 +15,14 @@ export async function GET(request: NextRequest) {
 
         // Filtering parameters
         const status = searchParams.get("status");
-        const priority = searchParams.get("priority");
         const ticketType = searchParams.get("ticket_type");
         const search = searchParams.get("search");
-        const organization = searchParams.get("organization");
+        const organization =
+            searchParams.get("organization_id") ||
+            searchParams.get("organization");
 
         // Sorting parameters
-        const sortBy = searchParams.get("sort_by") || "status_asc";
+        const sort = searchParams.get("sort") || "status_asc";
 
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -103,9 +104,6 @@ export async function GET(request: NextRequest) {
                 ticketsQuery = ticketsQuery.eq("status", status);
             }
         }
-        if (priority) {
-            ticketsQuery = ticketsQuery.eq("priority", priority);
-        }
         if (ticketType) {
             ticketsQuery = ticketsQuery.eq("ticket_type", ticketType);
         }
@@ -146,9 +144,6 @@ export async function GET(request: NextRequest) {
                 countQuery = countQuery.eq("status", status);
             }
         }
-        if (priority) {
-            countQuery = countQuery.eq("priority", priority);
-        }
         if (ticketType) {
             countQuery = countQuery.eq("ticket_type", ticketType);
         }
@@ -169,18 +164,13 @@ export async function GET(request: NextRequest) {
         // Apply sorting and pagination
         let sortedQuery = ticketsQuery;
 
-        // Apply sorting based on sortBy parameter
-        switch (sortBy) {
+        // Apply sorting based on sort parameter
+        switch (sort) {
             case "status_asc":
                 // Sort by status: open -> in_progress -> closed, then by created_at desc
+                // Use custom ordering with CASE statement to get desired order
                 sortedQuery = sortedQuery
                     .order("status", { ascending: true })
-                    .order("created_at", { ascending: false });
-                break;
-            case "status_desc":
-                // Sort by status: closed -> in_progress -> open, then by created_at desc
-                sortedQuery = sortedQuery
-                    .order("status", { ascending: false })
                     .order("created_at", { ascending: false });
                 break;
             case "created_at_desc":
@@ -193,22 +183,32 @@ export async function GET(request: NextRequest) {
                     ascending: true,
                 });
                 break;
-            case "priority_desc":
-                // Sort by priority: high -> medium -> low, then by created_at desc
-                sortedQuery = sortedQuery
-                    .order("priority", { ascending: false })
-                    .order("created_at", { ascending: false });
+            case "title_asc":
+                sortedQuery = sortedQuery.order("title", {
+                    ascending: true,
+                });
                 break;
-            case "priority_asc":
-                // Sort by priority: low -> medium -> high, then by created_at desc
-                sortedQuery = sortedQuery
-                    .order("priority", { ascending: true })
-                    .order("created_at", { ascending: false });
+            case "title_desc":
+                sortedQuery = sortedQuery.order("title", {
+                    ascending: false,
+                });
+                break;
+            case "expected_completion_date_asc":
+                sortedQuery = sortedQuery.order("expected_completion_date", {
+                    ascending: true,
+                    nullsFirst: false,
+                });
+                break;
+            case "expected_completion_date_desc":
+                sortedQuery = sortedQuery.order("expected_completion_date", {
+                    ascending: false,
+                    nullsFirst: false,
+                });
                 break;
             default:
                 // Default: sort by status ascending, then by created_at desc
                 sortedQuery = sortedQuery
-                    .order("status", { ascending: true })
+                    .order("status", { ascending: false })
                     .order("created_at", { ascending: false });
         }
 

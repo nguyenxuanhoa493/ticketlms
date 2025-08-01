@@ -47,11 +47,27 @@ export function getTicketTypeBadgeVariant(type: TicketType): string {
         case "bug":
             return "destructive";
         case "task":
-            return "secondary";
+            return "default";
         case "feature":
             return "default";
         default:
             return "outline";
+    }
+}
+
+/**
+ * Get CSS classes for ticket type badge styling
+ */
+export function getTicketTypeBadgeClasses(type: TicketType): string {
+    switch (type) {
+        case "bug":
+            return "bg-red-100 text-red-900 border-red-200";
+        case "task":
+            return "bg-blue-500 text-white border-blue-500";
+        case "feature":
+            return "bg-purple-100 text-purple-800 border-purple-200";
+        default:
+            return "";
     }
 }
 
@@ -108,6 +124,8 @@ export function getTicketTypeLabel(type: TicketType): string {
  */
 export function getStatusBadgeClasses(status: TicketStatus): string {
     switch (status) {
+        case "open":
+            return "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200";
         case "in_progress":
             return "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200";
         case "closed":
@@ -118,12 +136,69 @@ export function getStatusBadgeClasses(status: TicketStatus): string {
 }
 
 /**
+ * Get status color for consistent styling
+ */
+export function getStatusColor(status: TicketStatus): {
+    bg: string;
+    text: string;
+    border: string;
+    icon: string;
+} {
+    switch (status) {
+        case "open":
+            return {
+                bg: "bg-blue-100",
+                text: "text-blue-800",
+                border: "border-blue-200",
+                icon: "#3b82f6",
+            };
+        case "in_progress":
+            return {
+                bg: "bg-yellow-100",
+                text: "text-yellow-800",
+                border: "border-yellow-200",
+                icon: "#f59e0b",
+            };
+        case "closed":
+            return {
+                bg: "bg-green-100",
+                text: "text-green-800",
+                border: "border-green-200",
+                icon: "#10b981",
+            };
+        default:
+            return {
+                bg: "bg-gray-100",
+                text: "text-gray-800",
+                border: "border-gray-200",
+                icon: "#6b7280",
+            };
+    }
+}
+
+/**
+ * Get status description for tooltips and accessibility
+ */
+export function getStatusDescription(status: TicketStatus): string {
+    switch (status) {
+        case "open":
+            return "Ticket đang chờ xử lý";
+        case "in_progress":
+            return "Ticket đang được thực hiện";
+        case "closed":
+            return "Ticket đã hoàn thành";
+        default:
+            return "Trạng thái không xác định";
+    }
+}
+
+/**
  * Get CSS classes for priority badge styling
  */
 export function getPriorityBadgeClasses(priority: TicketPriority): string {
     switch (priority) {
         case "high":
-            return "bg-red-100 text-red-800 border-red-200";
+            return "bg-red-100 text-red-900 border-red-200";
         case "medium":
             return "bg-yellow-100 text-yellow-800 border-yellow-200";
         case "low":
@@ -139,13 +214,13 @@ export function getPriorityBadgeClasses(priority: TicketPriority): string {
 export function getTicketTypeIcon(type: TicketType): string {
     switch (type) {
         case "bug":
-            return "⚠️ ";
+            return "/bug-icon.svg";
         case "task":
-            return "✅ ";
+            return "/task-icon.svg";
         case "feature":
-            return "🚀 ";
+            return "/feature-icon.svg";
         default:
-            return "📄 ";
+            return "/file.svg";
     }
 }
 

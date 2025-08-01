@@ -2,6 +2,29 @@
 
 Tất cả các thay đổi quan trọng của dự án TicketLMS sẽ được ghi lại trong file này.
 
+## [1.2.2] - 2025-08-02
+
+### Cải thiện
+
+- **Tách component Dashboard**: Tối ưu hóa cấu trúc code bằng cách tách trang dashboard thành các component nhỏ hơn
+  - Tách `DashboardStats` component để hiển thị thống kê
+  - Tách `RecentTickets` component để hiển thị tickets gần đây
+  - Tách `RecentNotifications` component để hiển thị thông báo gần đây
+  - Tách `DashboardHeader` component để hiển thị header
+  - Tạo `dashboard-utils.ts` để chứa logic xử lý data
+  - Giảm kích thước file chính từ 647 dòng xuống còn 80 dòng
+- **Tách component Tickets**: Tối ưu hóa cấu trúc code bằng cách tách trang tickets thành các component nhỏ hơn
+  - Tách `TicketTable` component để hiển thị bảng tickets
+  - Tách `TicketFilters` component để xử lý bộ lọc và tìm kiếm
+  - Tách `TicketDialog` component để tạo/chỉnh sửa ticket
+  - Tách `TicketDetailView` component để hiển thị chi tiết ticket
+  - Tách `TicketComments` component để quản lý bình luận
+  - Tách `TicketEditForm` component để chỉnh sửa ticket
+  - Tạo `useTicketList` và `useTicketDetail` hooks để quản lý state
+  - Tạo `ticket-utils.ts` để chứa logic xử lý data tickets
+- **Cải thiện khả năng bảo trì**: Code được tổ chức rõ ràng hơn, dễ test và tái sử dụng
+- **Tối ưu performance**: Các component có thể được lazy load khi cần thiết
+
 ## [1.2.1] - 2025-08-01
 
 ### Tính năng mới
