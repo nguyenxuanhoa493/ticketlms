@@ -30,7 +30,7 @@ const navigation = [
         roles: ["admin", "manager"], // Admin và manager thấy
     },
     {
-        name: "Lịch sử",
+        name: "Thay đổi mới",
         href: "/changelog",
         icon: "changelog",
     },

@@ -217,7 +217,7 @@ export default async function HomePage() {
                                 href="/changelog"
                                 className="text-blue-600 hover:text-blue-800 text-sm"
                             >
-                                Lịch sử
+                                Thay đổi mới
                             </Link>
                         </div>
                     </div>
