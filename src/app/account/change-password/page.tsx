@@ -263,7 +263,7 @@ export default function ChangePasswordPage() {
                             className="w-full"
                         >
                             <Lock className="w-4 h-4 mr-2" />
-                            {saving ? "Đang xử lý..." : "Đổi mật khẩu"}
+                            {saving ? "Đang làm..." : "Đổi mật khẩu"}
                         </Button>
                     </form>
                 </CardContent>

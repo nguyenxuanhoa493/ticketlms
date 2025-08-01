@@ -168,6 +168,7 @@ export type Database = {
                     expected_completion_date: string | null;
                     closed_at: string | null;
                     response: string | null;
+                    jira_link: string | null;
                     created_at: string;
                     updated_at: string;
                 };
@@ -185,6 +186,7 @@ export type Database = {
                     expected_completion_date?: string | null;
                     closed_at?: string | null;
                     response?: string | null;
+                    jira_link?: string | null;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -202,6 +204,7 @@ export type Database = {
                     expected_completion_date?: string | null;
                     closed_at?: string | null;
                     response?: string | null;
+                    jira_link?: string | null;
                     created_at?: string;
                     updated_at?: string;
                 };

@@ -88,6 +88,7 @@ interface Ticket {
     expected_completion_date: string | null;
     closed_at: string | null;
     response: string | null;
+    jira_link: string | null;
     created_by: string;
     created_at: string;
     updated_at: string;
@@ -105,6 +106,7 @@ interface TicketFormData {
     organization_id: string;
     expected_completion_date: string;
     closed_at: string;
+    jira_link: string;
 }
 
 export default function TicketsPage() {
@@ -127,6 +129,13 @@ export default function TicketsPage() {
         },
         { key: "title", label: "Tiêu đề", width: "flex-1", align: "text-left" },
         {
+            key: "jira",
+            label: "JIRA",
+            width: "w-12",
+            align: "text-left",
+            adminOnly: true,
+        },
+        {
             key: "priority",
             label: "Ưu tiên",
             width: "w-16",
@@ -148,7 +157,7 @@ export default function TicketsPage() {
         {
             key: "status",
             label: "Trạng thái",
-            width: "w-30",
+            width: "w-32",
             align: "text-left",
         },
         {
@@ -160,7 +169,7 @@ export default function TicketsPage() {
         {
             key: "processingTime",
             label: "Thời lượng",
-            width: "w-22",
+            width: "w-20",
             align: "text-left",
         },
         {
@@ -191,6 +200,7 @@ export default function TicketsPage() {
         organization_id: "",
         expected_completion_date: "",
         closed_at: "",
+        jira_link: "",
     });
     const [submitting, setSubmitting] = useState(false);
     const { toast } = useToast();
@@ -198,6 +208,7 @@ export default function TicketsPage() {
     // Filter states
     const [filterOrganization, setFilterOrganization] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
+    const [sortBy, setSortBy] = useState<string>("status_asc"); // Default sort by status ascending
     const [searchText, setSearchText] = useState<string>("");
     const [searchQuery, setSearchQuery] = useState<string>(""); // Actual search query sent to API
     const [currentPage, setCurrentPage] = useState(1);
@@ -286,11 +297,12 @@ export default function TicketsPage() {
         if (filterOrganization !== "all")
             filters.organization = filterOrganization;
         if (searchQuery) filters.search = searchQuery;
+        if (sortBy) filters.sort_by = sortBy;
 
         fetchTickets(currentPage, filters);
         fetchOrganizations();
         getCurrentUser();
-    }, [currentPage, filterStatus, filterOrganization, searchQuery]);
+    }, [currentPage, filterStatus, filterOrganization, searchQuery, sortBy]);
 
     // Server-side filtering is now handled by the API
     const filteredTickets = tickets;
@@ -384,6 +396,7 @@ export default function TicketsPage() {
                 organization_id: ticket.organization_id || "",
                 expected_completion_date: ticket.expected_completion_date || "",
                 closed_at: formatDateTimeForDisplay(ticket.closed_at || ""),
+                jira_link: ticket.jira_link || "",
             });
         } else {
             setEditingTicket(null);
@@ -402,6 +415,7 @@ export default function TicketsPage() {
                 organization_id: defaultOrgId,
                 expected_completion_date: "",
                 closed_at: "",
+                jira_link: "",
             });
         }
         setIsDialogOpen(true);
@@ -420,6 +434,7 @@ export default function TicketsPage() {
             organization_id: "",
             expected_completion_date: "",
             closed_at: "",
+            jira_link: "",
         });
     };
 
@@ -456,6 +471,7 @@ export default function TicketsPage() {
                         expected_completion_date:
                             formData.expected_completion_date || null,
                         closed_at: formData.closed_at || null,
+                        jira_link: formData.jira_link || null,
                     }),
                 });
 
@@ -484,6 +500,7 @@ export default function TicketsPage() {
                         organization_id: formData.organization_id || null,
                         expected_completion_date:
                             formData.expected_completion_date || null,
+                        jira_link: formData.jira_link || null,
                         created_by: currentUser?.id || "unknown",
                     }),
                 });
@@ -571,7 +588,7 @@ export default function TicketsPage() {
             case "open":
                 return "Mở";
             case "in_progress":
-                return "Đang xử lý";
+                return "Đang làm";
             case "closed":
                 return "Đã đóng";
             default:
@@ -651,6 +668,33 @@ export default function TicketsPage() {
             default:
                 return type;
         }
+    };
+
+    // Helper function to calculate deadline countdown
+    const getDeadlineCountdown = (
+        expectedDate: string | null,
+        status: string
+    ) => {
+        if (!expectedDate || status === "closed") {
+            return null;
+        }
+
+        const now = new Date();
+        const deadline = new Date(expectedDate);
+        const diffTime = deadline.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // Only show countdown if within 10 days
+        if (diffDays > 10) {
+            return null;
+        }
+
+        return {
+            days: diffDays,
+            isOverdue: diffDays < 0,
+            isUrgent: diffDays <= 3 && diffDays >= 0,
+            isWarning: diffDays <= 7 && diffDays > 3,
+        };
     };
 
     return (
@@ -1001,7 +1045,7 @@ export default function TicketsPage() {
                                                         Mở
                                                     </SelectItem>
                                                     <SelectItem value="in_progress">
-                                                        Đang xử lý
+                                                        Đang làm
                                                     </SelectItem>
                                                     <SelectItem value="closed">
                                                         Đã đóng
@@ -1073,6 +1117,31 @@ export default function TicketsPage() {
                                                 chọn)
                                             </p>
                                         </div>
+                                    </div>
+                                )}
+
+                                {/* JIRA Link - Only for admin users */}
+                                {currentUser?.role === "admin" && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="jira_link">
+                                            Link JIRA
+                                        </Label>
+                                        <Input
+                                            id="jira_link"
+                                            value={formData.jira_link}
+                                            onChange={(e) =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    jira_link: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="https://vieted.atlassian.net/browse/CLD-1741"
+                                            type="url"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            Nhập link JIRA ticket (chỉ dành cho
+                                            admin)
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -1166,12 +1235,50 @@ export default function TicketsPage() {
                                     <SelectItem value="all">
                                         Tất cả trạng thái
                                     </SelectItem>
+                                    <SelectItem value="not_closed">
+                                        Chưa đóng
+                                    </SelectItem>
                                     <SelectItem value="open">Mở</SelectItem>
                                     <SelectItem value="in_progress">
-                                        Đang xử lý
+                                        Đang làm
                                     </SelectItem>
                                     <SelectItem value="closed">
                                         Đã đóng
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Sort Filter */}
+                        <div className="min-w-40">
+                            <Label
+                                htmlFor="filter-sort"
+                                className="text-sm font-medium"
+                            >
+                                Sắp xếp
+                            </Label>
+                            <Select value={sortBy} onValueChange={setSortBy}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Sắp xếp theo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="status_asc">
+                                        Trạng thái (Mở → Đang làm → Đã đóng)
+                                    </SelectItem>
+                                    <SelectItem value="status_desc">
+                                        Trạng thái (Đã đóng → Đang làm → Mở)
+                                    </SelectItem>
+                                    <SelectItem value="created_at_desc">
+                                        Mới nhất trước
+                                    </SelectItem>
+                                    <SelectItem value="created_at_asc">
+                                        Cũ nhất trước
+                                    </SelectItem>
+                                    <SelectItem value="priority_desc">
+                                        Ưu tiên (Cao → Thấp)
+                                    </SelectItem>
+                                    <SelectItem value="priority_asc">
+                                        Ưu tiên (Thấp → Cao)
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -1213,7 +1320,8 @@ export default function TicketsPage() {
                         {((filterOrganization &&
                             filterOrganization !== "all") ||
                             (filterStatus && filterStatus !== "all") ||
-                            searchQuery) && (
+                            searchQuery ||
+                            sortBy !== "status_asc") && (
                             <div className="pt-6">
                                 <Button
                                     variant="outline"
@@ -1221,6 +1329,7 @@ export default function TicketsPage() {
                                     onClick={() => {
                                         setFilterOrganization("all");
                                         setFilterStatus("all");
+                                        setSortBy("status_asc");
                                         setSearchText("");
                                         setSearchQuery("");
                                     }}
@@ -1358,6 +1467,66 @@ export default function TicketsPage() {
                                                 {ticket.title}
                                             </div>
                                         </TableCell>
+                                        {currentUser?.role === "admin" && (
+                                            <TableCell className="py-2">
+                                                {ticket.jira_link ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-blue-100 text-blue-800 border-blue-200 font-mono text-xs"
+                                                        >
+                                                            {(() => {
+                                                                const match =
+                                                                    ticket.jira_link.match(
+                                                                        /\/browse\/([A-Z]+-\d+)/
+                                                                    );
+                                                                if (match) {
+                                                                    // Extract just the number part (e.g., "1741" from "CLD-1741")
+                                                                    const numberPart =
+                                                                        match[1].split(
+                                                                            "-"
+                                                                        )[1];
+                                                                    return (
+                                                                        numberPart ||
+                                                                        match[1]
+                                                                    );
+                                                                }
+                                                                return "JIRA";
+                                                            })()}
+                                                        </Badge>
+                                                        <a
+                                                            href={
+                                                                ticket.jira_link
+                                                            }
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
+                                                            className="text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            <svg
+                                                                className="w-3 h-3"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth="2"
+                                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                                />
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">
+                                                        -
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                        )}
                                         <TableCell className="py-2">
                                             <Badge
                                                 variant={getPriorityBadgeVariant(
@@ -1375,11 +1544,70 @@ export default function TicketsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="py-2">
-                                            {ticket.expected_completion_date
-                                                ? new Date(
-                                                      ticket.expected_completion_date
-                                                  ).toLocaleDateString("vi-VN")
-                                                : "Chưa đặt"}
+                                            {ticket.expected_completion_date ? (
+                                                <div className="space-y-1">
+                                                    <div className="text-sm">
+                                                        {new Date(
+                                                            ticket.expected_completion_date
+                                                        ).toLocaleDateString(
+                                                            "vi-VN"
+                                                        )}
+                                                    </div>
+                                                    {(() => {
+                                                        const countdown =
+                                                            getDeadlineCountdown(
+                                                                ticket.expected_completion_date,
+                                                                ticket.status
+                                                            );
+                                                        if (!countdown)
+                                                            return null;
+
+                                                        const isOverdue =
+                                                            countdown.days < 0;
+                                                        const isUrgent =
+                                                            countdown.days <=
+                                                                3 &&
+                                                            countdown.days >= 0;
+                                                        const isWarning =
+                                                            countdown.days <=
+                                                                7 &&
+                                                            countdown.days > 3;
+
+                                                        let textColor =
+                                                            "text-gray-600";
+                                                        let bgColor =
+                                                            "bg-gray-100";
+
+                                                        if (
+                                                            isOverdue ||
+                                                            isUrgent
+                                                        ) {
+                                                            textColor =
+                                                                "text-red-600";
+                                                            bgColor =
+                                                                "bg-red-100";
+                                                        } else if (isWarning) {
+                                                            textColor =
+                                                                "text-orange-600";
+                                                            bgColor =
+                                                                "bg-orange-100";
+                                                        }
+
+                                                        return (
+                                                            <div
+                                                                className={`text-xs px-2 py-1 rounded-full ${bgColor} ${textColor} font-medium`}
+                                                            >
+                                                                {countdown.days >
+                                                                0
+                                                                    ? `+${countdown.days} ngày`
+                                                                    : `${countdown.days} ngày`}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            ) : (
+                                                "Chưa đặt"
+                                            )}
                                         </TableCell>
 
                                         <TableCell className="py-2">
@@ -1596,7 +1824,7 @@ export default function TicketsPage() {
 
                 {/* Pagination */}
                 {pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-6">
+                    <div className="flex items-center justify-between mt-6 mx-[5%]">
                         <div className="text-sm text-gray-700">
                             Hiển thị{" "}
                             {(pagination.page - 1) * pagination.limit + 1} -{" "}

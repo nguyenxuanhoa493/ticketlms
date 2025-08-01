@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import RichTextEditor from "@/components/RichTextEditor";
 import HtmlContent from "@/components/HtmlContent";
+import JiraInfo from "@/components/JiraInfo";
 import {
     ArrowLeft,
     Save,
@@ -31,6 +32,7 @@ import {
     X,
     Eye,
     Calendar,
+    Plus,
 } from "lucide-react";
 
 interface Ticket {
@@ -44,6 +46,7 @@ interface Ticket {
     organization_id: string;
     expected_completion_date: string | null;
     closed_at: string | null;
+    jira_link: string | null;
     created_at: string;
     updated_at: string;
     organizations?: {
@@ -102,6 +105,7 @@ export default function TicketDetailPage() {
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState("");
     const [isEditing, setIsEditing] = useState(false);
+    const [creatingJira, setCreatingJira] = useState(false);
 
     // Format time ago function
     const formatTimeAgo = (dateString: string) => {
@@ -134,6 +138,7 @@ export default function TicketDetailPage() {
         organization_id: "",
         expected_completion_date: "",
         closed_at: "",
+        jira_link: "",
     });
 
     useEffect(() => {
@@ -169,6 +174,7 @@ export default function TicketDetailPage() {
                 expected_completion_date:
                     ticketData.expected_completion_date || "",
                 closed_at: formatDateTimeForDisplay(ticketData.closed_at || ""),
+                jira_link: ticketData.jira_link || "",
             });
         } catch (error: unknown) {
             console.error("Error fetching ticket:", error);
@@ -530,9 +536,77 @@ export default function TicketDetailPage() {
                 closed_at: ticket.closed_at
                     ? formatDateTimeForDisplay(ticket.closed_at)
                     : "",
+                jira_link: ticket.jira_link || "",
             });
         }
         setIsEditing(false);
+    };
+
+    const handleCreateJiraIssue = async () => {
+        if (!ticket) return;
+
+        try {
+            setCreatingJira(true);
+
+            // Create JIRA issue
+            const response = await fetch("/api/jira/create-issue", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    title: ticket.title,
+                    description: ticket.description,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to create JIRA issue");
+            }
+
+            // Update ticket with JIRA link
+            const updateResponse = await fetch("/api/tickets", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: ticket.id,
+                    title: ticket.title,
+                    description: ticket.description,
+                    ticket_type: ticket.ticket_type,
+                    priority: ticket.priority,
+                    platform: ticket.platform,
+                    status: ticket.status,
+                    expected_completion_date: ticket.expected_completion_date,
+                    closed_at: ticket.closed_at,
+                    jira_link: result.jiraLink,
+                }),
+            });
+
+            if (!updateResponse.ok) {
+                throw new Error("Failed to update ticket with JIRA link");
+            }
+
+            toast({
+                title: "Thành công",
+                description: `Đã tạo JIRA issue ${result.key} và liên kết với ticket`,
+            });
+
+            // Refresh ticket data
+            fetchTicket();
+        } catch (error: any) {
+            console.error("Error creating JIRA issue:", error);
+            toast({
+                title: "Lỗi",
+                description: error.message || "Không thể tạo JIRA issue",
+                variant: "destructive",
+            });
+        } finally {
+            setCreatingJira(false);
+        }
     };
 
     const renderComment = (
@@ -769,6 +843,7 @@ export default function TicketDetailPage() {
                     expected_completion_date:
                         formData.expected_completion_date || null,
                     closed_at: formData.closed_at || null,
+                    jira_link: formData.jira_link || null,
                 }),
             });
 
@@ -842,15 +917,38 @@ export default function TicketDetailPage() {
                                     </Button>
                                     <div className="flex gap-2">
                                         {!isEditing ? (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={handleEditToggle}
-                                            >
-                                                <Edit className="w-4 h-4 mr-2" />
-                                                Chỉnh sửa
-                                            </Button>
+                                            <>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={handleEditToggle}
+                                                    className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300"
+                                                >
+                                                    <Edit className="w-4 h-4 mr-2" />
+                                                    Chỉnh sửa
+                                                </Button>
+                                                {currentUser?.role ===
+                                                    "admin" &&
+                                                    !ticket?.jira_link && (
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            onClick={
+                                                                handleCreateJiraIssue
+                                                            }
+                                                            disabled={
+                                                                creatingJira
+                                                            }
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                                                        >
+                                                            <Plus className="w-4 h-4 mr-2" />
+                                                            {creatingJira
+                                                                ? "Đang tạo..."
+                                                                : "Tạo JIRA"}
+                                                        </Button>
+                                                    )}
+                                            </>
                                         ) : (
                                             <>
                                                 <Button
@@ -1030,7 +1128,7 @@ export default function TicketDetailPage() {
                                                             ? "Mở"
                                                             : ticket?.status ===
                                                                 "in_progress"
-                                                              ? "Đang xử lý"
+                                                              ? "Đang làm"
                                                               : "Đã đóng"}
                                                     </Badge>
                                                 </div>
@@ -1054,6 +1152,14 @@ export default function TicketDetailPage() {
                                                 </p>
                                             </div>
                                         </div>
+
+                                        {/* JIRA Info - Only for admin users */}
+                                        {ticket?.jira_link &&
+                                            currentUser?.role === "admin" && (
+                                                <JiraInfo
+                                                    jiraLink={ticket.jira_link}
+                                                />
+                                            )}
 
                                         {/* Description */}
                                         <div className="space-y-2">
@@ -1424,7 +1530,7 @@ export default function TicketDetailPage() {
                                                             Mở
                                                         </SelectItem>
                                                         <SelectItem value="in_progress">
-                                                            Đang xử lý
+                                                            Đang làm
                                                         </SelectItem>
                                                         <SelectItem value="closed">
                                                             Đã đóng
@@ -1532,12 +1638,30 @@ export default function TicketDetailPage() {
                                                         <Calendar className="h-4 w-4" />
                                                     </button>
                                                 </div>
-                                                <p className="text-xs text-gray-500">
-                                                    Thời gian ticket được đóng
-                                                    (tùy chọn)
-                                                </p>
                                             </div>
                                         </div>
+
+                                        {/* JIRA Link - Only for admin users */}
+                                        {currentUser?.role === "admin" && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="jira_link">
+                                                    Link JIRA
+                                                </Label>
+                                                <Input
+                                                    id="jira_link"
+                                                    value={formData.jira_link}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            jira_link:
+                                                                e.target.value,
+                                                        }))
+                                                    }
+                                                    placeholder="https://vieted.atlassian.net/browse/CLD-1741"
+                                                    type="url"
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Description */}
                                         <div className="space-y-2">

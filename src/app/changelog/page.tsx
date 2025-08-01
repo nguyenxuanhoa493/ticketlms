@@ -28,8 +28,71 @@ interface ChangelogEntry {
 
 const changelogData: ChangelogEntry[] = [
     {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "feature",
+        title: "Tích hợp JIRA",
+        description:
+            "Thêm chức năng liên kết ticket với JIRA, hiển thị thông tin JIRA trong chi tiết ticket và danh sách tickets",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "improvement",
+        title: "Cải thiện hiển thị JIRA",
+        description:
+            "Cột JIRA chỉ hiển thị số (bỏ prefix CLD-), thu gọn độ rộng cột và chỉ hiển thị cho admin",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "improvement",
+        title: "Chuyển sắp xếp từ Frontend sang Backend",
+        description:
+            "Tối ưu hiệu suất bằng cách sắp xếp tickets ở database level thay vì JavaScript, thêm dropdown sắp xếp với 6 tùy chọn",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "improvement",
+        title: "Cải thiện bộ lọc trạng thái",
+        description:
+            "Thêm tùy chọn lọc 'Chưa đóng' để hiển thị tickets có trạng thái Mở hoặc Đang làm",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "improvement",
+        title: "Cải thiện cột Thời hạn",
+        description:
+            "Thêm đếm ngược thời hạn với màu sắc theo mức độ khẩn cấp, chỉ hiển thị trong 10 ngày gần deadline",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "improvement",
+        title: "Cải thiện UI phân trang",
+        description:
+            "Đồng bộ độ rộng phân trang với danh sách tickets để giao diện nhất quán",
+        author: "Development Team",
+    },
+    {
+        version: "1.2.1",
+        date: "2025-08-01",
+        type: "improvement",
+        title: "Đồng bộ màu sắc trạng thái ticket",
+        description:
+            "Cập nhật màu sắc trạng thái 'Đang làm' và 'Đã đóng' trong dashboard để đồng bộ với danh sách tickets",
+        author: "Development Team",
+    },
+    {
         version: "1.2.0",
-        date: "2024-12-19",
+        date: "2025-07-30",
         type: "feature",
         title: "Cải thiện Rich Text Editor và HTML Content",
         description:
@@ -38,7 +101,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.2.0",
-        date: "2024-12-19",
+        date: "2025-07-30",
         type: "improvement",
         title: "Cải thiện bộ lọc tìm kiếm",
         description:
@@ -47,7 +110,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.2.0",
-        date: "2024-12-19",
+        date: "2025-07-30",
         type: "improvement",
         title: "Đổi tên Dashboard thành Tổng quan",
         description:
@@ -56,7 +119,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.2.0",
-        date: "2024-12-19",
+        date: "2025-07-30",
         type: "improvement",
         title: "Cải thiện UI Tasks Gần Đây",
         description:
@@ -65,7 +128,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.1.0",
-        date: "2024-12-18",
+        date: "2025-07-29",
         type: "feature",
         title: "Hệ thống thông báo",
         description:
@@ -74,7 +137,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.1.0",
-        date: "2024-12-18",
+        date: "2025-07-29",
         type: "feature",
         title: "Quản lý profile người dùng",
         description:
@@ -83,7 +146,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.0.0",
-        date: "2024-12-17",
+        date: "2025-07-25",
         type: "feature",
         title: "Phát hành phiên bản đầu tiên",
         description:
@@ -92,7 +155,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.0.0",
-        date: "2024-12-17",
+        date: "2025-07-25",
         type: "feature",
         title: "Hệ thống phân quyền",
         description:
@@ -101,7 +164,7 @@ const changelogData: ChangelogEntry[] = [
     },
     {
         version: "1.0.0",
-        date: "2024-12-17",
+        date: "2025-07-25",
         type: "feature",
         title: "Quản lý tổ chức",
         description:

@@ -296,7 +296,7 @@ async function DashboardContent() {
             case "open":
                 return "Mở";
             case "in_progress":
-                return "Đang xử lý";
+                return "Đang làm";
             case "closed":
                 return "Đã đóng";
             default:
@@ -521,7 +521,7 @@ async function DashboardContent() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">
-                                Đang Xử Lý
+                                Đang Làm
                             </p>
                             <p className="text-2xl font-bold text-yellow-600">
                                 {stats.inProgressTickets}
@@ -645,7 +645,15 @@ async function DashboardContent() {
                                                 variant={getStatusBadgeVariant(
                                                     ticket.status
                                                 )}
-                                                className="text-xs"
+                                                className={`text-xs ${
+                                                    ticket.status ===
+                                                    "in_progress"
+                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
+                                                        : ticket.status ===
+                                                            "closed"
+                                                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
+                                                          : ""
+                                                }`}
                                             >
                                                 {getStatusLabel(ticket.status)}
                                             </Badge>

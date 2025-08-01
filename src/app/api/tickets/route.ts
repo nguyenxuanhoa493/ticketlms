@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
         const organization = searchParams.get("organization");
 
         // Sorting parameters
-        const sortBy = searchParams.get("sort_by") || "created_at";
-        const sortOrder = searchParams.get("sort_order") || "desc";
+        const sortBy = searchParams.get("sort_by") || "status_asc";
 
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,6 +68,7 @@ export async function GET(request: NextRequest) {
                 updated_at,
                 expected_completion_date,
                 closed_at,
+                jira_link,
                 organization_id,
                 assigned_to,
                 created_by,
@@ -92,7 +92,15 @@ export async function GET(request: NextRequest) {
 
         // Apply filters
         if (status) {
-            ticketsQuery = ticketsQuery.eq("status", status);
+            if (status === "not_closed") {
+                // Filter for tickets that are not closed (open or in_progress)
+                ticketsQuery = ticketsQuery.in("status", [
+                    "open",
+                    "in_progress",
+                ]);
+            } else {
+                ticketsQuery = ticketsQuery.eq("status", status);
+            }
         }
         if (priority) {
             ticketsQuery = ticketsQuery.eq("priority", priority);
@@ -130,7 +138,12 @@ export async function GET(request: NextRequest) {
         }
 
         if (status) {
-            countQuery = countQuery.eq("status", status);
+            if (status === "not_closed") {
+                // Filter for tickets that are not closed (open or in_progress)
+                countQuery = countQuery.in("status", ["open", "in_progress"]);
+            } else {
+                countQuery = countQuery.eq("status", status);
+            }
         }
         if (priority) {
             countQuery = countQuery.eq("priority", priority);
@@ -152,43 +165,65 @@ export async function GET(request: NextRequest) {
         const total = count || 0;
         const totalPages = Math.ceil(total / limit);
 
-        // Apply pagination and sorting
+        // Apply sorting and pagination
+        let sortedQuery = ticketsQuery;
+
+        // Apply sorting based on sortBy parameter
+        switch (sortBy) {
+            case "status_asc":
+                // Sort by status: open -> in_progress -> closed, then by created_at desc
+                sortedQuery = sortedQuery
+                    .order("status", { ascending: true })
+                    .order("created_at", { ascending: false });
+                break;
+            case "status_desc":
+                // Sort by status: closed -> in_progress -> open, then by created_at desc
+                sortedQuery = sortedQuery
+                    .order("status", { ascending: false })
+                    .order("created_at", { ascending: false });
+                break;
+            case "created_at_desc":
+                sortedQuery = sortedQuery.order("created_at", {
+                    ascending: false,
+                });
+                break;
+            case "created_at_asc":
+                sortedQuery = sortedQuery.order("created_at", {
+                    ascending: true,
+                });
+                break;
+            case "priority_desc":
+                // Sort by priority: high -> medium -> low, then by created_at desc
+                sortedQuery = sortedQuery
+                    .order("priority", { ascending: false })
+                    .order("created_at", { ascending: false });
+                break;
+            case "priority_asc":
+                // Sort by priority: low -> medium -> high, then by created_at desc
+                sortedQuery = sortedQuery
+                    .order("priority", { ascending: true })
+                    .order("created_at", { ascending: false });
+                break;
+            default:
+                // Default: sort by status ascending, then by created_at desc
+                sortedQuery = sortedQuery
+                    .order("status", { ascending: true })
+                    .order("created_at", { ascending: false });
+        }
+
         const { data: ticketsData, error: ticketsError } =
-            await ticketsQuery.range(offset, offset + limit - 1);
+            await sortedQuery.range(offset, offset + limit - 1);
 
         if (ticketsError) throw ticketsError;
-
-        // Sort tickets by status priority: open > in_progress > closed
-        const statusPriority = { open: 1, in_progress: 2, closed: 3 };
-        const sortedTicketsData =
-            ticketsData?.sort((a, b) => {
-                const priorityA =
-                    statusPriority[a.status as keyof typeof statusPriority] ||
-                    4;
-                const priorityB =
-                    statusPriority[b.status as keyof typeof statusPriority] ||
-                    4;
-
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
-                }
-
-                // If same status, sort by created_at desc (newest first)
-                return (
-                    new Date(b.created_at).getTime() -
-                    new Date(a.created_at).getTime()
-                );
-            }) || [];
 
         if (ticketsError) throw ticketsError;
 
         // Get user data separately if needed
         const userIds = [
             ...new Set([
-                ...(sortedTicketsData?.map((t) => t.created_by) || []),
-                ...(sortedTicketsData
-                    ?.map((t) => t.assigned_to)
-                    .filter(Boolean) || []),
+                ...(ticketsData?.map((t) => t.created_by) || []),
+                ...(ticketsData?.map((t) => t.assigned_to).filter(Boolean) ||
+                    []),
             ]),
         ];
 
@@ -212,7 +247,7 @@ export async function GET(request: NextRequest) {
 
         // Combine data
         const ticketsWithUsers =
-            sortedTicketsData?.map((ticket) => ({
+            ticketsData?.map((ticket) => ({
                 ...ticket,
                 created_user: userData[ticket.created_by] || null,
                 assigned_user: ticket.assigned_to
@@ -250,6 +285,7 @@ export async function POST(request: NextRequest) {
             organization_id,
             expected_completion_date,
             closed_at,
+            jira_link,
         } = body;
 
         if (!title?.trim()) {
@@ -372,6 +408,7 @@ export async function POST(request: NextRequest) {
             organization_id: finalOrgId,
             expected_completion_date: expected_completion_date || null,
             closed_at: formattedClosedAt,
+            jira_link: jira_link?.trim() || null,
             created_by: user.id,
         });
 
@@ -403,6 +440,7 @@ export async function PUT(request: NextRequest) {
             status,
             expected_completion_date,
             closed_at,
+            jira_link,
         } = body;
 
         if (!id || !title?.trim()) {
@@ -434,6 +472,7 @@ export async function PUT(request: NextRequest) {
             status: string;
             expected_completion_date: string | null;
             closed_at?: string;
+            jira_link?: string | null;
         } = {
             title: title.trim(),
             description: description?.trim() || null,
@@ -442,6 +481,7 @@ export async function PUT(request: NextRequest) {
             platform: platform || "all",
             status: status || "open",
             expected_completion_date: expected_completion_date || null,
+            jira_link: jira_link?.trim() || null,
         };
 
         // Handle closed_at logic - format for timestamptz (GMT+7 to UTC)
