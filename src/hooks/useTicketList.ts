@@ -23,6 +23,12 @@ export function useTicketList() {
     const [selectedOrganization, setSelectedOrganization] = useState("all");
     const [selectedSort, setSelectedSort] = useState("status_asc");
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalItems, setTotalItems] = useState(0);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
+
     // Form data
     const [formData, setFormData] = useState<TicketFormData>({
         title: "",
@@ -55,6 +61,7 @@ export function useTicketList() {
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
+                limit: itemsPerPage.toString(),
                 ...filters,
             });
 
@@ -65,12 +72,20 @@ export function useTicketList() {
 
                 // Handle different response formats
                 let ticketsArray = [];
+                let paginationData = { page: 1, totalPages: 0, total: 0 };
+
                 if (Array.isArray(data)) {
                     ticketsArray = data;
                 } else if (data && Array.isArray(data.tickets)) {
                     ticketsArray = data.tickets;
+                    if (data.pagination) {
+                        paginationData = data.pagination;
+                    }
                 } else if (data && data.tickets) {
                     ticketsArray = [data.tickets];
+                    if (data.pagination) {
+                        paginationData = data.pagination;
+                    }
                 }
 
                 console.log("Tickets array:", ticketsArray); // Debug log
@@ -79,6 +94,11 @@ export function useTicketList() {
                     ticketsArray.length
                 );
                 setTickets(ticketsArray);
+
+                // Update pagination state
+                setCurrentPage(paginationData.page);
+                setTotalPages(paginationData.totalPages);
+                setTotalItems(paginationData.total);
             }
         } catch (error) {
             console.error("Error fetching tickets:", error);
@@ -139,6 +159,7 @@ export function useTicketList() {
         console.log("Filters:", filters);
         console.log("selectedOrganization:", selectedOrganization);
 
+        setCurrentPage(1); // Reset to first page when searching
         fetchTickets(1, filters);
     };
 
@@ -148,7 +169,38 @@ export function useTicketList() {
         setSelectedStatus("all");
         setSelectedOrganization("all");
         setSelectedSort("status_asc");
+        setCurrentPage(1); // Reset to first page when clearing filters
         fetchTickets(1, {});
+    };
+
+    // Pagination handlers
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        const filters: any = {};
+        if (searchTerm) filters.search = searchTerm;
+        if (selectedStatus && selectedStatus !== "all")
+            filters.status = selectedStatus;
+        if (selectedOrganization && selectedOrganization !== "all")
+            filters.organization_id = selectedOrganization;
+        if (selectedSort && selectedSort !== "status_asc")
+            filters.sort = selectedSort;
+
+        fetchTickets(page, filters);
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1); // Reset to first page when changing items per page
+        const filters: any = {};
+        if (searchTerm) filters.search = searchTerm;
+        if (selectedStatus && selectedStatus !== "all")
+            filters.status = selectedStatus;
+        if (selectedOrganization && selectedOrganization !== "all")
+            filters.organization_id = selectedOrganization;
+        if (selectedSort && selectedSort !== "status_asc")
+            filters.sort = selectedSort;
+
+        fetchTickets(1, filters);
     };
 
     // Open dialog
@@ -234,7 +286,7 @@ export function useTicketList() {
             });
 
             handleCloseDialog();
-            fetchTickets(); // Refresh list
+            fetchTickets(currentPage); // Refresh current page
         } catch (error) {
             console.error("Error saving ticket:", error);
             toast({
@@ -267,7 +319,7 @@ export function useTicketList() {
                 description: "Ticket đã được xóa.",
             });
 
-            fetchTickets(); // Refresh list
+            fetchTickets(currentPage); // Refresh current page
         } catch (error) {
             console.error("Error deleting ticket:", error);
             toast({
@@ -353,6 +405,10 @@ export function useTicketList() {
         selectedOrganization,
         selectedSort,
         hasActiveFilters,
+        currentPage,
+        totalPages,
+        totalItems,
+        itemsPerPage,
 
         // Actions
         setFormData,
@@ -368,5 +424,7 @@ export function useTicketList() {
         handleSubmit,
         handleDelete,
         getDeadlineCountdown,
+        handlePageChange,
+        handleItemsPerPageChange,
     };
 }

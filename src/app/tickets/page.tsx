@@ -28,6 +28,10 @@ export default function TicketsPage() {
         selectedOrganization,
         selectedSort,
         hasActiveFilters,
+        currentPage,
+        totalPages,
+        totalItems,
+        itemsPerPage,
         setFormData,
         setSearchTerm,
         setSelectedStatus,
@@ -41,6 +45,8 @@ export default function TicketsPage() {
         handleSubmit,
         handleDelete,
         getDeadlineCountdown,
+        handlePageChange,
+        handleItemsPerPageChange,
     } = useTicketList();
 
     // Debug logging
@@ -154,6 +160,14 @@ export default function TicketsPage() {
                                     currentUser={currentUser}
                                     onDelete={handleDelete}
                                     getDeadlineCountdown={getDeadlineCountdown}
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    totalItems={totalItems}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={handlePageChange}
+                                    onItemsPerPageChange={
+                                        handleItemsPerPageChange
+                                    }
                                 />
                             )}
                         </CardContent>
