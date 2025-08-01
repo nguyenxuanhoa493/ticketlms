@@ -53,12 +53,12 @@ export default function AuthConfirmedClient() {
                                 Tài khoản của bạn đã được kích hoạt thành công.
                             </p>
                             <p className="mt-2 text-sm text-gray-500">
-                                Tự động chuyển đến dashboard sau {countdown}{" "}
+                                Tự động chuyển đến tổng quan sau {countdown}{" "}
                                 giây...
                             </p>
                             <div className="mt-4">
                                 <Link href="/dashboard">
-                                    <Button>Đi đến Dashboard ngay</Button>
+                                    <Button>Đi đến Tổng quan ngay</Button>
                                 </Link>
                             </div>
                         </div>

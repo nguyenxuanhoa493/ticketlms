@@ -57,10 +57,47 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
     };
 
-    const handlePaste = (e: React.ClipboardEvent) => {
+    const handlePaste = async (e: React.ClipboardEvent) => {
         e.preventDefault();
-        const text = e.clipboardData.getData("text/plain");
-        document.execCommand("insertText", false, text);
+
+        const clipboardData = e.clipboardData;
+
+        // Check if there are images in clipboard
+        const items = Array.from(clipboardData.items);
+        const imageItem = items.find((item) => item.type.startsWith("image/"));
+
+        if (imageItem) {
+            // Handle image paste
+            const file = imageItem.getAsFile();
+            if (file) {
+                await handleImageUpload(file);
+                return;
+            }
+        }
+
+        // Handle text paste - check if it's a URL
+        const text = clipboardData.getData("text/plain").trim();
+
+        // Check if the pasted text is a URL
+        const urlRegex = /^https?:\/\/[^\s]+$/i;
+        if (urlRegex.test(text)) {
+            // Check if it's an image URL
+            const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i;
+            const imageHostingServices =
+                /(imgur\.com|flickr\.com|500px\.com|unsplash\.com|pexels\.com|pixabay\.com|via\.placeholder\.com)/i;
+
+            if (imageExtensions.test(text) || imageHostingServices.test(text)) {
+                // If it's an image URL, insert as image
+                insertImage(text, "Pasted Image");
+            } else {
+                // If it's a regular URL, insert as clickable link
+                insertLink(text, text);
+            }
+        } else {
+            // Regular text paste
+            document.execCommand("insertText", false, text);
+        }
+
         handleInput();
     };
 
@@ -199,10 +236,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         const img = document.createElement("img");
         img.src = url;
         img.alt = alt;
-        img.style.maxWidth = "100%";
+        img.style.maxWidth = "250px";
+        img.style.maxHeight = "250px";
+        img.style.width = "auto";
         img.style.height = "auto";
         img.style.margin = "8px 0";
         img.style.borderRadius = "4px";
+        img.style.border = "1px solid #e5e7eb";
+        img.style.objectFit = "contain";
 
         // Insert image at cursor position
         const selection = window.getSelection();
@@ -262,6 +303,45 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        // Handle Tab key
+        if (e.key === "Tab") {
+            e.preventDefault();
+            document.execCommand("insertText", false, "\t");
+            handleInput();
+            return;
+        }
+
+        // Handle Enter key in lists
+        if (e.key === "Enter") {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer;
+
+                // Check if we're inside a list item
+                const listItem =
+                    container.nodeType === Node.ELEMENT_NODE
+                        ? (container as Element).closest("li")
+                        : container.parentElement?.closest("li");
+
+                if (listItem) {
+                    const list = listItem.parentElement;
+                    if (
+                        list &&
+                        (list.tagName === "UL" || list.tagName === "OL")
+                    ) {
+                        // If the list item is empty, create a new list item
+                        if (listItem.textContent?.trim() === "") {
+                            e.preventDefault();
+                            document.execCommand("outdent", false);
+                            handleInput();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         // Keyboard shortcuts
         if (e.ctrlKey || e.metaKey) {
             switch (e.key) {
@@ -279,6 +359,40 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                     break;
             }
         }
+    };
+
+    const toggleBulletList = () => {
+        // Focus the editor first
+        editorRef.current?.focus();
+
+        // Check if current selection is already in a list
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const container = range.commonAncestorContainer;
+
+            // Check if we're inside a list
+            let listElement =
+                container.nodeType === Node.ELEMENT_NODE
+                    ? (container as Element).closest("ul, ol")
+                    : container.parentElement?.closest("ul, ol");
+
+            if (listElement) {
+                // If already in a list, remove the list formatting
+                document.execCommand("outdent", false);
+            } else {
+                // If not in a list, create a new bullet list
+                document.execCommand("insertUnorderedList", false);
+            }
+        } else {
+            // No selection, just insert a new list
+            document.execCommand("insertUnorderedList", false);
+        }
+
+        // Force a re-render to ensure proper styling
+        setTimeout(() => {
+            handleInput();
+        }, 10);
     };
 
     return (
@@ -359,7 +473,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => formatText("insertUnorderedList")}
+                    onClick={toggleBulletList}
                     className="h-8 w-8 p-0"
                     title="Bullet List"
                 >
@@ -399,9 +513,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => formatText("removeFormat")}
+                    onClick={() => {
+                        if (editorRef.current) {
+                            editorRef.current.innerHTML = "";
+                            handleInput();
+                        }
+                    }}
                     className="h-8 px-2 text-xs"
-                    title="Clear Formatting"
+                    title="Clear All Content"
                 >
                     Clear
                 </Button>
@@ -414,12 +533,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 onInput={handleInput}
                 onPaste={handlePaste}
                 onKeyDown={handleKeyDown}
-                className={`p-3 focus:outline-none ${minHeight} ${
+                className={`rich-text-content p-3 focus:outline-none ${minHeight} ${
                     maxHeight || ""
                 } overflow-y-auto`}
                 style={{
                     minHeight: "80px",
-                    lineHeight: "1.5",
                 }}
                 suppressContentEditableWarning={true}
                 data-placeholder={placeholder}
@@ -442,29 +560,85 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 selectedText={selectedText}
             />
 
-            <style jsx>{`
+            <style jsx global>{`
+                .rich-text-content {
+                    line-height: 1.6;
+                }
+
+                .rich-text-content a {
+                    color: #2563eb;
+                    text-decoration: underline;
+                    word-break: break-all;
+                }
+
+                .rich-text-content a:hover {
+                    color: #1d4ed8;
+                }
+
+                .rich-text-content .auto-link {
+                    color: #2563eb;
+                    text-decoration: underline;
+                    word-break: break-all;
+                }
+
+                .rich-text-content .auto-link:hover {
+                    color: #1d4ed8;
+                }
+
+                .rich-text-content ul {
+                    margin: 8px 0;
+                    padding-left: 20px;
+                    list-style-type: disc;
+                    list-style-position: outside;
+                }
+
+                .rich-text-content ol {
+                    margin: 8px 0;
+                    padding-left: 20px;
+                    list-style-type: decimal;
+                    list-style-position: outside;
+                }
+
+                .rich-text-content li {
+                    margin: 4px 0;
+                    display: list-item;
+                    padding-left: 4px;
+                }
+
+                .rich-text-content li::marker {
+                    color: #6b7280;
+                }
+
+                .rich-text-content img {
+                    max-width: 250px !important;
+                    max-height: 250px !important;
+                    height: auto;
+                    margin: 8px 0;
+                    border-radius: 4px;
+                    border: 1px solid #e5e7eb;
+                    cursor: pointer;
+                    transition: transform 0.2s ease;
+                    object-fit: contain;
+                }
+
+                .rich-text-content img:hover {
+                    transform: scale(1.02);
+                }
+
+                .rich-text-content p {
+                    margin: 8px 0;
+                }
+
+                /* Editor specific styles */
                 [contenteditable]:empty:before {
                     content: attr(data-placeholder);
                     color: #9ca3af;
                     pointer-events: none;
                 }
-                [contenteditable] a {
-                    color: #2563eb;
-                    text-decoration: underline;
-                }
-                [contenteditable] ul {
-                    margin: 8px 0;
-                    padding-left: 20px;
-                }
-                [contenteditable] li {
-                    margin: 4px 0;
-                }
-                [contenteditable] img {
-                    max-width: 100%;
-                    height: auto;
-                    margin: 8px 0;
-                    border-radius: 4px;
-                    border: 1px solid #e5e7eb;
+
+                [contenteditable].rich-text-content img {
+                    max-width: 250px !important;
+                    max-height: 250px !important;
                 }
             `}</style>
         </div>

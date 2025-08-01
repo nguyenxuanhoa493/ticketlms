@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Dashboard - TicketLMS",
+    title: "Tổng quan - TicketLMS",
     description: "Bảng điều khiển hệ thống quản lý ticket",
     icons: {
         icon: "/favicon.png",
@@ -257,7 +257,7 @@ async function DashboardContent() {
     const getStatusBadgeVariant = (status: string) => {
         switch (status) {
             case "open":
-                return "destructive";
+                return "default";
             case "in_progress":
                 return "secondary";
             case "closed":
@@ -328,44 +328,44 @@ async function DashboardContent() {
         }
     };
 
-    // const getTicketTypeIcon = (type: string) => {
-    //     switch (type) {
-    //         case "bug":
-    //             return (
-    //                 <svg
-    //                     className="w-4 h-4"
-    //                     fill="none"
-    //                     stroke="currentColor"
-    //                     viewBox="0 0 24 24"
-    //                 >
-    //                     <path
-    //                         strokeLinecap="round"
-    //                         strokeLinejoin="round"
-    //                         strokeWidth="2"
-    //                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-    //                     />
-    //                 </svg>
-    //             );
-    //         case "task":
-    //             return (
-    //                 <svg
-    //                     className="w-4 h-4"
-    //                     fill="none"
-    //                     stroke="currentColor"
-    //                     viewBox="0 0 24 24"
-    //                 >
-    //                     <path
-    //                         strokeLinecap="round"
-    //                         strokeLinejoin="round"
-    //                         strokeWidth="2"
-    //                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-    //                     />
-    //                 </svg>
-    //             );
-    //         default:
-    //             return null;
-    //     }
-    // };
+    const getTicketTypeIcon = (type: string) => {
+        switch (type) {
+            case "bug":
+                return (
+                    <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                        />
+                    </svg>
+                );
+            case "task":
+                return (
+                    <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                );
+            default:
+                return null;
+        }
+    };
 
     const getNotificationType = (type: string) => {
         switch (type) {
@@ -384,7 +384,7 @@ async function DashboardContent() {
         <div className="space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Tổng quan</h1>
                 <p className="text-gray-600 mt-2">
                     Xin chào, {profile?.full_name || user.email}! Đây là tổng
                     quan hệ thống của bạn.
@@ -600,13 +600,16 @@ async function DashboardContent() {
                                                     variant={getTicketTypeBadgeVariant(
                                                         ticket.ticket_type
                                                     )}
-                                                    className={`text-xs ${
+                                                    className={`text-xs flex items-center gap-1 ${
                                                         ticket.ticket_type ===
                                                         "task"
                                                             ? "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
                                                             : ""
                                                     }`}
                                                 >
+                                                    {getTicketTypeIcon(
+                                                        ticket.ticket_type
+                                                    )}
                                                     {getTicketTypeLabel(
                                                         ticket.ticket_type
                                                     )}
@@ -632,11 +635,7 @@ async function DashboardContent() {
                                                 variant={getPriorityBadgeVariant(
                                                     ticket.priority
                                                 )}
-                                                className={`text-xs ${
-                                                    ticket.priority === "medium"
-                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
-                                                        : ""
-                                                }`}
+                                                className="text-xs"
                                             >
                                                 {getPriorityLabel(
                                                     ticket.priority
@@ -646,15 +645,7 @@ async function DashboardContent() {
                                                 variant={getStatusBadgeVariant(
                                                     ticket.status
                                                 )}
-                                                className={`text-xs ${
-                                                    ticket.status ===
-                                                    "in_progress"
-                                                        ? "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
-                                                        : ticket.status ===
-                                                            "closed"
-                                                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-                                                          : ""
-                                                }`}
+                                                className="text-xs"
                                             >
                                                 {getStatusLabel(ticket.status)}
                                             </Badge>

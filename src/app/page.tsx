@@ -200,7 +200,7 @@ export default async function HomePage() {
                             <ul className="space-y-2 text-sm text-gray-600">
                                 <li>• Thống kê ticket theo trạng thái</li>
                                 <li>• Báo cáo hiệu suất xử lý</li>
-                                <li>• Dashboard tổng quan</li>
+                                <li>• Tổng quan hệ thống</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -210,8 +210,16 @@ export default async function HomePage() {
             {/* Footer */}
             <footer className="bg-white border-t mt-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="text-center text-gray-600">
+                    <div className="flex flex-col md:flex-row justify-between items-center text-gray-600">
                         <p>&copy; 2024 TicketLMS. Tất cả quyền được bảo lưu.</p>
+                        <div className="flex items-center space-x-4 mt-4 md:mt-0">
+                            <Link
+                                href="/changelog"
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                                Lịch sử
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </footer>

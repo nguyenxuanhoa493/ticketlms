@@ -199,6 +199,7 @@ export default function TicketsPage() {
     const [filterOrganization, setFilterOrganization] = useState<string>("all");
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [searchText, setSearchText] = useState<string>("");
+    const [searchQuery, setSearchQuery] = useState<string>(""); // Actual search query sent to API
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState({
         page: 1,
@@ -284,12 +285,12 @@ export default function TicketsPage() {
         if (filterStatus !== "all") filters.status = filterStatus;
         if (filterOrganization !== "all")
             filters.organization = filterOrganization;
-        if (searchText) filters.search = searchText;
+        if (searchQuery) filters.search = searchQuery;
 
         fetchTickets(currentPage, filters);
         fetchOrganizations();
         getCurrentUser();
-    }, [currentPage, filterStatus, filterOrganization, searchText]);
+    }, [currentPage, filterStatus, filterOrganization, searchQuery]);
 
     // Server-side filtering is now handled by the API
     const filteredTickets = tickets;
@@ -354,6 +355,17 @@ export default function TicketsPage() {
             }
         } catch (error) {
             console.error("Error fetching organizations:", error);
+        }
+    };
+
+    const handleSearch = () => {
+        setSearchQuery(searchText);
+        setCurrentPage(1); // Reset to first page when searching
+    };
+
+    const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            handleSearch();
         }
     };
 
@@ -1173,21 +1185,35 @@ export default function TicketsPage() {
                             >
                                 Tìm kiếm
                             </Label>
-                            <Input
-                                id="search-text"
-                                type="text"
-                                placeholder="Tìm trong tiêu đề, nội dung, phản hồi..."
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                                className="w-full"
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="search-text"
+                                    type="text"
+                                    placeholder="Tìm trong tiêu đề, nội dung, phản hồi..."
+                                    value={searchText}
+                                    onChange={(e) =>
+                                        setSearchText(e.target.value)
+                                    }
+                                    onKeyPress={handleSearchKeyPress}
+                                    className="w-full pr-10"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleSearch}
+                                    className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                                >
+                                    <Search className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Clear Filters */}
                         {((filterOrganization &&
                             filterOrganization !== "all") ||
                             (filterStatus && filterStatus !== "all") ||
-                            searchText) && (
+                            searchQuery) && (
                             <div className="pt-6">
                                 <Button
                                     variant="outline"
@@ -1196,6 +1222,7 @@ export default function TicketsPage() {
                                         setFilterOrganization("all");
                                         setFilterStatus("all");
                                         setSearchText("");
+                                        setSearchQuery("");
                                     }}
                                 >
                                     Xóa bộ lọc

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/RichTextEditor";
+import HtmlContent from "@/components/HtmlContent";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -284,16 +285,16 @@ export default function OrganizationsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="description">Mô tả</Label>
-                                    <Input
-                                        id="description"
-                                        placeholder="Mô tả về đơn vị (tùy chọn)"
+                                    <RichTextEditor
                                         value={formData.description}
-                                        onChange={(e) =>
+                                        onChange={(value) =>
                                             setFormData((prev) => ({
                                                 ...prev,
-                                                description: e.target.value,
+                                                description: value,
                                             }))
                                         }
+                                        placeholder="Mô tả về đơn vị (tùy chọn)"
+                                        minHeight="min-h-24"
                                     />
                                 </div>
                             </div>
@@ -309,8 +310,8 @@ export default function OrganizationsPage() {
                                     {submitting
                                         ? "Đang lưu..."
                                         : editingOrg
-                                        ? "Cập nhật"
-                                        : "Tạo mới"}
+                                          ? "Cập nhật"
+                                          : "Tạo mới"}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -372,9 +373,12 @@ export default function OrganizationsPage() {
                                     </TableCell>
                                     <TableCell>
                                         {org.description ? (
-                                            <span className="text-gray-600">
-                                                {org.description}
-                                            </span>
+                                            <div className="max-w-xs">
+                                                <HtmlContent
+                                                    content={org.description}
+                                                    className="text-sm text-gray-600"
+                                                />
+                                            </div>
                                         ) : (
                                             <span className="text-gray-400 italic">
                                                 Chưa có mô tả
