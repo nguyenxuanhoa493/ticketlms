@@ -15,10 +15,49 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: "TicketLMS - Hệ thống quản lý ticket",
     description: "Hệ thống quản lý ticket và hỗ trợ khách hàng",
+    keywords: [
+        "ticket management",
+        "customer support",
+        "help desk",
+        "issue tracking",
+    ],
+    authors: [{ name: "TicketLMS Team" }],
+    creator: "TicketLMS",
+    publisher: "TicketLMS",
+    formatDetection: {
+        email: false,
+        address: false,
+        telephone: false,
+    },
+    metadataBase: new URL(
+        process.env.NEXT_PUBLIC_SITE_URL || "https://your-domain.vercel.app"
+    ),
+    alternates: {
+        canonical: "/",
+    },
+    openGraph: {
+        title: "TicketLMS - Hệ thống quản lý ticket",
+        description: "Hệ thống quản lý ticket và hỗ trợ khách hàng",
+        url: "/",
+        siteName: "TicketLMS",
+        locale: "vi_VN",
+        type: "website",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "TicketLMS - Hệ thống quản lý ticket",
+        description: "Hệ thống quản lý ticket và hỗ trợ khách hàng",
+    },
     icons: {
         icon: "/favicon.png",
         shortcut: "/favicon.png",
         apple: "/favicon.png",
+    },
+    manifest: "/manifest.json",
+    viewport: {
+        width: "device-width",
+        initialScale: 1,
+        maximumScale: 1,
     },
 };
 

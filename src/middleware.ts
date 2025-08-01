@@ -8,6 +8,19 @@ export async function middleware(request: NextRequest) {
         },
     });
 
+    // Add cache headers for static assets
+    if (
+        request.nextUrl.pathname.startsWith("/_next/static") ||
+        request.nextUrl.pathname.startsWith("/_next/image") ||
+        request.nextUrl.pathname.includes("favicon.ico")
+    ) {
+        response.headers.set(
+            "Cache-Control",
+            "public, max-age=31536000, immutable"
+        );
+        return response;
+    }
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
