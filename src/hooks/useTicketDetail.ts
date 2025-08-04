@@ -268,16 +268,16 @@ export function useTicketDetail(ticketId: string) {
             if (!response.ok) throw new Error("Failed to update ticket");
 
             const responseData = await response.json();
-            
+
             // Handle different response formats
             let updatedTicketData = responseData;
             if (responseData && responseData.ticket) {
                 updatedTicketData = responseData.ticket;
             }
-            
+
             // Update the ticket state with new data
             setTicket(updatedTicketData);
-            
+
             // Also update form data to match the updated ticket
             setFormData({
                 title: updatedTicketData.title || "",
@@ -287,11 +287,12 @@ export function useTicketDetail(ticketId: string) {
                 platform: updatedTicketData.platform || "web",
                 status: updatedTicketData.status || "open",
                 organization_id: updatedTicketData.organization_id || "",
-                expected_completion_date: updatedTicketData.expected_completion_date || "",
+                expected_completion_date:
+                    updatedTicketData.expected_completion_date || "",
                 closed_at: updatedTicketData.closed_at || "",
                 jira_link: updatedTicketData.jira_link || "",
             });
-            
+
             setIsEditing(false);
 
             toast({
@@ -330,15 +331,36 @@ export function useTicketDetail(ticketId: string) {
 
             const data = await response.json();
 
-            // Update ticket with JIRA link
-            setTicket((prev) =>
-                prev ? { ...prev, jira_link: data.jira_link } : null
-            );
-            setFormData((prev) => ({ ...prev, jira_link: data.jira_link }));
+            // Update ticket with JIRA link in database
+            const updateResponse = await fetch(`/api/tickets/${ticketId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    jira_link: data.jiraLink,
+                }),
+            });
+
+            if (!updateResponse.ok) {
+                throw new Error("Failed to update ticket with JIRA link");
+            }
+
+            const updatedTicketData = await updateResponse.json();
+
+            // Handle different response formats
+            let updatedTicket = updatedTicketData;
+            if (updatedTicketData && updatedTicketData.ticket) {
+                updatedTicket = updatedTicketData.ticket;
+            }
+
+            // Update local state with the updated ticket data
+            setTicket(updatedTicket);
+            setFormData((prev) => ({ ...prev, jira_link: data.jiraLink }));
 
             toast({
                 title: "Thành công",
-                description: "JIRA issue đã được tạo.",
+                description: "JIRA issue đã được tạo và link đã được cập nhật.",
             });
         } catch (error) {
             console.error("Error creating JIRA issue:", error);
