@@ -267,8 +267,31 @@ export function useTicketDetail(ticketId: string) {
 
             if (!response.ok) throw new Error("Failed to update ticket");
 
-            const updatedTicket = await response.json();
-            setTicket(updatedTicket);
+            const responseData = await response.json();
+            
+            // Handle different response formats
+            let updatedTicketData = responseData;
+            if (responseData && responseData.ticket) {
+                updatedTicketData = responseData.ticket;
+            }
+            
+            // Update the ticket state with new data
+            setTicket(updatedTicketData);
+            
+            // Also update form data to match the updated ticket
+            setFormData({
+                title: updatedTicketData.title || "",
+                description: updatedTicketData.description || "",
+                ticket_type: updatedTicketData.ticket_type || "task",
+                priority: updatedTicketData.priority || "medium",
+                platform: updatedTicketData.platform || "web",
+                status: updatedTicketData.status || "open",
+                organization_id: updatedTicketData.organization_id || "",
+                expected_completion_date: updatedTicketData.expected_completion_date || "",
+                closed_at: updatedTicketData.closed_at || "",
+                jira_link: updatedTicketData.jira_link || "",
+            });
+            
             setIsEditing(false);
 
             toast({
