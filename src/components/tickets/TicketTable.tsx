@@ -69,11 +69,9 @@ export function TicketTable({
                             <TableHead className="w-auto">Thời hạn</TableHead>
                             <TableHead className="w-auto">Trạng thái</TableHead>
                             <TableHead className="w-auto">
-                                Thời gian đóng
+                                T.gian đóng
                             </TableHead>
-                            <TableHead className="w-auto">
-                                Thời gian xử lý
-                            </TableHead>
+                            <TableHead className="w-auto">T.gian làm</TableHead>
                             <TableHead className="text-right w-auto">
                                 Thao tác
                             </TableHead>
@@ -183,7 +181,9 @@ export function TicketTable({
                                             })()}
                                         </div>
                                     ) : (
-                                        "Chưa đặt"
+                                        <span className="text-gray-400 text-sm">
+                                            -
+                                        </span>
                                     )}
                                 </TableCell>
                                 <TableCell className="py-2 w-auto">
@@ -219,44 +219,48 @@ export function TicketTable({
                                         </div>
                                     ) : (
                                         <span className="text-gray-400 text-sm">
-                                            Chưa đóng
+                                            -
                                         </span>
                                     )}
                                 </TableCell>
                                 <TableCell className="py-2 w-auto">
-                                    {ticket.closed_at && ticket.created_at
-                                        ? (() => {
-                                              const created = new Date(
-                                                  ticket.created_at
-                                              );
-                                              const closed = new Date(
-                                                  ticket.closed_at
-                                              );
-                                              const diffMs =
-                                                  closed.getTime() -
-                                                  created.getTime();
-                                              const diffDays = Math.floor(
-                                                  diffMs / (1000 * 60 * 60 * 24)
-                                              );
-                                              const diffHours = Math.floor(
-                                                  (diffMs %
-                                                      (1000 * 60 * 60 * 24)) /
-                                                      (1000 * 60 * 60)
-                                              );
-                                              const diffMinutes = Math.floor(
-                                                  (diffMs % (1000 * 60 * 60)) /
-                                                      (1000 * 60)
-                                              );
+                                    {ticket.closed_at && ticket.created_at ? (
+                                        (() => {
+                                            const created = new Date(
+                                                ticket.created_at
+                                            );
+                                            const closed = new Date(
+                                                ticket.closed_at
+                                            );
+                                            const diffMs =
+                                                closed.getTime() -
+                                                created.getTime();
+                                            const diffDays = Math.floor(
+                                                diffMs / (1000 * 60 * 60 * 24)
+                                            );
+                                            const diffHours = Math.floor(
+                                                (diffMs %
+                                                    (1000 * 60 * 60 * 24)) /
+                                                    (1000 * 60 * 60)
+                                            );
+                                            const diffMinutes = Math.floor(
+                                                (diffMs % (1000 * 60 * 60)) /
+                                                    (1000 * 60)
+                                            );
 
-                                              if (diffDays > 0) {
-                                                  return `${diffDays}d ${diffHours}h`;
-                                              } else if (diffHours > 0) {
-                                                  return `${diffHours}h ${diffMinutes}m`;
-                                              } else {
-                                                  return `${diffMinutes}m`;
-                                              }
-                                          })()
-                                        : ""}
+                                            if (diffDays > 0) {
+                                                return `${diffDays}d ${diffHours}h`;
+                                            } else if (diffHours > 0) {
+                                                return `${diffHours}h ${diffMinutes}m`;
+                                            } else {
+                                                return `${diffMinutes}m`;
+                                            }
+                                        })()
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">
+                                            -
+                                        </span>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-right py-2 w-auto">
                                     <div
