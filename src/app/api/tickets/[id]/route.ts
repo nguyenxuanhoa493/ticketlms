@@ -337,3 +337,133 @@ export async function PUT(
         );
     }
 }
+
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const cookieStore = await cookies();
+        const { id } = await params;
+        const ticketId = id;
+
+        console.log("DELETE request for ticket ID:", ticketId);
+
+        if (!ticketId) {
+            return NextResponse.json(
+                { error: "Ticket ID is required" },
+                { status: 400 }
+            );
+        }
+
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    get(name: string) {
+                        return cookieStore.get(name)?.value;
+                    },
+                },
+            }
+        );
+
+        // Get current user
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError) {
+            console.error("Auth error:", authError);
+            return NextResponse.json(
+                { error: "Authentication error" },
+                { status: 401 }
+            );
+        }
+
+        if (!user) {
+            return NextResponse.json(
+                { error: "User not authenticated" },
+                { status: 401 }
+            );
+        }
+
+        console.log("User authenticated:", user.id);
+
+        // Get user profile to check permissions
+        const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role, organization_id")
+            .eq("id", user.id)
+            .single();
+
+        if (profileError) {
+            console.error("Profile error:", profileError);
+            throw profileError;
+        }
+
+        console.log("User profile:", profile);
+
+        // Check if user is admin
+        if (profile.role !== "admin") {
+            return NextResponse.json(
+                { error: "Only admins can delete tickets" },
+                { status: 403 }
+            );
+        }
+
+        // First, get the existing ticket to check if it exists
+        const { data: existingTicket, error: ticketError } = await supabase
+            .from("tickets")
+            .select("id, title, organization_id")
+            .eq("id", ticketId)
+            .single();
+
+        if (ticketError) {
+            console.error("Ticket fetch error:", ticketError);
+            if (ticketError.code === "PGRST116") {
+                return NextResponse.json(
+                    { error: "Ticket not found" },
+                    { status: 404 }
+                );
+            }
+            throw ticketError;
+        }
+
+        console.log("Existing ticket:", existingTicket);
+
+        // Delete the ticket
+        const { error: deleteError } = await supabase
+            .from("tickets")
+            .delete()
+            .eq("id", ticketId);
+
+        if (deleteError) {
+            console.error("Error deleting ticket:", deleteError);
+            return NextResponse.json(
+                { error: `Failed to delete ticket: ${deleteError.message}` },
+                { status: 500 }
+            );
+        }
+
+        console.log("Ticket deleted successfully:", ticketId);
+
+        return NextResponse.json({
+            success: true,
+            message: "Ticket deleted successfully",
+            deletedTicketId: ticketId,
+        });
+    } catch (error: unknown) {
+        console.error("Error deleting ticket:", error);
+        return NextResponse.json(
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to delete ticket",
+            },
+            { status: 500 }
+        );
+    }
+}
