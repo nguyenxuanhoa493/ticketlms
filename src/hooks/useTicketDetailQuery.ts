@@ -193,8 +193,8 @@ export function useTicketDetailQuery(ticketId: string) {
         platform: "web",
         status: "open",
         organization_id: "",
-        expected_completion_date: "",
-        closed_at: "",
+        expected_completion_date: null,
+        closed_at: null,
         jira_link: "",
         only_show_in_admin: false,
     });
@@ -372,8 +372,8 @@ export function useTicketDetailQuery(ticketId: string) {
                 platform: ticket.platform || "web",
                 status: ticket.status || "open",
                 organization_id: ticket.organization_id || "",
-                expected_completion_date: ticket.expected_completion_date || "",
-                closed_at: ticket.closed_at || "",
+                expected_completion_date: ticket.expected_completion_date || null,
+                closed_at: ticket.closed_at || null,
                 jira_link: ticket.jira_link || "",
                 only_show_in_admin: ticket.only_show_in_admin || false,
             });

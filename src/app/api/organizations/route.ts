@@ -9,13 +9,19 @@ import { Database } from "@/types/database";
 
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
-// GET - Cho phép tất cả authenticated users truy cập
+// GET - Filter organizations based on user role
 export const GET = withAuth(
     async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
-        const { data, error } = await supabase
-            .from("organizations")
-            .select("*")
-            .order("created_at", { ascending: false });
+        let query = supabase.from("organizations").select("*");
+
+        // Apply organization filter for non-admin users
+        if (user.role !== "admin" && user.organization_id) {
+            query = query.eq("id", user.organization_id);
+        }
+
+        const { data, error } = await query.order("created_at", {
+            ascending: false,
+        });
 
         if (error) throw error;
 

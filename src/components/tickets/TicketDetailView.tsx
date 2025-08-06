@@ -181,6 +181,25 @@ export function TicketDetailView({
                             )}
                     </p>
                 </div>
+                {/* Admin-only information */}
+                {currentUser?.role === "admin" && (
+                    <div>
+                        <Label className="text-sm font-medium text-gray-500">
+                            Chỉ hiển thị với admin
+                        </Label>
+                        <div className="space-y-1">
+                            {ticket?.only_show_in_admin ? (
+                                <Badge variant="destructive" className="text-xs">
+                                    Có
+                                </Badge>
+                            ) : (
+                                <Badge variant="secondary" className="text-xs">
+                                    Không
+                                </Badge>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

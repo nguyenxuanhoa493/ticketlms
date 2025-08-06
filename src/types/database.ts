@@ -162,7 +162,7 @@ export type Database = {
                     status: "open" | "in_progress" | "closed";
                     priority: "low" | "medium" | "high";
                     platform: "web" | "app" | "all";
-                    organization_id: string;
+                    organization_id: string | null;
                     assigned_to: string | null;
                     created_by: string;
                     expected_completion_date: string | null;
@@ -181,7 +181,7 @@ export type Database = {
                     status?: "open" | "in_progress" | "closed";
                     priority?: "low" | "medium" | "high";
                     platform?: "web" | "app" | "all";
-                    organization_id: string;
+                    organization_id: string | null;
                     assigned_to?: string | null;
                     created_by: string;
                     expected_completion_date?: string | null;

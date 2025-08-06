@@ -59,8 +59,8 @@ export interface TicketFormData {
     platform: "web" | "app" | "all";
     status: "open" | "in_progress" | "closed";
     organization_id: string;
-    expected_completion_date: string;
-    closed_at: string;
+    expected_completion_date: string | null;
+    closed_at: string | null;
     jira_link: string;
     only_show_in_admin: boolean;
 }

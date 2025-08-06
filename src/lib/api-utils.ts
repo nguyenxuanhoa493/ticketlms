@@ -209,3 +209,235 @@ export const buildBaseQuery = (
 
     return query;
 };
+
+// File upload utilities
+export const validateFileUpload = (
+    file: File,
+    options: {
+        maxSize?: number;
+        allowedTypes?: string[];
+        maxSizeMB?: number;
+    } = {}
+): { isValid: boolean; error?: string } => {
+    const {
+        maxSize = 5 * 1024 * 1024, // 5MB default
+        allowedTypes = [
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+        ],
+        maxSizeMB = 5,
+    } = options;
+
+    if (!file) {
+        return { isValid: false, error: "No file uploaded" };
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+        return {
+            isValid: false,
+            error: `Invalid file type. Allowed types: ${allowedTypes.join(
+                ", "
+            )}`,
+        };
+    }
+
+    if (file.size > maxSize) {
+        return {
+            isValid: false,
+            error: `File too large. Maximum size is ${maxSizeMB}MB`,
+        };
+    }
+
+    return { isValid: true };
+};
+
+export const generateUniqueFileName = (
+    file: File,
+    prefix: string = ""
+): string => {
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const fileExt = file.name.split(".").pop();
+    return `${prefix}${timestamp}_${randomString}.${fileExt}`;
+};
+
+// Database operation utilities
+export const executeQuery = async <T>(
+    query: Promise<{ data: T | null; error: any }>,
+    context: string
+): Promise<{ data: T | null; error: NextResponse | null }> => {
+    try {
+        const { data, error } = await query;
+
+        if (error) {
+            console.error(`Database error in ${context}:`, error);
+            return {
+                data: null,
+                error: NextResponse.json(
+                    { error: `Database operation failed: ${error.message}` },
+                    { status: 500 }
+                ),
+            };
+        }
+
+        return { data, error: null };
+    } catch (error) {
+        console.error(`Unexpected error in ${context}:`, error);
+        return {
+            data: null,
+            error: NextResponse.json(
+                { error: `Unexpected error in ${context}` },
+                { status: 500 }
+            ),
+        };
+    }
+};
+
+// User data fetching utilities
+export const fetchUserData = async (
+    supabase: any,
+    userIds: string[]
+): Promise<Record<string, any>> => {
+    if (userIds.length === 0) return {};
+
+    const { data: users, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, role, organization_id")
+        .in("id", userIds);
+
+    if (error) {
+        console.error("Error fetching user data:", error);
+        return {};
+    }
+
+    return (
+        users?.reduce((acc: Record<string, any>, user: any) => {
+            acc[user.id] = user;
+            return acc;
+        }, {}) || {}
+    );
+};
+
+// Ticket-specific utilities
+export const buildTicketQuery = (
+    supabase: any,
+    user: AuthenticatedUser,
+    filters: {
+        status?: string;
+        priority?: string;
+        ticket_type?: string;
+        platform?: string;
+        search?: string;
+        assigned_to?: string;
+        created_by?: string;
+        organization_id?: string;
+        only_show_in_admin?: boolean;
+    } = {}
+) => {
+    let query = supabase.from("tickets").select(`
+            *,
+            organizations(id, name, description)
+        `);
+
+    // Apply organization filter for non-admin users
+    if (user.role !== "admin") {
+        if (user.organization_id) {
+            query = query.eq("organization_id", user.organization_id);
+        } else {
+            // If user has no organization, only show tickets with no organization
+            query = query.is("organization_id", null);
+        }
+    }
+
+    // Apply filters
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+            if (key === "search") {
+                query = query.or(
+                    `title.ilike.%${value}%,description.ilike.%${value}%`
+                );
+            } else if (key === "only_show_in_admin") {
+                // Only show admin-only tickets to admins
+                if (user.role === "admin") {
+                    query = query.eq(key, value);
+                } else {
+                    query = query.eq(key, false);
+                }
+            } else if (key === "organization_id") {
+                // Handle organization_id filter
+                if (value === "null" || value === "") {
+                    query = query.is("organization_id", null);
+                } else {
+                    query = query.eq(key, value);
+                }
+            } else {
+                query = query.eq(key, value);
+            }
+        }
+    });
+
+    return query;
+};
+
+// Notification utilities
+export const createNotification = async (
+    supabase: any,
+    notification: {
+        user_id: string;
+        type: string;
+        title: string;
+        message: string;
+        ticket_id?: string;
+        comment_id?: string;
+        created_by: string;
+    }
+) => {
+    const { data, error } = await supabase
+        .from("notifications")
+        .insert(notification)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error creating notification:", error);
+        throw error;
+    }
+
+    return data;
+};
+
+// Common response builders
+export const buildPaginatedResponse = <T>(
+    data: T[],
+    total: number,
+    page: number,
+    limit: number
+) => {
+    return {
+        data,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+            hasNext: page * limit < total,
+            hasPrev: page > 1,
+        },
+    };
+};
+
+export const buildTicketResponse = (
+    ticket: any,
+    userData: Record<string, any>
+) => {
+    return {
+        ...ticket,
+        created_user: userData[ticket.created_by] || null,
+        assigned_user: ticket.assigned_to
+            ? userData[ticket.assigned_to] || null
+            : null,
+    };
+};

@@ -21,8 +21,8 @@ export function useTicketListOptimized() {
         platform: "web",
         status: "open",
         organization_id: "",
-        expected_completion_date: "",
-        closed_at: "",
+        expected_completion_date: null,
+        closed_at: null,
         jira_link: "",
         only_show_in_admin: false,
     });
@@ -148,13 +148,20 @@ export function useTicketListOptimized() {
                 platform: ticket.platform || "web",
                 status: ticket.status || "open",
                 organization_id: ticket.organization_id || "",
-                expected_completion_date: ticket.expected_completion_date || "",
-                closed_at: ticket.closed_at || "",
+                expected_completion_date:
+                    ticket.expected_completion_date || null,
+                closed_at: ticket.closed_at || null,
                 jira_link: ticket.jira_link || "",
                 only_show_in_admin: ticket.only_show_in_admin || false,
             });
         } else {
             setEditingTicket(null);
+            // Auto-set organization_id for non-admin users
+            const defaultOrgId =
+                currentUser?.role !== "admin" && currentUser?.organization_id
+                    ? currentUser.organization_id
+                    : "";
+
             setFormData({
                 title: "",
                 description: "",
@@ -162,7 +169,7 @@ export function useTicketListOptimized() {
                 priority: "medium",
                 platform: "web",
                 status: "open",
-                organization_id: "",
+                organization_id: defaultOrgId,
                 expected_completion_date: "",
                 closed_at: "",
                 jira_link: "",
@@ -175,6 +182,12 @@ export function useTicketListOptimized() {
     const handleCloseDialog = () => {
         setDialogOpen(false);
         setEditingTicket(null);
+        // Reset organization_id based on user role
+        const defaultOrgId =
+            currentUser?.role !== "admin" && currentUser?.organization_id
+                ? currentUser.organization_id
+                : "";
+
         setFormData({
             title: "",
             description: "",
@@ -182,9 +195,9 @@ export function useTicketListOptimized() {
             priority: "medium",
             platform: "web",
             status: "open",
-            organization_id: "",
-            expected_completion_date: "",
-            closed_at: "",
+            organization_id: defaultOrgId,
+            expected_completion_date: null,
+            closed_at: null,
             jira_link: "",
             only_show_in_admin: false,
         });

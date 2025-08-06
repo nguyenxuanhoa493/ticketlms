@@ -1,493 +1,154 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { withAuth } from "@/lib/api-middleware";
+import {
+    validateRequiredFields,
+    createSuccessResponse,
+    executeQuery,
+    fetchUserData,
+    AuthenticatedUser
+} from "@/lib/api-utils";
 
-export async function GET(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const cookieStore = await cookies();
-        const { id } = await params;
-        const ticketId = id;
-
-        if (!ticketId) {
-            return NextResponse.json(
-                { error: "Ticket ID is required" },
-                { status: 400 }
-            );
+// Helper function to clean timestamp fields
+const cleanTimestampFields = (data: any) => {
+    const cleaned = { ...data };
+    
+    // Convert empty strings to null for timestamp fields that can be updated
+    const timestampFields = ['expected_completion_date', 'closed_at'];
+    
+    timestampFields.forEach(field => {
+        if (cleaned[field] === "" || cleaned[field] === undefined) {
+            cleaned[field] = null;
         }
+    });
+    
+    // Remove created_at and updated_at from update data as they should be managed by database
+    delete cleaned.created_at;
+    delete cleaned.updated_at;
+    
+    return cleaned;
+};
 
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-            return NextResponse.json(
-                { error: "User not authenticated" },
-                { status: 401 }
-            );
-        }
-
-        // Get user profile to check permissions
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role, organization_id")
-            .eq("id", user.id)
-            .single();
-
-        if (profileError) throw profileError;
-
-        // Fetch ticket with related data
-        const { data: ticket, error: ticketError } = await supabase
+export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
+    
+    const { data, error } = await executeQuery(
+        supabase
             .from("tickets")
-            .select(
-                `
+            .select(`
                 *,
-                organizations:organization_id (
-                    id,
-                    name
-                )
-            `
-            )
-            .eq("id", ticketId)
-            .single();
-
-        if (ticketError) {
-            if (ticketError.code === "PGRST116") {
-                return NextResponse.json(
-                    { error: "Ticket not found" },
-                    { status: 404 }
-                );
-            }
-            throw ticketError;
-        }
-
-        // Check if non-admin user is trying to access admin-only ticket
-        if (profile.role !== "admin" && ticket.only_show_in_admin) {
-            return NextResponse.json(
-                { error: "Access denied" },
-                { status: 403 }
-            );
-        }
-
-        // Fetch created user separately from profiles table
-        let created_user = null;
-        if (ticket.created_by) {
-            const { data: userProfile, error: userError } = await supabase
-                .from("profiles")
-                .select("id, full_name, avatar_url")
-                .eq("id", ticket.created_by)
-                .single();
-
-            if (!userError) {
-                created_user = userProfile;
-            }
-        }
-
-        // Add created_user to ticket object
-        const ticketWithUser = {
-            ...ticket,
-            created_user,
-        };
-
-        // Check permissions - users can only see tickets from their organization
-        if (profile.role !== "admin") {
-            if (ticketWithUser.organization_id !== profile.organization_id) {
-                return NextResponse.json(
-                    { error: "Permission denied" },
-                    { status: 403 }
-                );
-            }
-        }
-
-        return NextResponse.json({ ticket: ticketWithUser });
-    } catch (error: unknown) {
-        console.error("Error fetching ticket:", error);
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to fetch ticket",
-            },
-            { status: 500 }
-        );
+                organizations(id, name, description)
+            `)
+            .eq("id", id)
+            .single(),
+        "fetching ticket"
+    );
+    
+    if (error) return error;
+    
+    // Check organization access
+    if (user.role !== "admin" && (data as any).organization_id !== user.organization_id) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
-}
+    
+    // Fetch user data for created_by and assigned_to
+    const ticket = data as any;
+    const userIds = new Set<string>();
+    
+    if (ticket.created_by) userIds.add(ticket.created_by);
+    if (ticket.assigned_to) userIds.add(ticket.assigned_to);
+    
+    const userData = await fetchUserData(supabase, Array.from(userIds));
+    
+    // Merge user data into ticket
+    const ticketWithUsers = {
+        ...ticket,
+        created_user: ticket.created_by ? userData[ticket.created_by] || null : null,
+        assigned_user: ticket.assigned_to ? userData[ticket.assigned_to] || null : null,
+    };
+    
+    return NextResponse.json(ticketWithUsers);
+});
 
-export async function PUT(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const cookieStore = await cookies();
-        const { id } = await params;
-        const ticketId = id;
-
-        console.log("PUT request for ticket ID:", ticketId);
-
-        let body;
-        try {
-            body = await request.json();
-            console.log("Request body:", body);
-        } catch (parseError) {
-            console.error("Error parsing request body:", parseError);
-            return NextResponse.json(
-                { error: "Invalid JSON in request body" },
-                { status: 400 }
-            );
-        }
-
-        if (!ticketId) {
-            return NextResponse.json(
-                { error: "Ticket ID is required" },
-                { status: 400 }
-            );
-        }
-
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError) {
-            console.error("Auth error:", authError);
-            return NextResponse.json(
-                { error: "Authentication error" },
-                { status: 401 }
-            );
-        }
-
-        if (!user) {
-            return NextResponse.json(
-                { error: "User not authenticated" },
-                { status: 401 }
-            );
-        }
-
-        console.log("User authenticated:", user.id);
-
-        // Get user profile to check permissions
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role, organization_id")
-            .eq("id", user.id)
-            .single();
-
-        if (profileError) {
-            console.error("Profile error:", profileError);
-            throw profileError;
-        }
-
-        console.log("User profile:", profile);
-
-        // First, get the existing ticket to check permissions
-        const { data: existingTicket, error: ticketError } = await supabase
-            .from("tickets")
-            .select("organization_id, created_by, only_show_in_admin")
-            .eq("id", ticketId)
-            .single();
-
-        if (ticketError) {
-            console.error("Ticket fetch error:", ticketError);
-            if (ticketError.code === "PGRST116") {
-                return NextResponse.json(
-                    { error: "Ticket not found" },
-                    { status: 404 }
-                );
-            }
-            throw ticketError;
-        }
-
-        console.log("Existing ticket:", existingTicket);
-
-        // Check permissions - users can only update tickets from their organization
-        if (profile.role !== "admin") {
-            if (existingTicket.organization_id !== profile.organization_id) {
-                return NextResponse.json(
-                    { error: "Permission denied" },
-                    { status: 403 }
-                );
-            }
-            // Non-admin users cannot update admin-only tickets
-            if (existingTicket.only_show_in_admin) {
-                return NextResponse.json(
-                    { error: "Permission denied" },
-                    { status: 403 }
-                );
-            }
-        }
-
-        // Prepare update data - only allow specific fields to be updated
-        const allowedFields = [
-            "title",
-            "description",
-            "ticket_type",
-            "status",
-            "priority",
-            "platform",
-            "assigned_to",
-            "expected_completion_date",
-            "closed_at",
-            "response",
-            "jira_link",
-            "only_show_in_admin",
-        ];
-
-        const updateData: any = {
-            updated_at: new Date().toISOString(),
-        };
-
-        // Only include fields that are allowed and present in the request
-        for (const field of allowedFields) {
-            if (body.hasOwnProperty(field)) {
-                let value = body[field];
-
-                // Handle timestamp fields - convert empty strings to null
-                if (
-                    field === "closed_at" ||
-                    field === "expected_completion_date"
-                ) {
-                    if (value === "" || value === null || value === undefined) {
-                        value = null;
-                    } else if (
-                        typeof value === "string" &&
-                        value.trim() === ""
-                    ) {
-                        value = null;
-                    }
-                }
-
-                // Only admin can update only_show_in_admin field
-                if (
-                    field === "only_show_in_admin" &&
-                    profile.role !== "admin"
-                ) {
-                    continue;
-                }
-
-                updateData[field] = value;
-            }
-        }
-
-        console.log("Update data:", updateData);
-
-        // Update the ticket
-        const { data: updatedTicket, error: updateError } = await supabase
-            .from("tickets")
-            .update(updateData)
-            .eq("id", ticketId)
-            .select(
-                `
-                *,
-                organizations:organization_id (
-                    id,
-                    name
-                )
-            `
-            )
-            .single();
-
-        if (updateError) {
-            console.error("Error updating ticket:", updateError);
-            return NextResponse.json(
-                { error: `Failed to update ticket: ${updateError.message}` },
-                { status: 500 }
-            );
-        }
-
-        console.log("Ticket updated successfully:", updatedTicket);
-
-        // Fetch created user separately from profiles table
-        let created_user = null;
-        if (updatedTicket.created_by) {
-            const { data: userProfile, error: userError } = await supabase
-                .from("profiles")
-                .select("id, full_name, avatar_url")
-                .eq("id", updatedTicket.created_by)
-                .single();
-
-            if (!userError) {
-                created_user = userProfile;
-            }
-        }
-
-        // Add created_user to ticket object
-        const ticketWithUser = {
-            ...updatedTicket,
-            created_user,
-        };
-
-        console.log("Ticket with user data:", ticketWithUser);
-
-        return NextResponse.json({ ticket: ticketWithUser });
-    } catch (error: unknown) {
-        console.error("Error updating ticket:", error);
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to update ticket",
-            },
-            { status: 500 }
-        );
+export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
+    const body = await request.json();
+    
+    console.log("PUT /api/tickets/[id] - Request body:", body);
+    console.log("PUT /api/tickets/[id] - User role:", user.role);
+    
+    // Check if user has permission to update this ticket
+    const { data: existingTicket } = await supabase
+        .from("tickets")
+        .select("created_by, organization_id")
+        .eq("id", id)
+        .single();
+    
+    if (!existingTicket) {
+        return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
-}
-
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const cookieStore = await cookies();
-        const { id } = await params;
-        const ticketId = id;
-
-        console.log("DELETE request for ticket ID:", ticketId);
-
-        if (!ticketId) {
-            return NextResponse.json(
-                { error: "Ticket ID is required" },
-                { status: 400 }
-            );
-        }
-
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError) {
-            console.error("Auth error:", authError);
-            return NextResponse.json(
-                { error: "Authentication error" },
-                { status: 401 }
-            );
-        }
-
-        if (!user) {
-            return NextResponse.json(
-                { error: "User not authenticated" },
-                { status: 401 }
-            );
-        }
-
-        console.log("User authenticated:", user.id);
-
-        // Get user profile to check permissions
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role, organization_id")
-            .eq("id", user.id)
-            .single();
-
-        if (profileError) {
-            console.error("Profile error:", profileError);
-            throw profileError;
-        }
-
-        console.log("User profile:", profile);
-
-        // Check if user is admin
-        if (profile.role !== "admin") {
-            return NextResponse.json(
-                { error: "Only admins can delete tickets" },
-                { status: 403 }
-            );
-        }
-
-        // First, get the existing ticket to check if it exists
-        const { data: existingTicket, error: ticketError } = await supabase
-            .from("tickets")
-            .select("id, title, organization_id")
-            .eq("id", ticketId)
-            .single();
-
-        if (ticketError) {
-            console.error("Ticket fetch error:", ticketError);
-            if (ticketError.code === "PGRST116") {
-                return NextResponse.json(
-                    { error: "Ticket not found" },
-                    { status: 404 }
-                );
-            }
-            throw ticketError;
-        }
-
-        console.log("Existing ticket:", existingTicket);
-
-        // Delete the ticket
-        const { error: deleteError } = await supabase
-            .from("tickets")
-            .delete()
-            .eq("id", ticketId);
-
-        if (deleteError) {
-            console.error("Error deleting ticket:", deleteError);
-            return NextResponse.json(
-                { error: `Failed to delete ticket: ${deleteError.message}` },
-                { status: 500 }
-            );
-        }
-
-        console.log("Ticket deleted successfully:", ticketId);
-
-        return NextResponse.json({
-            success: true,
-            message: "Ticket deleted successfully",
-            deletedTicketId: ticketId,
-        });
-    } catch (error: unknown) {
-        console.error("Error deleting ticket:", error);
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to delete ticket",
-            },
-            { status: 500 }
-        );
+    
+    // Check permissions
+    if (user.role !== "admin" && existingTicket.created_by !== user.id) {
+        return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
-}
+    
+    // Validate organization_id based on user role
+    let finalBody = { ...body };
+    
+    if (user.role !== "admin") {
+        // Non-admin users cannot change organization_id
+        finalBody.organization_id = user.organization_id;
+        // Non-admin users cannot set only_show_in_admin to true
+        finalBody.only_show_in_admin = false;
+    }
+    
+    // Clean timestamp fields before sending to database
+    finalBody = cleanTimestampFields(finalBody);
+    
+    // Add updated_at timestamp
+    finalBody.updated_at = new Date().toISOString();
+    
+    console.log("PUT /api/tickets/[id] - Final body:", finalBody);
+    
+    const { data, error } = await executeQuery(
+        supabase.from("tickets").update(finalBody).eq("id", id).select().single(),
+        "updating ticket"
+    );
+    
+    if (error) {
+        console.error("PUT /api/tickets/[id] - Error:", error);
+        return error;
+    }
+    
+    console.log("PUT /api/tickets/[id] - Success:", data);
+    return createSuccessResponse(data, "Ticket updated successfully");
+});
+
+export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
+    
+    // Check if user has permission to delete this ticket
+    const { data: existingTicket } = await supabase
+        .from("tickets")
+        .select("created_by, organization_id")
+        .eq("id", id)
+        .single();
+    
+    if (!existingTicket) {
+        return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+    }
+    
+    // Check permissions
+    if (user.role !== "admin" && existingTicket.created_by !== user.id) {
+        return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    }
+    
+    const { error } = await executeQuery(
+        supabase.from("tickets").delete().eq("id", id),
+        "deleting ticket"
+    );
+    
+    if (error) return error;
+    
+    return createSuccessResponse(null, "Ticket deleted successfully");
+});

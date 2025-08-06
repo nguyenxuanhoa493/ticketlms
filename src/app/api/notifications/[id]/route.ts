@@ -1,136 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { withAuth } from "@/lib/api-middleware";
+import {
+    createSuccessResponse,
+    executeQuery,
+    AuthenticatedUser
+} from "@/lib/api-utils";
 
-export async function PUT(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        const { id } = await params;
-        const notificationId = id;
-        const body = await request.json();
-        const { is_read } = body;
-
-        // Update notification (RLS will ensure user can only update their own)
-        const { data: notification, error } = await supabase
-            .from("notifications")
-            .update({ is_read: is_read ?? true })
-            .eq("id", notificationId)
-            .eq("user_id", user.id) // Extra security check
-            .select()
-            .single();
-
-        if (error) {
-            console.error("Error updating notification:", error);
-            return NextResponse.json(
-                { error: "Failed to update notification" },
-                { status: 500 }
-            );
-        }
-
-        if (!notification) {
-            return NextResponse.json(
-                { error: "Notification not found" },
-                { status: 404 }
-            );
-        }
-
-        return NextResponse.json({
-            success: true,
-            notification,
-        });
-    } catch (error) {
-        console.error("Update notification error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
+    const body = await request.json();
+    const { is_read } = body;
+    
+    // Check if notification belongs to user
+    const { data: notification } = await supabase
+        .from("notifications")
+        .select("user_id")
+        .eq("id", id)
+        .single();
+    
+    if (!notification) {
+        return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
-}
-
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        const { id } = await params;
-        const notificationId = id;
-
-        // Delete notification (RLS will ensure user can only delete their own)
-        const { error } = await supabase
-            .from("notifications")
-            .delete()
-            .eq("id", notificationId)
-            .eq("user_id", user.id); // Extra security check
-
-        if (error) {
-            console.error("Error deleting notification:", error);
-            return NextResponse.json(
-                { error: "Failed to delete notification" },
-                { status: 500 }
-            );
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: "Notification deleted",
-        });
-    } catch (error) {
-        console.error("Delete notification error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+    
+    if (notification.user_id !== user.id) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
-}
+    
+    const { data, error } = await executeQuery(
+        supabase.from("notifications").update({ is_read }).eq("id", id).select().single(),
+        "updating notification"
+    );
+    
+    if (error) return error;
+    
+    return createSuccessResponse(data, "Notification updated successfully");
+});
+
+export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
+    
+    // Check if notification belongs to user
+    const { data: notification } = await supabase
+        .from("notifications")
+        .select("user_id")
+        .eq("id", id)
+        .single();
+    
+    if (!notification) {
+        return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    }
+    
+    if (notification.user_id !== user.id) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+    
+    const { error } = await executeQuery(
+        supabase.from("notifications").delete().eq("id", id),
+        "deleting notification"
+    );
+    
+    if (error) return error;
+    
+    return createSuccessResponse(null, "Notification deleted successfully");
+});

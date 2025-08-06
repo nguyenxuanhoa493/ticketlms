@@ -45,6 +45,7 @@ export function TicketEditForm({
                                 organization_id: value,
                             }))
                         }
+                        disabled={!["admin", "manager"].includes(currentUser?.role || "")}
                     >
                         <SelectTrigger>
                             <SelectValue />
@@ -58,6 +59,11 @@ export function TicketEditForm({
                                 ))}
                         </SelectContent>
                     </Select>
+                    {!["admin", "manager"].includes(currentUser?.role || "") && (
+                        <p className="text-sm text-gray-500">
+                            Chỉ admin và manager có thể thay đổi đơn vị
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-2 md:col-span-9">
@@ -170,11 +176,11 @@ export function TicketEditForm({
                         <Input
                             id="expected_completion_date"
                             type="date"
-                            value={formData.expected_completion_date}
+                            value={formData.expected_completion_date ?? ""}
                             onChange={(e) =>
                                 setFormData((prev) => ({
                                     ...prev,
-                                    expected_completion_date: e.target.value,
+                                    expected_completion_date: e.target.value || null,
                                 }))
                             }
                             className="pr-10 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:pr-0"
@@ -333,11 +339,11 @@ export function TicketEditForm({
                         <Input
                             id="closed_at"
                             type="datetime-local"
-                            value={formData.closed_at}
+                            value={formData.closed_at ?? ""}
                             onChange={(e) =>
                                 setFormData((prev) => ({
                                     ...prev,
-                                    closed_at: e.target.value,
+                                    closed_at: e.target.value || null,
                                 }))
                             }
                             className="pr-10 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:pr-0"
@@ -382,25 +388,28 @@ export function TicketEditForm({
 
                     {/* Only show in admin field */}
                     <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                            <input
-                                type="checkbox"
-                                id="only_show_in_admin"
-                                checked={formData.only_show_in_admin}
-                                onChange={(e) =>
+                        <div className="flex items-center p-3 bg-gray-50 rounded-lg border">
+                            <button
+                                type="button"
+                                onClick={() =>
                                     setFormData((prev) => ({
                                         ...prev,
-                                        only_show_in_admin: e.target.checked,
+                                        only_show_in_admin: !prev.only_show_in_admin,
                                     }))
                                 }
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <Label
-                                htmlFor="only_show_in_admin"
-                                className="text-sm font-medium text-gray-700"
+                                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors mr-3 ${
+                                    formData.only_show_in_admin
+                                        ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                        : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                                }`}
                             >
-                                Chỉ hiển thị với admin
-                            </Label>
+                                {formData.only_show_in_admin ? "Bật" : "Tắt"}
+                            </button>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                    Chỉ hiển thị với admin
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

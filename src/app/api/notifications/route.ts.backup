@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/api-middleware";
+import {
+    validateRequiredFields,
+    createSuccessResponse,
+    executeQuery,
+    createNotification,
+    handleApiError,
+    AuthenticatedUser,
+} from "@/lib/api-utils";
+
+export const GET = withAuth(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+        const { searchParams } = new URL(request.url);
+        const unreadOnly = searchParams.get("unread_only") === "true";
+        const limit = parseInt(searchParams.get("limit") || "50");
+
+        let query = supabase
+            .from("notifications")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+
+        if (unreadOnly) {
+            query = query.eq("is_read", false);
+        }
+
+        const { data, error } = await executeQuery(
+            query,
+            "fetching notifications"
+        );
+        if (error) return error;
+
+        return NextResponse.json({
+            notifications: data || [],
+            unread_count: unreadOnly ? (data as any[])?.length || 0 : null,
+        });
+    }
+);
+
+export const POST = withAuth(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+        const body = await request.json();
+        const { user_id, type, title, message, ticket_id, comment_id } = body;
+
+        // Validate required fields
+        const validation = validateRequiredFields(body, [
+            "user_id",
+            "type",
+            "title",
+            "message",
+        ]);
+        if (!validation.isValid) {
+            return validation.error!;
+        }
+
+        // Don't send notification to self
+        if (user_id === user.id) {
+            return createSuccessResponse(null, "Notification not sent to self");
+        }
+
+        try {
+            const notification = await createNotification(supabase, {
+                user_id,
+                type,
+                title,
+                message,
+                ticket_id: ticket_id || null,
+                comment_id: comment_id || null,
+                created_by: user.id,
+            });
+
+            return createSuccessResponse(
+                notification,
+                "Notification created successfully"
+            );
+        } catch (error) {
+            return handleApiError(error, "creating notification");
+        }
+    }
+);

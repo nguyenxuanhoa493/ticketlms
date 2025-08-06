@@ -32,8 +32,8 @@ export function useTicketDetail(ticketId: string) {
         platform: "web",
         status: "open",
         organization_id: "",
-        expected_completion_date: "",
-        closed_at: "",
+        expected_completion_date: null,
+        closed_at: null,
         jira_link: "",
         only_show_in_admin: false,
     });
@@ -73,8 +73,8 @@ export function useTicketDetail(ticketId: string) {
                 status: ticketData.status || "open",
                 organization_id: ticketData.organization_id || "",
                 expected_completion_date:
-                    ticketData.expected_completion_date || "",
-                closed_at: ticketData.closed_at || "",
+                    ticketData.expected_completion_date || null,
+                closed_at: ticketData.closed_at || null,
                 jira_link: ticketData.jira_link || "",
                 only_show_in_admin: ticketData.only_show_in_admin || false,
             });
@@ -290,8 +290,8 @@ export function useTicketDetail(ticketId: string) {
                 status: updatedTicketData.status || "open",
                 organization_id: updatedTicketData.organization_id || "",
                 expected_completion_date:
-                    updatedTicketData.expected_completion_date || "",
-                closed_at: updatedTicketData.closed_at || "",
+                    updatedTicketData.expected_completion_date || null,
+                closed_at: updatedTicketData.closed_at || null,
                 jira_link: updatedTicketData.jira_link || "",
                 only_show_in_admin: updatedTicketData.only_show_in_admin || false,
             });
@@ -395,8 +395,8 @@ export function useTicketDetail(ticketId: string) {
                 platform: ticket.platform || "web",
                 status: ticket.status || "open",
                 organization_id: ticket.organization_id || "",
-                expected_completion_date: ticket.expected_completion_date || "",
-                closed_at: ticket.closed_at || "",
+                expected_completion_date: ticket.expected_completion_date || null,
+                closed_at: ticket.closed_at || null,
                 jira_link: ticket.jira_link || "",
                 only_show_in_admin: ticket.only_show_in_admin || false,
             });
