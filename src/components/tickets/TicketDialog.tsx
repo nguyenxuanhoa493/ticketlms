@@ -36,6 +36,9 @@ interface TicketDialogProps {
     onSubmit: (e: React.FormEvent) => Promise<void>;
     submitting: boolean;
     editingTicket?: any; // Ticket being edited, if any
+    currentUser?: {
+        role: "admin" | "manager" | "user";
+    } | null;
 }
 
 export function TicketDialog({
@@ -47,6 +50,7 @@ export function TicketDialog({
     onSubmit,
     submitting,
     editingTicket,
+    currentUser,
 }: TicketDialogProps) {
     const isEditing = !!editingTicket;
 
@@ -251,6 +255,33 @@ export function TicketDialog({
                                 className="min-h-64"
                             />
                         </div>
+
+                        {/* Admin-only field */}
+                        {currentUser?.role === "admin" && (
+                            <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="only_show_in_admin"
+                                        checked={formData.only_show_in_admin}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                only_show_in_admin:
+                                                    e.target.checked,
+                                            }))
+                                        }
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <Label
+                                        htmlFor="only_show_in_admin"
+                                        className="text-sm font-medium text-gray-700"
+                                    >
+                                        Chỉ hiển thị với admin
+                                    </Label>
+                                </div>
+                            </div>
+                        )}
 
                         <DialogFooter>
                             <Button

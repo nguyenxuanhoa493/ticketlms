@@ -57,6 +57,14 @@ export async function GET(request: NextRequest) {
 
         if (profileError) throw profileError;
 
+        // Debug log để kiểm tra role và organization
+        console.log("🔍 Debug - User ID:", user.id);
+        console.log("🔍 Debug - User Role:", profile.role);
+        console.log(
+            "🔍 Debug - User Organization ID:",
+            profile.organization_id
+        );
+
         // Build optimized query with basic JOINs
         let ticketsQuery = supabase.from("tickets").select(`
                 id,
@@ -71,6 +79,7 @@ export async function GET(request: NextRequest) {
                 expected_completion_date,
                 closed_at,
                 jira_link,
+                only_show_in_admin,
                 organization_id,
                 assigned_to,
                 created_by,
@@ -78,18 +87,41 @@ export async function GET(request: NextRequest) {
             `);
 
         // Apply organization filter based on user role
+        console.log(
+            "🔍 Debug - Checking role:",
+            profile.role,
+            "Type:",
+            typeof profile.role
+        );
+        console.log("🔍 Debug - Is admin?", profile.role === "admin");
+
         if (profile.role !== "admin") {
+            console.log("🔍 Debug - Non-admin user detected, applying filters");
             if (profile.organization_id) {
                 ticketsQuery = ticketsQuery.eq(
                     "organization_id",
                     profile.organization_id
                 );
+                // Non-admin users cannot see tickets marked as only_show_in_admin
+                ticketsQuery = ticketsQuery.eq("only_show_in_admin", false);
+                console.log(
+                    "🔍 Debug - Applied organization filter:",
+                    profile.organization_id
+                );
+                console.log(
+                    "🔍 Debug - Applied only_show_in_admin filter: false"
+                );
             } else {
+                console.log(
+                    "🔍 Debug - User has no organization_id, returning empty result"
+                );
                 return NextResponse.json({
                     tickets: [],
                     pagination: { page, limit, total: 0, totalPages: 0 },
                 });
             }
+        } else {
+            console.log("🔍 Debug - Admin user detected, no filters applied");
         }
 
         // Apply filters
@@ -122,12 +154,24 @@ export async function GET(request: NextRequest) {
             .select("*", { count: "exact", head: true });
 
         // Apply the same filters to count query
+        console.log(
+            "🔍 Debug - Count query role check:",
+            profile.role,
+            "Is admin?",
+            profile.role === "admin"
+        );
+
         if (profile.role !== "admin") {
+            console.log(
+                "🔍 Debug - Applying same filters to count query for non-admin"
+            );
             if (profile.organization_id) {
                 countQuery = countQuery.eq(
                     "organization_id",
                     profile.organization_id
                 );
+                // Non-admin users cannot see tickets marked as only_show_in_admin
+                countQuery = countQuery.eq("only_show_in_admin", false);
             } else {
                 return NextResponse.json({
                     tickets: [],
@@ -256,6 +300,21 @@ export async function GET(request: NextRequest) {
                     : null,
             })) || [];
 
+        // Debug log kết quả cuối cùng
+        console.log("🔍 Debug - Final tickets count:", ticketsWithUsers.length);
+        console.log(
+            "🔍 Debug - Tickets with only_show_in_admin=true:",
+            ticketsWithUsers.filter((t) => t.only_show_in_admin).length
+        );
+        console.log(
+            "🔍 Debug - Sample tickets:",
+            ticketsWithUsers.slice(0, 3).map((t) => ({
+                id: t.id,
+                title: t.title,
+                only_show_in_admin: t.only_show_in_admin,
+            }))
+        );
+
         return NextResponse.json({
             tickets: ticketsWithUsers,
             pagination: {
@@ -287,6 +346,7 @@ export async function POST(request: NextRequest) {
             expected_completion_date,
             closed_at,
             jira_link,
+            only_show_in_admin,
         } = body;
 
         if (!title?.trim()) {
@@ -334,6 +394,12 @@ export async function POST(request: NextRequest) {
         if (profile.role !== "admin") {
             // User và Manager chỉ có thể tạo ticket trong organization của mình
             finalOrgId = profile.organization_id;
+        }
+
+        // Only admin can set only_show_in_admin to true
+        let finalOnlyShowInAdmin = false;
+        if (profile.role === "admin") {
+            finalOnlyShowInAdmin = only_show_in_admin || false;
         }
 
         const supabase = createServerClient(
@@ -384,6 +450,7 @@ export async function POST(request: NextRequest) {
             expected_completion_date: expected_completion_date || null,
             closed_at: formattedClosedAt,
             jira_link: jira_link?.trim() || null,
+            only_show_in_admin: finalOnlyShowInAdmin,
             created_by: user.id,
         });
 

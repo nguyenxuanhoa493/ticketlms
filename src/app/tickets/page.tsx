@@ -9,9 +9,9 @@ import { Plus } from "lucide-react";
 import { TicketTable } from "@/components/tickets/TicketTable";
 import { TicketFilters } from "@/components/tickets/TicketFilters";
 import { TicketDialog } from "@/components/tickets/TicketDialog";
-import { useTicketList } from "@/hooks/useTicketList";
+import { useTicketListOptimized } from "@/hooks/useTicketListOptimized";
 
-console.log("=== PAGE: useTicketList imported ==="); // Debug log
+console.log("=== PAGE: useTicketListOptimized imported ==="); // Debug log
 
 export default function TicketsPage() {
     const {
@@ -32,6 +32,8 @@ export default function TicketsPage() {
         totalPages,
         totalItems,
         itemsPerPage,
+        hasError,
+        errorMessage,
         setFormData,
         setSearchTerm,
         setSelectedStatus,
@@ -47,7 +49,7 @@ export default function TicketsPage() {
         getDeadlineCountdown,
         handlePageChange,
         handleItemsPerPageChange,
-    } = useTicketList();
+    } = useTicketListOptimized();
 
     // Debug logging
     console.log("TicketsPage - tickets:", tickets);
@@ -55,6 +57,8 @@ export default function TicketsPage() {
     console.log("TicketsPage - loading:", loading);
     console.log("TicketsPage - organizations:", organizations);
     console.log("TicketsPage - currentUser:", currentUser);
+    console.log("TicketsPage - hasError:", hasError);
+    console.log("TicketsPage - errorMessage:", errorMessage);
 
     if (loading) {
         return (
@@ -62,6 +66,26 @@ export default function TicketsPage() {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">Đang tải...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (hasError) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Có lỗi xảy ra</h1>
+                    <p className="text-gray-600 mb-4">{errorMessage}</p>
+                    {errorMessage?.includes("Unauthorized") && (
+                        <button
+                            onClick={() => window.location.href = "/login"}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                            Đăng nhập lại
+                        </button>
+                    )}
                 </div>
             </div>
         );
@@ -185,6 +209,7 @@ export default function TicketsPage() {
                 onSubmit={handleSubmit}
                 submitting={submitting}
                 editingTicket={editingTicket}
+                currentUser={currentUser}
             />
         </div>
     );

@@ -1,34 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { withAuth, withManager } from "@/lib/api-middleware";
+import {
+    parsePaginationParams,
+    validateRequiredFields,
+    createSuccessResponse,
+    AuthenticatedUser,
+} from "@/lib/api-utils";
 
-export async function GET(request: NextRequest) {
-    try {
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
+export const GET = withAuth(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
         const { searchParams } = new URL(request.url);
         const unreadOnly = searchParams.get("unread_only") === "true";
         const limit = parseInt(searchParams.get("limit") || "50");
@@ -37,16 +17,16 @@ export async function GET(request: NextRequest) {
             .from("notifications")
             .select(
                 `
-                id,
-                type,
-                title,
-                message,
-                is_read,
-                ticket_id,
-                comment_id,
-                created_by,
-                created_at
-            `
+            id,
+            type,
+            title,
+            message,
+            is_read,
+            ticket_id,
+            comment_id,
+            created_by,
+            created_at
+        `
             )
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
@@ -83,53 +63,23 @@ export async function GET(request: NextRequest) {
             notifications: notifications || [],
             unread_count: unreadOnly ? notifications?.length || 0 : null,
         });
-    } catch (error) {
-        console.error("Notifications API error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
     }
-}
+);
 
-export async function POST(request: NextRequest) {
-    try {
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                },
-            }
-        );
-
-        // Get current user (for authentication)
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
+export const POST = withAuth(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
         const body = await request.json();
         const { user_id, type, title, message, ticket_id, comment_id } = body;
 
         // Validate required fields
-        if (!user_id || !type || !title || !message) {
-            return NextResponse.json(
-                {
-                    error: "Missing required fields: user_id, type, title, message",
-                },
-                { status: 400 }
-            );
+        const validation = validateRequiredFields(body, [
+            "user_id",
+            "type",
+            "title",
+            "message",
+        ]);
+        if (!validation.isValid) {
+            return validation.error!;
         }
 
         // Validate notification type
@@ -140,9 +90,7 @@ export async function POST(request: NextRequest) {
         ];
         if (!validTypes.includes(type)) {
             return NextResponse.json(
-                {
-                    error: "Invalid notification type",
-                },
+                { error: "Invalid notification type" },
                 { status: 400 }
             );
         }
@@ -162,6 +110,7 @@ export async function POST(request: NextRequest) {
             ticket_id,
             comment_id,
         });
+
         const { data: notification, error: insertError } = await supabase
             .from("notifications")
             .insert({
@@ -193,15 +142,9 @@ export async function POST(request: NextRequest) {
 
         console.log("Successfully created notification:", notification?.id);
 
-        return NextResponse.json({
-            success: true,
+        return createSuccessResponse(
             notification,
-        });
-    } catch (error) {
-        console.error("Create notification error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
+            "Notification created successfully"
         );
     }
-}
+);

@@ -35,7 +35,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
             <CardHeader>
                 <CardTitle>Tasks Gần Đây</CardTitle>
                 <CardDescription>
-                    5 tickets được tạo mới nhất trong hệ thống
+                    5 tickets được tạo mới nhất
                 </CardDescription>
             </CardHeader>
             <CardContent>

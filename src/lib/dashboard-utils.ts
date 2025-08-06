@@ -32,7 +32,11 @@ export interface Notification {
     created_at: string;
 }
 
-export async function getDashboardStats(userId: string, userRole?: string, organizationId?: string): Promise<DashboardStats> {
+export async function getDashboardStats(
+    userId: string,
+    userRole?: string,
+    organizationId?: string
+): Promise<DashboardStats> {
     const cookieStore = await cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -115,21 +119,25 @@ export async function getDashboardStats(userId: string, userRole?: string, organ
                 supabase
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
-                    .eq("organization_id", orgFilter),
+                    .eq("organization_id", orgFilter)
+                    .eq("only_show_in_admin", false),
                 supabase
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
                     .eq("organization_id", orgFilter)
+                    .eq("only_show_in_admin", false)
                     .eq("status", "open"),
                 supabase
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
                     .eq("organization_id", orgFilter)
+                    .eq("only_show_in_admin", false)
                     .eq("status", "in_progress"),
                 supabase
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
                     .eq("organization_id", orgFilter)
+                    .eq("only_show_in_admin", false)
                     .eq("status", "closed"),
             ]);
 
@@ -149,7 +157,10 @@ export async function getDashboardStats(userId: string, userRole?: string, organ
     return stats;
 }
 
-export async function getRecentTickets(userRole?: string, organizationId?: string): Promise<Ticket[]> {
+export async function getRecentTickets(
+    userRole?: string,
+    organizationId?: string
+): Promise<Ticket[]> {
     const cookieStore = await cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -178,9 +189,16 @@ export async function getRecentTickets(userRole?: string, organizationId?: strin
       `
         );
 
-        // Nếu không phải admin, filter theo organization
-        if (userRole !== "admin" && organizationId) {
-            ticketsQuery = ticketsQuery.eq("organization_id", organizationId);
+        // Nếu không phải admin, filter theo organization và only_show_in_admin
+        if (userRole !== "admin") {
+            if (organizationId) {
+                ticketsQuery = ticketsQuery.eq(
+                    "organization_id",
+                    organizationId
+                );
+            }
+            // Non-admin users không thể thấy tickets marked as only_show_in_admin
+            ticketsQuery = ticketsQuery.eq("only_show_in_admin", false);
         }
 
         const { data } = await ticketsQuery
@@ -200,7 +218,9 @@ export async function getRecentTickets(userRole?: string, organizationId?: strin
     return recentTickets;
 }
 
-export async function getRecentNotifications(userId: string): Promise<Notification[]> {
+export async function getRecentNotifications(
+    userId: string
+): Promise<Notification[]> {
     const cookieStore = await cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -229,4 +249,4 @@ export async function getRecentNotifications(userId: string): Promise<Notificati
     }
 
     return recentNotifications;
-} 
+}

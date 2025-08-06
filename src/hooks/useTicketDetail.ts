@@ -35,6 +35,7 @@ export function useTicketDetail(ticketId: string) {
         expected_completion_date: "",
         closed_at: "",
         jira_link: "",
+        only_show_in_admin: false,
     });
 
     // Fetch ticket data
@@ -75,6 +76,7 @@ export function useTicketDetail(ticketId: string) {
                     ticketData.expected_completion_date || "",
                 closed_at: ticketData.closed_at || "",
                 jira_link: ticketData.jira_link || "",
+                only_show_in_admin: ticketData.only_show_in_admin || false,
             });
         } catch (error) {
             console.error("Error fetching ticket:", error);
@@ -291,6 +293,7 @@ export function useTicketDetail(ticketId: string) {
                     updatedTicketData.expected_completion_date || "",
                 closed_at: updatedTicketData.closed_at || "",
                 jira_link: updatedTicketData.jira_link || "",
+                only_show_in_admin: updatedTicketData.only_show_in_admin || false,
             });
 
             setIsEditing(false);
@@ -395,6 +398,7 @@ export function useTicketDetail(ticketId: string) {
                 expected_completion_date: ticket.expected_completion_date || "",
                 closed_at: ticket.closed_at || "",
                 jira_link: ticket.jira_link || "",
+                only_show_in_admin: ticket.only_show_in_admin || false,
             });
         }
     };

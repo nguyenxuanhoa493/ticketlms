@@ -10,6 +10,7 @@ export interface Ticket {
     expected_completion_date: string | null;
     closed_at: string | null;
     jira_link: string | null;
+    only_show_in_admin: boolean;
     created_at: string;
     updated_at: string;
     organizations?: {
@@ -61,4 +62,5 @@ export interface TicketFormData {
     expected_completion_date: string;
     closed_at: string;
     jira_link: string;
+    only_show_in_admin: boolean;
 }

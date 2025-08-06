@@ -1,22 +1,17 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, withAdmin } from "@/lib/api-middleware";
+import {
+    validateRequiredFields,
+    createSuccessResponse,
+    AuthenticatedUser,
+} from "@/lib/api-utils";
+import { Database } from "@/types/database";
 
-export async function GET() {
-    try {
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get() {
-                        return undefined;
-                    },
-                    set() {},
-                    remove() {},
-                },
-            }
-        );
+type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
+// GET - Cho phép tất cả authenticated users truy cập
+export const GET = withAuth(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
         const { data, error } = await supabase
             .from("organizations")
             .select("*")
@@ -26,7 +21,7 @@ export async function GET() {
 
         // Get open tickets count for each organization
         const organizationsWithCount = await Promise.all(
-            (data || []).map(async (org) => {
+            (data || []).map(async (org: Organization) => {
                 const { count, error: countError } = await supabase
                     .from("tickets")
                     .select("*", { count: "exact", head: true })
@@ -49,41 +44,19 @@ export async function GET() {
         );
 
         return NextResponse.json({ organizations: organizationsWithCount });
-    } catch (error: unknown) {
-        console.error("Error fetching organizations:", error);
-        const errorMessage =
-            error instanceof Error
-                ? error.message
-                : "Failed to fetch organizations";
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
-}
+);
 
-export async function POST(request: NextRequest) {
-    try {
+// POST - Chỉ admin mới có thể tạo organization
+export const POST = withAdmin(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
         const body = await request.json();
         const { name, description } = body;
 
-        if (!name?.trim()) {
-            return NextResponse.json(
-                { error: "Organization name is required" },
-                { status: 400 }
-            );
+        const validation = validateRequiredFields(body, ["name"]);
+        if (!validation.isValid) {
+            return validation.error!;
         }
-
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get() {
-                        return undefined;
-                    },
-                    set() {},
-                    remove() {},
-                },
-            }
-        );
 
         const { error } = await supabase.from("organizations").insert({
             name: name.trim(),
@@ -92,45 +65,20 @@ export async function POST(request: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json({
-            success: true,
-            message: "Organization created successfully",
-        });
-    } catch (error: unknown) {
-        console.error("Error creating organization:", error);
-        const errorMessage =
-            error instanceof Error
-                ? error.message
-                : "Failed to create organization";
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        return createSuccessResponse(null, "Organization created successfully");
     }
-}
+);
 
-export async function PUT(request: NextRequest) {
-    try {
+// PUT - Chỉ admin mới có thể cập nhật organization
+export const PUT = withAdmin(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
         const body = await request.json();
         const { id, name, description } = body;
 
-        if (!id || !name?.trim()) {
-            return NextResponse.json(
-                { error: "Organization ID and name are required" },
-                { status: 400 }
-            );
+        const validation = validateRequiredFields(body, ["id", "name"]);
+        if (!validation.isValid) {
+            return validation.error!;
         }
-
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get() {
-                        return undefined;
-                    },
-                    set() {},
-                    remove() {},
-                },
-            }
-        );
 
         const { error } = await supabase
             .from("organizations")
@@ -142,22 +90,13 @@ export async function PUT(request: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json({
-            success: true,
-            message: "Organization updated successfully",
-        });
-    } catch (error: unknown) {
-        console.error("Error updating organization:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to update organization";
-        return NextResponse.json(
-            { error: errorMessage },
-            { status: 500 }
-        );
+        return createSuccessResponse(null, "Organization updated successfully");
     }
-}
+);
 
-export async function DELETE(request: NextRequest) {
-    try {
+// DELETE - Chỉ admin mới có thể xóa organization
+export const DELETE = withAdmin(
+    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get("id");
 
@@ -168,20 +107,6 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get() {
-                        return undefined;
-                    },
-                    set() {},
-                    remove() {},
-                },
-            }
-        );
-
         const { error } = await supabase
             .from("organizations")
             .delete()
@@ -189,16 +114,6 @@ export async function DELETE(request: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json({
-            success: true,
-            message: "Organization deleted successfully",
-        });
-    } catch (error: unknown) {
-        console.error("Error deleting organization:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to delete organization";
-        return NextResponse.json(
-            { error: errorMessage },
-            { status: 500 }
-        );
+        return createSuccessResponse(null, "Organization deleted successfully");
     }
-}
+);

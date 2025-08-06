@@ -76,6 +76,14 @@ export async function GET(
             throw ticketError;
         }
 
+        // Check if non-admin user is trying to access admin-only ticket
+        if (profile.role !== "admin" && ticket.only_show_in_admin) {
+            return NextResponse.json(
+                { error: "Access denied" },
+                { status: 403 }
+            );
+        }
+
         // Fetch created user separately from profiles table
         let created_user = null;
         if (ticket.created_by) {
@@ -203,7 +211,7 @@ export async function PUT(
         // First, get the existing ticket to check permissions
         const { data: existingTicket, error: ticketError } = await supabase
             .from("tickets")
-            .select("organization_id, created_by")
+            .select("organization_id, created_by, only_show_in_admin")
             .eq("id", ticketId)
             .single();
 
@@ -228,6 +236,13 @@ export async function PUT(
                     { status: 403 }
                 );
             }
+            // Non-admin users cannot update admin-only tickets
+            if (existingTicket.only_show_in_admin) {
+                return NextResponse.json(
+                    { error: "Permission denied" },
+                    { status: 403 }
+                );
+            }
         }
 
         // Prepare update data - only allow specific fields to be updated
@@ -243,6 +258,7 @@ export async function PUT(
             "closed_at",
             "response",
             "jira_link",
+            "only_show_in_admin",
         ];
 
         const updateData: any = {
@@ -267,6 +283,14 @@ export async function PUT(
                     ) {
                         value = null;
                     }
+                }
+
+                // Only admin can update only_show_in_admin field
+                if (
+                    field === "only_show_in_admin" &&
+                    profile.role !== "admin"
+                ) {
+                    continue;
                 }
 
                 updateData[field] = value;

@@ -65,6 +65,7 @@ export function TicketTable({
                             {currentUser?.role === "admin" && (
                                 <TableHead className="w-auto">JIRA</TableHead>
                             )}
+
                             <TableHead className="w-auto">Ưu tiên</TableHead>
                             <TableHead className="w-auto">Thời hạn</TableHead>
                             <TableHead className="w-auto">Trạng thái</TableHead>
@@ -126,6 +127,7 @@ export function TicketTable({
                                         />
                                     </TableCell>
                                 )}
+
                                 <TableCell className="py-2 w-auto">
                                     <TicketPriorityBadge
                                         priority={ticket.priority}

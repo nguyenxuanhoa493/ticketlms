@@ -169,6 +169,7 @@ export type Database = {
                     closed_at: string | null;
                     response: string | null;
                     jira_link: string | null;
+                    only_show_in_admin: boolean;
                     created_at: string;
                     updated_at: string;
                 };
@@ -187,6 +188,7 @@ export type Database = {
                     closed_at?: string | null;
                     response?: string | null;
                     jira_link?: string | null;
+                    only_show_in_admin?: boolean;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -205,6 +207,7 @@ export type Database = {
                     closed_at?: string | null;
                     response?: string | null;
                     jira_link?: string | null;
+                    only_show_in_admin?: boolean;
                     created_at?: string;
                     updated_at?: string;
                 };

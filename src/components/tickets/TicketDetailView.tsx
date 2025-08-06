@@ -119,8 +119,8 @@ export function TicketDetailView({
                 </div>
             </div>
 
-            {/* JIRA Info - Only for admin users */}
-            {ticket?.jira_link && currentUser?.role === "admin" && (
+            {/* JIRA Info - Admin only */}
+            {currentUser?.role === "admin" && ticket?.jira_link && (
                 <JiraInfo jiraLink={ticket.jira_link} />
             )}
 
@@ -141,7 +141,7 @@ export function TicketDetailView({
             </div>
 
             {/* Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
                 <div>
                     <Label className="text-sm font-medium text-gray-500">
                         Người tạo

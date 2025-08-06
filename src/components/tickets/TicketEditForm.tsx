@@ -360,22 +360,49 @@ export function TicketEditForm({
                 </div>
             </div>
 
-            {/* JIRA Link - Only for admin users */}
+            {/* Admin-only fields */}
             {currentUser?.role === "admin" && (
-                <div className="space-y-2">
-                    <Label htmlFor="jira_link">JIRA Link</Label>
-                    <Input
-                        id="jira_link"
-                        type="url"
-                        value={formData.jira_link}
-                        onChange={(e) =>
-                            setFormData((prev) => ({
-                                ...prev,
-                                jira_link: e.target.value,
-                            }))
-                        }
-                        placeholder="https://vieted.atlassian.net/browse/CLD-XXX"
-                    />
+                <div className="space-y-4">
+                    {/* JIRA Link */}
+                    <div className="space-y-2">
+                        <Label htmlFor="jira_link">JIRA Link</Label>
+                        <Input
+                            id="jira_link"
+                            type="url"
+                            value={formData.jira_link}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    jira_link: e.target.value,
+                                }))
+                            }
+                            placeholder="https://vieted.atlassian.net/browse/CLD-XXX"
+                        />
+                    </div>
+
+                    {/* Only show in admin field */}
+                    <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="only_show_in_admin"
+                                checked={formData.only_show_in_admin}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        only_show_in_admin: e.target.checked,
+                                    }))
+                                }
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <Label
+                                htmlFor="only_show_in_admin"
+                                className="text-sm font-medium text-gray-700"
+                            >
+                                Chỉ hiển thị với admin
+                            </Label>
+                        </div>
+                    </div>
                 </div>
             )}
 

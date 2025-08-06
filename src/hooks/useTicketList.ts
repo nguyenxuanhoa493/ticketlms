@@ -41,6 +41,7 @@ export function useTicketList() {
         expected_completion_date: "",
         closed_at: "",
         jira_link: "",
+        only_show_in_admin: false,
     });
 
     // Get current user
@@ -218,6 +219,7 @@ export function useTicketList() {
                 expected_completion_date: ticket.expected_completion_date || "",
                 closed_at: ticket.closed_at || "",
                 jira_link: ticket.jira_link || "",
+                only_show_in_admin: ticket.only_show_in_admin || false,
             });
         } else {
             setEditingTicket(null);
@@ -232,6 +234,7 @@ export function useTicketList() {
                 expected_completion_date: "",
                 closed_at: "",
                 jira_link: "",
+                only_show_in_admin: false,
             });
         }
         setDialogOpen(true);
@@ -252,6 +255,7 @@ export function useTicketList() {
             expected_completion_date: "",
             closed_at: "",
             jira_link: "",
+            only_show_in_admin: false,
         });
     };
 

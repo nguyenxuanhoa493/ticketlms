@@ -10,11 +10,30 @@ import { ArrowLeft, Save, Edit, X, Plus } from "lucide-react";
 import { TicketDetailView } from "@/components/tickets/TicketDetailView";
 import { TicketEditForm } from "@/components/tickets/TicketEditForm";
 import { TicketComments } from "@/components/tickets/TicketComments";
-import { useTicketDetail } from "@/hooks/useTicketDetail";
+import { useTicketDetailQuery } from "@/hooks/useTicketDetailQuery";
 
 export default function TicketDetailPage() {
     const params = useParams();
     const ticketId = params?.id as string;
+
+    const ticketData = useTicketDetailQuery(ticketId);
+
+    // Early return if hook returns null (error case)
+    if (!ticketData) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Có lỗi xảy ra</h1>
+                    <p className="text-gray-600 mb-4">Không thể tải thông tin ticket</p>
+                    <Button onClick={() => window.history.back()}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Quay lại
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     const {
         ticket,
@@ -26,6 +45,7 @@ export default function TicketDetailPage() {
         creatingJira,
         loading,
         formData,
+        hasError,
         setFormData,
         handleSave,
         handleEditToggle,
@@ -34,7 +54,7 @@ export default function TicketDetailPage() {
         handleAddComment,
         handleEditComment,
         handleDeleteComment,
-    } = useTicketDetail(ticketId);
+    } = ticketData;
 
     if (loading) {
         return (
@@ -42,6 +62,22 @@ export default function TicketDetailPage() {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">Đang tải...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (hasError) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Có lỗi xảy ra</h1>
+                    <p className="text-gray-600 mb-4">Không thể tải thông tin ticket</p>
+                    <Button onClick={() => window.history.back()}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Quay lại
+                    </Button>
                 </div>
             </div>
         );
