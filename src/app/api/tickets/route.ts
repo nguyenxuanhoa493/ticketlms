@@ -127,13 +127,12 @@ export const GET = withAuth(
         const { count, error: countError } = await countQuery;
 
         // Debug: Log count query result
-        console.log("Count query result:", { 
-            count, 
-            countError, 
-            filters, 
-            userRole: user.role, 
+        console.log("Count query result:", {
+            count,
+            countError,
+            filters,
+            userRole: user.role,
             userOrgId: user.organization_id,
-            queryString: countQuery.toSQL?.() || "No SQL available"
         });
 
         if (countError) {

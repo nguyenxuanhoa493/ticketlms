@@ -4,6 +4,16 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus } from "lucide-react";
 
 import { TicketTable } from "@/components/tickets/TicketTable";
@@ -20,6 +30,8 @@ export default function TicketsPage() {
         submitting,
         dialogOpen,
         editingTicket,
+        deleteDialogOpen,
+        ticketToDelete,
         formData,
         searchTerm,
         selectedStatus,
@@ -38,12 +50,15 @@ export default function TicketsPage() {
         setSelectedOrganization,
         setSelectedSort,
         setDialogOpen,
+        setDeleteDialogOpen,
         handleSearch,
         handleClearFilters,
         handleOpenDialog,
         handleCloseDialog,
         handleSubmit,
         handleDelete,
+        handleConfirmDelete,
+        handleCancelDelete,
         getDeadlineCountdown,
         handlePageChange,
         handleItemsPerPageChange,
@@ -65,11 +80,13 @@ export default function TicketsPage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-red-600 text-6xl mb-4">⚠️</div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Có lỗi xảy ra</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                        Có lỗi xảy ra
+                    </h1>
                     <p className="text-gray-600 mb-4">{errorMessage}</p>
                     {errorMessage?.includes("Unauthorized") && (
                         <button
-                            onClick={() => window.location.href = "/login"}
+                            onClick={() => (window.location.href = "/login")}
                             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                         >
                             Đăng nhập lại
@@ -200,6 +217,44 @@ export default function TicketsPage() {
                 editingTicket={editingTicket}
                 currentUser={currentUser}
             />
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Bạn có chắc chắn muốn xóa ticket{" "}
+                            <span className="font-semibold">
+                                "{ticketToDelete?.title}"
+                            </span>
+                            ? Hành động này không thể hoàn tác.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleCancelDelete}>
+                            Hủy
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={submitting}
+                        >
+                            {submitting ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Đang xóa...
+                                </>
+                            ) : (
+                                "Xóa"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

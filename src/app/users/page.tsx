@@ -134,7 +134,7 @@ export default function UsersPage() {
 
     // Filter users whenever users or filters change
     useEffect(() => {
-        let filtered = [...users];
+        let filtered = [...(users || [])];
 
         // Search filter
         if (filters.search.trim()) {
@@ -162,7 +162,7 @@ export default function UsersPage() {
         }
 
         setFilteredUsers(filtered);
-    }, [users, filters.search, filters.organization]);
+    }, [users, filters.search, filters.organization, currentUser]);
 
     const clearFilters = () => {
         setFilters({
@@ -212,7 +212,8 @@ export default function UsersPage() {
                 throw new Error(data.error || "Failed to fetch users");
             }
 
-            setUsers(data.users);
+            // API trả về paginated response với data.users
+            setUsers(data.data || []);
         } catch (error: any) {
             const errorMessage =
                 error instanceof Error
@@ -224,6 +225,8 @@ export default function UsersPage() {
                     error.message || "Không thể tải danh sách người dùng",
                 variant: "destructive",
             });
+            // Đảm bảo users luôn là array ngay cả khi có lỗi
+            setUsers([]);
         } finally {
             setLoading(false);
         }
@@ -766,8 +769,9 @@ export default function UsersPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h2 className="text-lg font-medium text-gray-900">
-                                Danh sách người dùng ({filteredUsers.length}/
-                                {users.length})
+                                Danh sách người dùng (
+                                {(filteredUsers || []).length}/
+                                {(users || []).length})
                             </h2>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -824,7 +828,7 @@ export default function UsersPage() {
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
-                ) : users.length === 0 ? (
+                ) : (users || []).length === 0 ? (
                     <div className="text-center py-12">
                         <svg
                             className="mx-auto h-12 w-12 text-gray-400"
@@ -859,7 +863,7 @@ export default function UsersPage() {
                             Bắt đầu bằng cách tạo người dùng đầu tiên.
                         </p>
                     </div>
-                ) : filteredUsers.length === 0 && hasActiveFilters() ? (
+                ) : (filteredUsers || []).length === 0 && hasActiveFilters() ? (
                     <div className="text-center py-12">
                         <Search className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-sm font-medium text-gray-900">
@@ -894,7 +898,7 @@ export default function UsersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredUsers.map((user) => (
+                            {(filteredUsers || []).map((user) => (
                                 <TableRow key={user.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">

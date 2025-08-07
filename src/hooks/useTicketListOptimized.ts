@@ -13,6 +13,11 @@ export function useTicketListOptimized() {
     // State cho UI
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [ticketToDelete, setTicketToDelete] = useState<{
+        id: string;
+        title: string;
+    } | null>(null);
     const [formData, setFormData] = useState<TicketFormData>({
         title: "",
         description: "",
@@ -239,9 +244,25 @@ export function useTicketListOptimized() {
     };
 
     const handleDelete = async (id: string, title: string) => {
-        if (confirm(`Bạn có chắc chắn muốn xóa ticket "${title}"?`)) {
-            await deleteTicketMutation.mutateAsync(id);
+        setTicketToDelete({ id, title });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (ticketToDelete) {
+            try {
+                await deleteTicketMutation.mutateAsync(ticketToDelete.id);
+                setDeleteDialogOpen(false);
+                setTicketToDelete(null);
+            } catch (error) {
+                // Error handling is done in the mutation
+            }
         }
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setTicketToDelete(null);
     };
 
     // Get deadline countdown
@@ -271,6 +292,8 @@ export function useTicketListOptimized() {
             deleteTicketMutation.isPending,
         dialogOpen,
         editingTicket,
+        deleteDialogOpen,
+        ticketToDelete,
         formData,
         searchTerm,
         selectedStatus,
@@ -291,12 +314,15 @@ export function useTicketListOptimized() {
         setSelectedOrganization,
         setSelectedSort,
         setDialogOpen,
+        setDeleteDialogOpen,
         handleSearch,
         handleClearFilters,
         handleOpenDialog,
         handleCloseDialog,
         handleSubmit,
         handleDelete,
+        handleConfirmDelete,
+        handleCancelDelete,
         getDeadlineCountdown,
         handlePageChange,
         handleItemsPerPageChange,
