@@ -50,17 +50,12 @@ export function useTicketDetail(ticketId: string) {
                 throw new Error("Failed to fetch ticket");
             }
             const data = await response.json();
-            console.log("Ticket API Response:", data); // Debug log
 
             // Handle different response formats
             let ticketData = data;
             if (data && data.ticket) {
                 ticketData = data.ticket;
             }
-
-            console.log("Ticket data:", ticketData); // Debug log
-            console.log("Ticket created_at:", ticketData.created_at); // Debug log
-            console.log("Ticket created_user:", ticketData.created_user); // Debug log
             setTicket(ticketData);
 
             // Initialize form data
@@ -94,7 +89,6 @@ export function useTicketDetail(ticketId: string) {
             const response = await fetch("/api/organizations");
             if (response.ok) {
                 const data = await response.json();
-                console.log("Organizations API Response:", data); // Debug log
 
                 // Handle different response formats
                 let organizationsArray = [];
@@ -105,8 +99,6 @@ export function useTicketDetail(ticketId: string) {
                 } else if (data && data.organizations) {
                     organizationsArray = [data.organizations];
                 }
-
-                console.log("Organizations array:", organizationsArray); // Debug log
                 setOrganizations(organizationsArray);
             }
         } catch (error) {
@@ -134,7 +126,6 @@ export function useTicketDetail(ticketId: string) {
             const response = await fetch(`/api/tickets/${ticketId}/comments`);
             if (response.ok) {
                 const data = await response.json();
-                console.log("Comments API Response:", data); // Debug log
 
                 // Handle different response formats
                 let commentsArray = [];
@@ -145,8 +136,6 @@ export function useTicketDetail(ticketId: string) {
                 } else if (data && data.comments) {
                     commentsArray = [data.comments];
                 }
-
-                console.log("Comments array:", commentsArray); // Debug log
                 setComments(organizeComments(commentsArray));
             }
         } catch (error) {

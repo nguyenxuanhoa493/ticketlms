@@ -29,12 +29,6 @@ export const GET = withAuth(
             organizations: organizationData,
         };
 
-        console.log("Current user API response:", {
-            hasProfile: !!user,
-            avatar_url: user.avatar_url,
-            userId: user.id,
-        });
-
         return NextResponse.json(responseData);
     }
 );

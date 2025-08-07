@@ -10,7 +10,7 @@ import {
     TicketTypeBadge,
     TicketStatusBadge,
     TicketPriorityBadge,
-} from "@/components/ticket-badges";
+} from "@/components/badges";
 
 interface Ticket {
     id: string;

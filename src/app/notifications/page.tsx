@@ -62,7 +62,6 @@ export default function NotificationsPage() {
             if (response.ok) {
                 setNotifications(data.notifications || []);
             } else {
-                console.error("Error fetching notifications:", data.error);
                 toast({
                     title: "Lỗi",
                     description: "Không thể tải thông báo",
@@ -70,7 +69,6 @@ export default function NotificationsPage() {
                 });
             }
         } catch (error) {
-            console.error("Error fetching notifications:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể tải thông báo",
@@ -107,7 +105,6 @@ export default function NotificationsPage() {
                 throw new Error("Failed to mark as read");
             }
         } catch (error) {
-            console.error("Error marking as read:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể đánh dấu đã đọc",
@@ -137,7 +134,6 @@ export default function NotificationsPage() {
                 throw new Error("Failed to mark all as read");
             }
         } catch (error) {
-            console.error("Error marking all as read:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể đánh dấu tất cả đã đọc",
@@ -170,7 +166,6 @@ export default function NotificationsPage() {
                 throw new Error("Failed to delete notification");
             }
         } catch (error) {
-            console.error("Error deleting notification:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể xóa thông báo",

@@ -151,7 +151,7 @@ export async function getDashboardStats(
             };
         }
     } catch (error) {
-        console.log("Stats loading error:", error);
+        // Silent error handling
     }
 
     return stats;
@@ -212,7 +212,7 @@ export async function getRecentTickets(
                 : ticket.organizations,
         })) as Ticket[];
     } catch (error) {
-        console.log("Recent tickets loading error:", error);
+        // Silent error handling
     }
 
     return recentTickets;
@@ -245,7 +245,7 @@ export async function getRecentNotifications(
 
         recentNotifications = data || [];
     } catch (error) {
-        console.log("Recent notifications loading error:", error);
+        // Silent error handling
     }
 
     return recentNotifications;

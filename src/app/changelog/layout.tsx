@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { DashboardNav } from "@/components/dashboard-nav";
+import { DashboardNav } from "@/components/navigation/dashboard-nav";
 
 export default async function ChangelogLayout({
     children,

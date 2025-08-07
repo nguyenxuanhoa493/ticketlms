@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
                 );
             }
         } catch (error) {
-            console.error("Auth callback error:", error);
+            // Silent error handling
         }
     }
 

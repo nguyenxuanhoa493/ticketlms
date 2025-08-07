@@ -97,14 +97,13 @@ export async function middleware(request: NextRequest) {
     let session = null;
 
     try {
-        // Get both session and user for better debugging
         const { data: sessionData } = await supabase.auth.getSession();
         const { data: userData } = await supabase.auth.getUser();
 
         session = sessionData.session;
         user = userData.user;
     } catch (error) {
-        console.log("❌ Middleware auth error:", error);
+        // Silent error handling
     }
 
     // Redirect to login if accessing any route without auth (except public paths)

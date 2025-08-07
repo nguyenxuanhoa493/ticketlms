@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 // Dynamic import để tránh hydration error
-const LoginForm = dynamic(() => import("@/components/login-form"), {
+const LoginForm = dynamic(() => import("@/components/forms/login-form"), {
     ssr: false,
     loading: () => (
         <div className="w-full max-w-md mx-auto">

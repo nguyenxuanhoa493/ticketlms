@@ -24,19 +24,19 @@ export interface JiraADFContent {
  */
 export function convertHtmlToPlainText(html: string): string {
     if (!html) return "";
-    
+
     // Convert img tags to URLs
     let result = html.replace(
         /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi,
         "$1"
     );
-    
+
     // Convert link tags to URLs
     result = result.replace(
         /<a[^>]+href\s*=\s*["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi,
         "$1"
     );
-    
+
     // Clean HTML tags
     result = result
         .replace(/<br\s*\/?>/gi, "\n")
@@ -62,10 +62,10 @@ export function convertHtmlToPlainText(html: string): string {
         .replace(/<\/h2>/gi, "\n")
         .replace(/<h3[^>]*>/gi, "h3. ")
         .replace(/<\/h3>/gi, "\n");
-    
+
     // Remove remaining HTML tags
     result = result.replace(/<[^>]*>/g, "");
-    
+
     // Clean HTML entities and spacing
     result = result
         .replace(/&nbsp;/g, " ")
@@ -80,7 +80,7 @@ export function convertHtmlToPlainText(html: string): string {
         .replace(/\n\s+/g, "\n")
         .replace(/\s+\n/g, "\n")
         .trim();
-    
+
     return result;
 }
 
@@ -106,9 +106,7 @@ export function convertHtmlToJiraADF(html: string): JiraADFContent {
     const content: any[] = [];
 
     // Step 1: Convert HTML to plain text first
-    console.log("Original HTML:", html);
     const plainTextResult = convertHtmlToPlainText(html);
-    console.log("Final plain text:", plainTextResult);
 
     // Step 3: Extract images and links from plain text
     const images: string[] = [];
@@ -119,7 +117,6 @@ export function convertHtmlToJiraADF(html: string): JiraADFContent {
     let imgMatch;
     while ((imgMatch = imgUrlRegex.exec(plainTextResult)) !== null) {
         images.push(imgMatch[0]);
-        console.log("Found image URL:", imgMatch[0]);
     }
 
     // Extract link URLs from plain text
@@ -130,7 +127,6 @@ export function convertHtmlToJiraADF(html: string): JiraADFContent {
         // Skip if it's already an image URL
         if (!images.includes(url)) {
             links.push(url);
-            console.log("Found link URL:", url);
         }
     }
 
@@ -348,6 +344,5 @@ export function convertHtmlToJiraADF(html: string): JiraADFContent {
                   ],
     };
 
-    console.log("JIRA ADF Output:", JSON.stringify(result, null, 2));
     return result;
-} 
+}

@@ -35,11 +35,7 @@ export const GET = withAuth(
                     .neq("status", "closed");
 
                 if (countError) {
-                    console.error(
-                        "Error counting tickets for org",
-                        org.id,
-                        countError
-                    );
+                    // Silent error handling
                 }
 
                 return {

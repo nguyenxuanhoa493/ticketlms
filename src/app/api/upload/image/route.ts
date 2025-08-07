@@ -4,38 +4,53 @@ import {
     validateFileUpload,
     generateUniqueFileName,
     createSuccessResponse,
-    AuthenticatedUser
+    AuthenticatedUser,
 } from "@/lib/api-utils";
 
-export const POST = withFileUpload(async (request: NextRequest, user: AuthenticatedUser, supabase: any, file: File) => {
-    // Validate file
-    const validation = validateFileUpload(file);
-    if (!validation.isValid) {
-        return NextResponse.json({ error: validation.error }, { status: 400 });
+export const POST = withFileUpload(
+    async (
+        request: NextRequest,
+        user: AuthenticatedUser,
+        supabase: any,
+        file: File
+    ) => {
+        // Validate file
+        const validation = validateFileUpload(file);
+        if (!validation.isValid) {
+            return NextResponse.json(
+                { error: validation.error },
+                { status: 400 }
+            );
+        }
+
+        // Generate unique filename
+        const fileName = generateUniqueFileName(file, "images/");
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("images")
+            .upload(fileName, file);
+
+        if (uploadError) {
+            return NextResponse.json(
+                { error: "Failed to upload file" },
+                { status: 500 }
+            );
+        }
+
+        // Get public URL
+        const {
+            data: { publicUrl },
+        } = supabase.storage.from("images").getPublicUrl(fileName);
+
+        return createSuccessResponse(
+            {
+                url: publicUrl,
+                filename: fileName,
+                size: file.size,
+                type: file.type,
+            },
+            "File uploaded successfully"
+        );
     }
-    
-    // Generate unique filename
-    const fileName = generateUniqueFileName(file, "images/");
-    
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("images")
-        .upload(fileName, file);
-    
-    if (uploadError) {
-        console.error("Upload error:", uploadError);
-        return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
-    }
-    
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-        .from("images")
-        .getPublicUrl(fileName);
-    
-    return createSuccessResponse({ 
-        url: publicUrl, 
-        filename: fileName,
-        size: file.size,
-        type: file.type
-    }, "File uploaded successfully");
-});
+);

@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import ImageCropper from "@/components/ImageCropper";
+import ImageCropper from "@/components/modals/ImageCropper";
 import { User, Save } from "lucide-react";
 
 interface Profile {
@@ -26,9 +26,12 @@ interface Profile {
     role: string;
     organization_id: string;
     avatar_url?: string;
+    created_at?: string;
+    updated_at?: string;
     organizations?: {
         id: string;
         name: string;
+        description?: string;
     };
 }
 
@@ -58,26 +61,20 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
         try {
-            const response = await fetch("/api/current-user");
+            const response = await fetch("/api/profile");
             if (!response.ok) {
-                console.error(
-                    "Profile API failed:",
-                    response.status,
-                    response.statusText
-                );
                 throw new Error("Failed to fetch profile");
             }
 
             const data = await response.json();
-            setProfile(data);
+            setProfile(data.data);
             setFormData({
-                full_name: data.full_name || "",
-                role: data.role || "",
-                organization_id: data.organization_id || "",
-                avatar_url: data.avatar_url || "",
+                full_name: data.data.full_name || "",
+                role: data.data.role || "",
+                organization_id: data.data.organization_id || "",
+                avatar_url: data.data.avatar_url || "",
             });
         } catch (error) {
-            console.error("Error fetching profile:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể tải thông tin người dùng",
@@ -97,11 +94,9 @@ export default function ProfilePage() {
                 // Ensure data is always an array
                 setOrganizations(data.organizations || []);
             } else {
-                console.error("Organizations API failed:", response.status);
                 setOrganizations([]);
             }
         } catch (error) {
-            console.error("Error fetching organizations:", error);
             setOrganizations([]);
         }
     };
@@ -129,41 +124,29 @@ export default function ProfilePage() {
                 body: JSON.stringify(requestData),
             });
 
-            if (!response.ok) {
-                const responseText = await response.text();
-                console.error("API Error - Status:", response.status);
-                console.error("API Error - Response:", responseText);
+            const result = await response.json();
 
-                try {
-                    const errorData = JSON.parse(responseText);
-                    throw new Error(
-                        errorData.error || "Failed to update profile"
-                    );
-                } catch (parseError) {
-                    console.error(
-                        "Failed to parse error response:",
-                        parseError
-                    );
-                    throw new Error(
-                        `HTTP ${response.status}: ${
-                            responseText || "Failed to update profile"
-                        }`
-                    );
-                }
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to update profile");
             }
 
             toast({
                 title: "Thành công",
-                description: "Cập nhật thông tin thành công",
+                description: result.message || "Cập nhật thông tin thành công",
             });
 
-            // Refresh profile data
-            await fetchProfile();
+            // Update profile with new data
+            setProfile(result.data);
+            setFormData({
+                full_name: result.data.full_name || "",
+                role: result.data.role || "",
+                organization_id: result.data.organization_id || "",
+                avatar_url: result.data.avatar_url || "",
+            });
 
             // Trigger navigation bar update
             window.dispatchEvent(new CustomEvent("profileUpdated"));
         } catch (error) {
-            console.error("Error updating profile:", error);
             toast({
                 title: "Lỗi",
                 description: "Cập nhật thông tin thất bại",
@@ -275,6 +258,24 @@ export default function ProfilePage() {
                                     </p>
                                 </div>
 
+                                {/* User ID (read-only) */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="user_id">
+                                        ID người dùng
+                                    </Label>
+                                    <Input
+                                        id="user_id"
+                                        type="text"
+                                        value={profile?.id || ""}
+                                        disabled
+                                        className="bg-gray-50"
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                        ID duy nhất của người dùng trong hệ
+                                        thống
+                                    </p>
+                                </div>
+
                                 {/* Role (chỉ admin mới edit được) */}
                                 <div className="space-y-2">
                                     <Label htmlFor="role">Vai trò</Label>
@@ -366,6 +367,34 @@ export default function ProfilePage() {
                                             ? "Đang lưu..."
                                             : "Lưu thông tin"}
                                     </Button>
+                                </div>
+
+                                {/* Timestamps */}
+                                <div className="pt-4 border-t border-gray-200">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+                                        <div>
+                                            <span className="font-medium">
+                                                Tạo lúc:
+                                            </span>
+                                            <br />
+                                            {profile?.created_at
+                                                ? new Date(
+                                                      profile.created_at
+                                                  ).toLocaleString("vi-VN")
+                                                : "Không xác định"}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">
+                                                Cập nhật lúc:
+                                            </span>
+                                            <br />
+                                            {profile?.updated_at
+                                                ? new Date(
+                                                      profile.updated_at
+                                                  ).toLocaleString("vi-VN")
+                                                : "Không xác định"}
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                         </CardContent>

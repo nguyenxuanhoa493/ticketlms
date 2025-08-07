@@ -76,7 +76,7 @@ async function DashboardContent() {
             .single();
         profile = data;
     } catch {
-        console.log("Profile not found, will create during next operation");
+        // Profile not found, will create during next operation
     }
 
     // Get dashboard data using utility functions

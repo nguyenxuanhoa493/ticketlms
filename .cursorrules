@@ -1,0 +1,440 @@
+# Cursor Rules cho dự án TicketLMS
+
+## 🎯 Tổng quan dự án
+
+-   **Framework**: Next.js 15 với App Router
+-   **Language**: TypeScript
+-   **Styling**: Tailwind CSS
+-   **Database**: Supabase (PostgreSQL)
+-   **Authentication**: Supabase Auth
+-   **State Management**: React Query (TanStack Query)
+-   **UI Components**: Radix UI + shadcn/ui
+
+## 📁 Cấu trúc thư mục
+
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes
+│   ├── (auth)/            # Auth pages (login, register)
+│   ├── dashboard/         # Dashboard pages
+│   ├── tickets/           # Ticket management
+│   ├── users/             # User management
+│   └── organizations/     # Organization management
+├── components/            # Reusable components
+│   ├── ui/               # Base UI components (shadcn/ui)
+│   ├── badges/           # Badge components (status, type, priority, etc.)
+│   ├── modals/           # Modal components (ImageModal, LinkModal, etc.)
+│   ├── forms/            # Form components (LoginForm, etc.)
+│   ├── common/           # Common utility components (HtmlContent, RichTextEditor)
+│   ├── navigation/       # Navigation components (DashboardNav, NotificationDropdown)
+│   ├── tickets/          # Ticket-specific components
+│   ├── dashboard/        # Dashboard components
+│   ├── providers/        # Context providers (QueryProvider)
+│   └── index.ts          # Main barrel export
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility functions & configurations
+├── types/                # TypeScript type definitions
+└── middleware.ts         # Next.js middleware
+```
+
+## 🛠️ Nguyên tắc thiết kế
+
+### 1. Component Organization
+
+```
+src/components/
+├── ui/                    # Base UI components (shadcn/ui)
+├── badges/               # Badge components (status, type, priority, etc.)
+├── modals/               # Modal components (ImageModal, LinkModal, etc.)
+├── forms/                # Form components (LoginForm, etc.)
+├── common/               # Common utility components (HtmlContent, RichTextEditor)
+├── navigation/           # Navigation components (DashboardNav, NotificationDropdown)
+├── tickets/              # Ticket-specific components
+├── dashboard/            # Dashboard components
+├── providers/            # Context providers (QueryProvider)
+└── index.ts              # Main barrel export
+```
+
+**Nguyên tắc tổ chức:**
+
+-   **Domain-based**: Nhóm theo chức năng nghiệp vụ (tickets, dashboard, etc.)
+-   **Function-based**: Nhóm theo loại component (badges, modals, forms, etc.)
+-   **Barrel Exports**: Mỗi nhóm có index.ts để export tất cả components
+-   **Main Export**: src/components/index.ts export tất cả nhóm
+
+### 2. Component Architecture
+
+-   **Atomic Design**: atoms → molecules → organisms → templates → pages
+-   **Single Responsibility**: Mỗi component chỉ làm một việc
+-   **Composition over Inheritance**: Ưu tiên composition
+-   **Props Interface**: Luôn định nghĩa interface cho props
+-   **Default Props**: Sử dụng default values khi cần thiết
+-   **Organized Structure**: Components được nhóm theo chức năng và domain
+-   **Barrel Exports**: Sử dụng barrel exports cho organized imports
+
+### 2. State Management
+
+-   **Local State**: useState cho component-level state
+-   **Server State**: React Query cho API data
+-   **Global State**: Tránh, chỉ dùng khi thực sự cần thiết
+-   **Form State**: react-hook-form với zod validation
+
+### 3. API Design
+
+-   **RESTful**: Tuân thủ REST principles
+-   **Consistent Response**: Luôn dùng format response nhất quán
+-   **Error Handling**: Proper error responses với status codes
+-   **Authentication**: withAuth middleware cho protected routes
+-   **Validation**: Zod schemas cho input validation
+
+### 4. TypeScript Standards
+
+-   **Strict Mode**: Luôn bật strict mode
+-   **Interface over Type**: Ưu tiên interface cho object shapes
+-   **Generic Types**: Sử dụng generics cho reusable types
+-   **Type Guards**: Sử dụng type guards khi cần
+-   **No Any**: Tránh sử dụng `any`, dùng `unknown` nếu cần
+
+## 📝 Coding Standards
+
+### 1. Naming Conventions
+
+```typescript
+// Components: PascalCase
+export function TicketTable() {}
+
+// Functions: camelCase
+const fetchTickets = async () => {};
+
+// Constants: UPPER_SNAKE_CASE
+const API_BASE_URL = "https://api.example.com";
+
+// Interfaces: PascalCase với I prefix cho complex interfaces
+interface ITicketFormData {
+    title: string;
+    description: string;
+}
+
+// Types: PascalCase
+type TicketStatus = "open" | "in_progress" | "closed";
+```
+
+### 2. File Naming
+
+-   **Components**: PascalCase.tsx (TicketTable.tsx)
+-   **Hooks**: camelCase.ts (useTicketList.ts)
+-   **Utilities**: camelCase.ts (api-utils.ts)
+-   **Types**: camelCase.ts (ticket.ts)
+-   **Constants**: camelCase.ts (constants.ts)
+-   **Barrel Exports**: index.ts (cho mỗi component group)
+
+### 3. Import/Export
+
+```typescript
+// Prefer named exports
+export function Component() {}
+export const utility = () => {};
+
+// Use barrel exports for organized imports
+// components/badges/index.ts
+export { TicketTypeBadge, TicketStatusBadge, TicketPriorityBadge } from "./";
+
+// components/index.ts (main barrel export)
+export * from "./ui";
+export * from "./badges";
+export * from "./modals";
+export * from "./forms";
+export * from "./common";
+export * from "./navigation";
+export * from "./tickets";
+export * from "./dashboard";
+export * from "./providers";
+
+// Import order (prefer barrel imports)
+import React from "react";
+import { NextRequest } from "next/server";
+import { Button } from "@/components/ui/button";
+import { TicketTypeBadge, TicketStatusBadge } from "@/components/badges";
+import { useTicketList } from "@/hooks/useTicketList";
+import { Ticket } from "@/types";
+```
+
+### 4. Error Handling
+
+```typescript
+// API Routes
+try {
+    const result = await someOperation();
+    return createSuccessResponse(result);
+} catch (error) {
+    return handleApiError(error, "context");
+}
+
+// Components
+const { data, error, isLoading } = useQuery({
+    queryKey: ["tickets"],
+    queryFn: fetchTickets,
+});
+
+if (isLoading) return <LoadingSpinner />;
+if (error) return <ErrorMessage error={error} />;
+```
+
+### 5. Form Handling
+
+```typescript
+// Use react-hook-form with zod
+const form = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+        title: "",
+        description: "",
+    },
+});
+
+// Validation schema
+const schema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z
+        .string()
+        .min(10, "Description must be at least 10 characters"),
+});
+```
+
+## 🔒 Security Principles
+
+### 1. Authentication & Authorization
+
+-   **Server-side validation**: Luôn validate trên server
+-   **Role-based access**: Kiểm tra role trước khi cho phép action
+-   **Organization isolation**: Non-admin users chỉ thấy data của org mình
+-   **Input sanitization**: Sanitize tất cả user inputs
+
+### 2. Data Protection
+
+-   **Environment variables**: Sử dụng .env cho sensitive data
+-   **No client secrets**: Không expose secrets ra client
+-   **HTTPS only**: Luôn sử dụng HTTPS
+-   **CORS**: Configure CORS properly
+
+## 🎨 UI/UX Standards
+
+### 1. Design System
+
+-   **Consistent spacing**: Sử dụng Tailwind spacing scale
+-   **Color palette**: Sử dụng Tailwind colors
+-   **Typography**: Consistent font sizes và weights
+-   **Responsive design**: Mobile-first approach
+
+### 2. Accessibility
+
+-   **Semantic HTML**: Sử dụng semantic elements
+-   **ARIA labels**: Thêm ARIA labels khi cần
+-   **Keyboard navigation**: Hỗ trợ keyboard navigation
+-   **Color contrast**: Đảm bảo contrast ratio đủ
+
+### 3. Loading States
+
+```typescript
+// Always show loading states
+if (isLoading) {
+    return <LoadingSpinner />;
+}
+
+// Skeleton loading cho better UX
+if (isLoading) {
+    return <TicketTableSkeleton />;
+}
+```
+
+## 🚀 Performance Standards
+
+### 1. Code Splitting
+
+-   **Dynamic imports**: Sử dụng dynamic imports cho large components
+-   **Route-based splitting**: Next.js tự động code splitting
+-   **Component lazy loading**: Lazy load components khi cần
+
+### 2. Caching Strategy
+
+-   **React Query**: Sử dụng React Query cho server state caching
+-   **Static generation**: Sử dụng SSG khi có thể
+-   **CDN**: Sử dụng CDN cho static assets
+
+### 3. Bundle Optimization
+
+-   **Tree shaking**: Đảm bảo tree shaking hoạt động
+-   **Bundle analysis**: Sử dụng bundle analyzer
+-   **Dependency optimization**: Loại bỏ unused dependencies
+
+## 🧪 Testing Standards
+
+### 1. Test Structure
+
+```typescript
+// Component tests
+describe("TicketTable", () => {
+    it("should render tickets correctly", () => {
+        // test implementation
+    });
+});
+
+// API tests
+describe("POST /api/tickets", () => {
+    it("should create ticket successfully", () => {
+        // test implementation
+    });
+});
+```
+
+### 2. Test Coverage
+
+-   **Unit tests**: Cho utilities và hooks
+-   **Integration tests**: Cho API routes
+-   **E2E tests**: Cho critical user flows
+
+## 📚 Documentation Standards
+
+### 1. Code Comments
+
+```typescript
+/**
+ * Fetches tickets with pagination and filtering
+ * @param page - Current page number
+ * @param filters - Filter options
+ * @returns Promise with tickets data
+ */
+export async function fetchTickets(page: number, filters: TicketFilters) {
+    // implementation
+}
+```
+
+### 2. README Structure
+
+-   **Project overview**
+-   **Setup instructions**
+-   **API documentation**
+-   **Component documentation**
+-   **Deployment guide**
+
+## 🔄 Git Workflow
+
+### 1. Commit Messages
+
+```
+feat: add ticket creation functionality
+fix: resolve infinite render issue
+refactor: improve API error handling
+docs: update README with new features
+test: add unit tests for ticket hooks
+```
+
+### 2. Branch Naming
+
+-   `feature/ticket-management`
+-   `fix/auth-bug`
+-   `refactor/api-structure`
+-   `docs/update-readme`
+
+## 🚨 Anti-patterns to Avoid
+
+### 1. Code Anti-patterns
+
+-   ❌ Using `any` type
+-   ❌ Mutating props directly
+-   ❌ Large monolithic components
+-   ❌ Inline styles
+-   ❌ Console.log in production
+-   ❌ Hardcoded values
+-   ❌ Scattered component organization
+-   ❌ Inconsistent import patterns
+
+### 2. Performance Anti-patterns
+
+-   ❌ Unnecessary re-renders
+-   ❌ Large bundle sizes
+-   ❌ Blocking operations in render
+-   ❌ Memory leaks
+
+### 3. Security Anti-patterns
+
+-   ❌ Client-side validation only
+-   ❌ Exposing sensitive data
+-   ❌ No input sanitization
+-   ❌ Weak authentication
+
+## ⚠️ Quy định nghiêm ngặt
+
+### 1. Không tự tạo file báo cáo
+
+-   ❌ **KHÔNG** tự tạo file `.md` để báo cáo
+-   ❌ **KHÔNG** tạo file `CLEANUP_REPORT.md`, `OPTIMIZATION_REPORT.md`, etc.
+-   ❌ **KHÔNG** tạo file documentation không được yêu cầu
+-   ✅ Chỉ tạo file `.md` khi được yêu cầu cụ thể
+
+### 2. Không tự ý refactor code
+
+-   ❌ **KHÔNG** tự ý refactor code mà không được yêu cầu
+-   ❌ **KHÔNG** thay đổi cấu trúc API mà không có lý do cụ thể
+-   ❌ **KHÔNG** refactor components mà không được chỉ định
+-   ✅ Chỉ refactor khi được yêu cầu rõ ràng
+
+### 3. Xác nhận trước khi refactor
+
+-   ✅ **LUÔN** xác nhận với user trước khi refactor code
+-   ✅ **GIẢI THÍCH** lý do cần refactor và lợi ích
+-   ✅ **ĐỀ XUẤT** phương án refactor cụ thể
+-   ✅ **CHỜ** sự đồng ý trước khi thực hiện
+-   ✅ **CHỈ** refactor khi user đồng ý
+
+### 4. Nguyên tắc làm việc
+
+-   🔍 **TẬP TRUNG** vào task được yêu cầu
+-   🎯 **CHÍNH XÁC** - chỉ làm những gì được yêu cầu
+-   📝 **RÕ RÀNG** - giải thích rõ mọi thay đổi
+-   ⚡ **HIỆU QUẢ** - hoàn thành task nhanh chóng
+-   🛡️ **AN TOÀN** - không làm hỏng code hiện tại
+
+## 🎯 Best Practices Summary
+
+1. **Write clean, readable code**
+2. **Follow TypeScript best practices**
+3. **Implement proper error handling**
+4. **Use consistent naming conventions**
+5. **Write comprehensive tests**
+6. **Document your code**
+7. **Optimize for performance**
+8. **Prioritize security**
+9. **Maintain accessibility**
+10. **Follow the established patterns**
+11. **Organize components by domain and functionality**
+12. **Use barrel exports for clean imports**
+
+## 🔧 Development Tools
+
+### 1. Essential Extensions
+
+-   TypeScript
+-   ESLint
+-   Prettier
+-   Tailwind CSS IntelliSense
+-   GitLens
+
+### 2. Scripts
+
+```json
+{
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "type-check": "tsc --noEmit"
+    }
+}
+```
+
+---
+
+**Lưu ý**: Tuân thủ các nguyên tắc này sẽ giúp code dễ đọc, bảo trì và nâng cấp. Luôn ưu tiên code quality và user experience.

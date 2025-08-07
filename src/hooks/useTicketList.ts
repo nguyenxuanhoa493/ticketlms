@@ -3,7 +3,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Ticket, Organization, CurrentUser, TicketFormData } from "@/types";
 
 export function useTicketList() {
-    console.log("=== HOOK: useTicketList called ==="); // Debug log
     const { toast } = useToast();
 
     // State
@@ -69,7 +68,6 @@ export function useTicketList() {
             const response = await fetch(`/api/tickets?${params}`);
             if (response.ok) {
                 const data = await response.json();
-                console.log("API Response:", data); // Debug log
 
                 // Handle different response formats
                 let ticketsArray = [];
@@ -89,11 +87,7 @@ export function useTicketList() {
                     }
                 }
 
-                console.log("Tickets array:", ticketsArray); // Debug log
-                console.log(
-                    "Setting tickets state with length:",
-                    ticketsArray.length
-                );
+
                 setTickets(ticketsArray);
 
                 // Update pagination state
@@ -114,20 +108,12 @@ export function useTicketList() {
 
     // Fetch organizations
     const fetchOrganizations = async () => {
-        console.log("Fetching organizations..."); // Debug log
         try {
             const response = await fetch("/api/organizations");
-            console.log("Organizations response status:", response.status); // Debug log
             if (response.ok) {
                 const data = await response.json();
-                console.log("Organizations API response:", data); // Debug log
                 // Handle the response format from API
                 const organizationsArray = data.organizations || data || [];
-                console.log("Organizations array:", organizationsArray); // Debug log
-                console.log(
-                    "Organizations array length:",
-                    organizationsArray.length
-                ); // Debug log
                 setOrganizations(
                     Array.isArray(organizationsArray) ? organizationsArray : []
                 );
@@ -156,9 +142,7 @@ export function useTicketList() {
         if (selectedSort && selectedSort !== "status_asc")
             filters.sort = selectedSort;
 
-        console.log("=== SEARCH FILTERS ===");
-        console.log("Filters:", filters);
-        console.log("selectedOrganization:", selectedOrganization);
+
 
         setCurrentPage(1); // Reset to first page when searching
         fetchTickets(1, filters);
@@ -372,7 +356,6 @@ export function useTicketList() {
     // Initialize data
     useEffect(() => {
         const initializeData = async () => {
-            console.log("=== HOOK: Initializing data... ==="); // Debug log
             setLoading(true);
             try {
                 await Promise.all([
@@ -380,7 +363,6 @@ export function useTicketList() {
                     fetchOrganizations(),
                     fetchTickets(),
                 ]);
-                console.log("=== HOOK: All data fetched successfully ==="); // Debug log
             } catch (error) {
                 console.error(
                     "=== HOOK: Error during initialization ===",
@@ -388,23 +370,13 @@ export function useTicketList() {
                 );
             } finally {
                 setLoading(false);
-                console.log("=== HOOK: Data initialization completed ==="); // Debug log
             }
         };
 
         initializeData();
     }, []);
 
-    // Debug effect for organizations
-    useEffect(() => {
-        console.log("Organizations state changed:", organizations);
-    }, [organizations]);
 
-    // Debug effect for tickets
-    useEffect(() => {
-        console.log("Tickets state changed:", tickets);
-        console.log("Tickets length:", tickets?.length);
-    }, [tickets]);
 
     return {
         // State

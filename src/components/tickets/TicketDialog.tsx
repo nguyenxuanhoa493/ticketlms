@@ -20,12 +20,14 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import RichTextEditor from "@/components/RichTextEditor";
+import RichTextEditor from "@/components/common/RichTextEditor";
 import { TicketFormData, Organization } from "@/types";
-import { TicketTypeBadge } from "@/components/TicketTypeBadge";
-import { TicketStatusBadge } from "@/components/TicketStatusBadge";
-import { TicketPriorityBadge } from "@/components/TicketPriorityBadge";
-import { PlatformBadge } from "@/components/PlatformBadge";
+import {
+    TicketTypeBadge,
+    TicketStatusBadge,
+    TicketPriorityBadge,
+    PlatformBadge,
+} from "@/components/badges";
 
 interface TicketDialogProps {
     open: boolean;
@@ -79,7 +81,11 @@ export function TicketDialog({
                                             organization_id: value,
                                         }))
                                     }
-                                    disabled={!["admin", "manager"].includes(currentUser?.role || "")}
+                                    disabled={
+                                        !["admin", "manager"].includes(
+                                            currentUser?.role || ""
+                                        )
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Chọn đơn vị" />
@@ -95,9 +101,12 @@ export function TicketDialog({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {!["admin", "manager"].includes(currentUser?.role || "") && (
+                                {!["admin", "manager"].includes(
+                                    currentUser?.role || ""
+                                ) && (
                                     <p className="text-sm text-gray-500">
-                                        Chỉ admin và manager có thể thay đổi đơn vị
+                                        Chỉ admin và manager có thể thay đổi đơn
+                                        vị
                                     </p>
                                 )}
                             </div>
@@ -234,7 +243,9 @@ export function TicketDialog({
                                 <Input
                                     id="expected_completion_date"
                                     type="date"
-                                    value={formData.expected_completion_date ?? ""}
+                                    value={
+                                        formData.expected_completion_date ?? ""
+                                    }
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
@@ -271,7 +282,8 @@ export function TicketDialog({
                                         onClick={() =>
                                             setFormData((prev) => ({
                                                 ...prev,
-                                                only_show_in_admin: !prev.only_show_in_admin,
+                                                only_show_in_admin:
+                                                    !prev.only_show_in_admin,
                                             }))
                                         }
                                         className={`px-3 py-1 text-xs font-medium rounded-full transition-colors mr-3 ${
@@ -280,7 +292,9 @@ export function TicketDialog({
                                                 : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
                                         }`}
                                     >
-                                        {formData.only_show_in_admin ? "Bật" : "Tắt"}
+                                        {formData.only_show_in_admin
+                                            ? "Bật"
+                                            : "Tắt"}
                                     </button>
                                     <div className="flex items-center space-x-2">
                                         <span className="text-sm font-medium text-gray-700">
@@ -304,8 +318,8 @@ export function TicketDialog({
                                 {submitting
                                     ? "Đang lưu..."
                                     : isEditing
-                                      ? "Cập nhật"
-                                      : "Tạo ticket"}
+                                    ? "Cập nhật"
+                                    : "Tạo ticket"}
                             </Button>
                         </DialogFooter>
                     </form>

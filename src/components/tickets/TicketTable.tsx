@@ -16,7 +16,7 @@ import {
     TicketPriorityBadge,
     PlatformBadge,
     JiraBadge,
-} from "@/components/ticket-badges";
+} from "@/components/badges";
 import { Pagination } from "@/components/ui/pagination";
 import { Ticket, CurrentUser } from "@/types";
 import { ExternalLink, Trash2 } from "lucide-react";

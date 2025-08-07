@@ -173,7 +173,6 @@ export async function POST(request: NextRequest) {
 
             // Step 2: Convert HTML to plain text (including image URLs)
             const plainTextResult = convertHtmlToPlainText(html);
-            console.log("Plain text:", plainTextResult);
 
             // Step 3: Extract images and links from plain text
             const images: string[] = [];
@@ -185,7 +184,6 @@ export async function POST(request: NextRequest) {
             let imgMatch;
             while ((imgMatch = imgUrlRegex.exec(plainTextResult)) !== null) {
                 images.push(imgMatch[0]);
-                console.log("Found image URL:", imgMatch[0]);
             }
 
             // Extract link URLs from plain text
@@ -196,7 +194,6 @@ export async function POST(request: NextRequest) {
                 // Skip if it's already an image URL
                 if (!images.includes(url)) {
                     links.push(url);
-                    console.log("Found link URL:", url);
                 }
             }
 
@@ -414,7 +411,6 @@ export async function POST(request: NextRequest) {
                           ],
             };
 
-            console.log("JIRA ADF Output:", JSON.stringify(result, null, 2));
             return result;
         };
 
@@ -431,11 +427,6 @@ export async function POST(request: NextRequest) {
                 },
             },
         };
-
-        console.log(
-            "JIRA Request Data:",
-            JSON.stringify(jiraIssueData, null, 2)
-        );
 
         // Create JIRA API URL
         const apiUrl = `${jiraUrl}/rest/api/3/issue`;
@@ -455,7 +446,6 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
             const errorData = await response.text();
-            console.error("JIRA API error:", response.status, errorData);
 
             if (response.status === 400) {
                 return NextResponse.json(
@@ -487,7 +477,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(issueData);
     } catch (error) {
-        console.error("Error creating JIRA issue:", error);
         return NextResponse.json(
             { error: "Failed to create JIRA issue" },
             { status: 500 }

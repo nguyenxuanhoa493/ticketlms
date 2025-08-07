@@ -6,8 +6,8 @@ import {
     TicketStatusBadge,
     TicketPriorityBadge,
     PlatformBadge,
-} from "@/components/ticket-badges";
-import HtmlContent from "@/components/HtmlContent";
+} from "@/components/badges";
+import HtmlContent from "@/components/common/HtmlContent";
 import JiraInfo from "@/components/JiraInfo";
 import { Ticket, CurrentUser } from "@/types";
 
@@ -189,7 +189,10 @@ export function TicketDetailView({
                         </Label>
                         <div className="space-y-1">
                             {ticket?.only_show_in_admin ? (
-                                <Badge variant="destructive" className="text-xs">
+                                <Badge
+                                    variant="destructive"
+                                    className="text-xs"
+                                >
                                     Có
                                 </Badge>
                             ) : (

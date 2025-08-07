@@ -14,7 +14,6 @@ export function formatDateTimeForDB(datetimeLocal: string): string | null {
         // datetime-local format: "2024-01-15T14:30"
         // Validate format first
         if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(datetimeLocal)) {
-            console.warn("Invalid datetime format:", datetimeLocal);
             return null;
         }
 
@@ -24,7 +23,6 @@ export function formatDateTimeForDB(datetimeLocal: string): string | null {
 
         // Check if date is valid
         if (isNaN(localDate.getTime())) {
-            console.warn("Invalid date value:", datetimeLocal);
             return null;
         }
 
@@ -33,7 +31,6 @@ export function formatDateTimeForDB(datetimeLocal: string): string | null {
 
         return utcDate.toISOString();
     } catch (error) {
-        console.error("Error formatting datetime for DB:", error, datetimeLocal);
         return null;
     }
 }
@@ -51,7 +48,6 @@ export function formatDateTimeForDisplay(isoString: string): string {
 
         // Check if date is valid
         if (isNaN(utcDate.getTime())) {
-            console.warn("Invalid ISO string:", isoString);
             return "";
         }
 
@@ -67,7 +63,6 @@ export function formatDateTimeForDisplay(isoString: string): string {
 
         return `${year}-${month}-${day}T${hour}:${minute}`;
     } catch (error) {
-        console.error("Error formatting datetime for display:", error, isoString);
         return "";
     }
 }
@@ -106,7 +101,6 @@ export function convertToUTCISO(datetime: string): string | null {
 
         return utcDate.toISOString();
     } catch (error) {
-        console.error("Error converting to UTC ISO:", error, datetime);
         return null;
     }
 }
@@ -116,15 +110,15 @@ export function convertToUTCISO(datetime: string): string | null {
  */
 export function formatDateForDisplay(date: string | Date): string {
     try {
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        
+        const dateObj = typeof date === "string" ? new Date(date) : date;
+
         if (isNaN(dateObj.getTime())) {
             return "";
         }
 
         // Add 7 hours to convert UTC to GMT+7 for display
         const gmt7Date = new Date(dateObj.getTime() + 7 * 60 * 60 * 1000);
-        
+
         return gmt7Date.toLocaleDateString("vi-VN", {
             year: "numeric",
             month: "2-digit",
@@ -133,7 +127,6 @@ export function formatDateForDisplay(date: string | Date): string {
             minute: "2-digit",
         });
     } catch (error) {
-        console.error("Error formatting date for display:", error, date);
         return "";
     }
-} 
+}

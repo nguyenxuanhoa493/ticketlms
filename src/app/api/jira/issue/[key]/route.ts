@@ -69,7 +69,6 @@ export async function GET(
 
         return NextResponse.json(issue);
     } catch (error) {
-        console.error("Error fetching JIRA issue:", error);
         return NextResponse.json(
             { error: "Failed to fetch JIRA issue" },
             { status: 500 }

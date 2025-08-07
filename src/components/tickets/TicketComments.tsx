@@ -12,8 +12,8 @@ import {
     X,
 } from "lucide-react";
 import { Comment } from "@/types";
-import RichTextEditor from "@/components/RichTextEditor";
-import HtmlContent from "@/components/HtmlContent";
+import RichTextEditor from "@/components/common/RichTextEditor";
+import HtmlContent from "@/components/common/HtmlContent";
 
 interface TicketCommentsProps {
     comments: Comment[];

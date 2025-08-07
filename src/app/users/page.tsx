@@ -193,7 +193,6 @@ export default function UsersPage() {
 
             setCurrentUser(data); // Fix: API returns data directly, not data.user
         } catch (error: unknown) {
-            console.error("Error fetching current user:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể lấy thông tin người dùng hiện tại",
@@ -215,7 +214,6 @@ export default function UsersPage() {
 
             setUsers(data.users);
         } catch (error: any) {
-            console.error("Error fetching users:", error);
             const errorMessage =
                 error instanceof Error
                     ? error.message
@@ -241,7 +239,7 @@ export default function UsersPage() {
             if (error) throw error;
             setOrganizations(data || []);
         } catch (error) {
-            console.error("Error fetching organizations:", error);
+            // Silent error handling
         }
     };
 
@@ -378,7 +376,6 @@ export default function UsersPage() {
             handleCloseDialog();
             fetchUsers();
         } catch (error: any) {
-            console.error("Error saving user:", error);
             toast({
                 title: "Lỗi",
                 description:
@@ -428,7 +425,6 @@ export default function UsersPage() {
 
             handleCloseResetPassword();
         } catch (error: any) {
-            console.error("Error resetting password:", error);
             toast({
                 title: "Lỗi",
                 description: error.message || "Không thể reset mật khẩu",
@@ -457,7 +453,6 @@ export default function UsersPage() {
 
             fetchUsers();
         } catch (error: any) {
-            console.error("Error deleting user:", error);
             toast({
                 title: "Lỗi",
                 description: error.message || "Không thể xóa người dùng",

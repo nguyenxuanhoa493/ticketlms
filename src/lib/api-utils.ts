@@ -128,7 +128,6 @@ export const handleApiError = (
     error: unknown,
     context: string
 ): NextResponse => {
-    console.error(`Error in ${context}:`, error);
     const errorMessage =
         error instanceof Error ? error.message : `Failed to ${context}`;
     return NextResponse.json({ error: errorMessage }, { status: 500 });
@@ -273,7 +272,6 @@ export const executeQuery = async <T>(
         const { data, error } = await query;
 
         if (error) {
-            console.error(`Database error in ${context}:`, error);
             return {
                 data: null,
                 error: NextResponse.json(
@@ -285,7 +283,6 @@ export const executeQuery = async <T>(
 
         return { data, error: null };
     } catch (error) {
-        console.error(`Unexpected error in ${context}:`, error);
         return {
             data: null,
             error: NextResponse.json(
@@ -309,7 +306,6 @@ export const fetchUserData = async (
         .in("id", userIds);
 
     if (error) {
-        console.error("Error fetching user data:", error);
         return {};
     }
 
@@ -402,7 +398,6 @@ export const createNotification = async (
         .single();
 
     if (error) {
-        console.error("Error creating notification:", error);
         throw error;
     }
 

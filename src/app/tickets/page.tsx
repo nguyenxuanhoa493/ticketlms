@@ -11,8 +11,6 @@ import { TicketFilters } from "@/components/tickets/TicketFilters";
 import { TicketDialog } from "@/components/tickets/TicketDialog";
 import { useTicketListOptimized } from "@/hooks/useTicketListOptimized";
 
-console.log("=== PAGE: useTicketListOptimized imported ==="); // Debug log
-
 export default function TicketsPage() {
     const {
         tickets,
@@ -50,15 +48,6 @@ export default function TicketsPage() {
         handlePageChange,
         handleItemsPerPageChange,
     } = useTicketListOptimized();
-
-    // Debug logging
-    console.log("TicketsPage - tickets:", tickets);
-    console.log("TicketsPage - tickets.length:", tickets?.length);
-    console.log("TicketsPage - loading:", loading);
-    console.log("TicketsPage - organizations:", organizations);
-    console.log("TicketsPage - currentUser:", currentUser);
-    console.log("TicketsPage - hasError:", hasError);
-    console.log("TicketsPage - errorMessage:", errorMessage);
 
     if (loading) {
         return (

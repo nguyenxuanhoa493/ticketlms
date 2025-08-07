@@ -23,7 +23,6 @@ export const POST = withFileUpload(async (request: NextRequest, user: Authentica
         .upload(fileName, file);
     
     if (uploadError) {
-        console.error("Upload error:", uploadError);
         return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
     }
     

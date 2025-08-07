@@ -13,10 +13,10 @@ import {
     TicketStatusBadge,
     TicketPriorityBadge,
     PlatformBadge,
-} from "@/components/ticket-badges";
+} from "@/components/badges";
 import { Calendar } from "lucide-react";
 import { TicketFormData, Organization } from "@/types";
-import RichTextEditor from "@/components/RichTextEditor";
+import RichTextEditor from "@/components/common/RichTextEditor";
 
 interface TicketEditFormProps {
     formData: TicketFormData;

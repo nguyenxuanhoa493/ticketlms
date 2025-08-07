@@ -39,7 +39,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
             profile: profile || null,
         };
     } catch (error) {
-        console.error("Error getting current user:", error);
         return null;
     }
 }
@@ -77,7 +76,6 @@ export async function checkUserAccess(
             profile,
         };
     } catch (error) {
-        console.error("Error checking user access:", error);
         return { canAccess: false, role: null, profile: null };
     }
 }

@@ -23,7 +23,7 @@ async function getVersionInfo() {
             return await response.json();
         }
     } catch (error) {
-        console.log("Không thể đọc version.json:", error);
+        // Silent error handling
     }
 
     return {

@@ -84,13 +84,11 @@ export default function ChangePasswordPage() {
                     // Redirect to login with success message
                     router.push("/login?message=password-changed");
                 } catch (signOutError) {
-                    console.error("Error signing out:", signOutError);
                     // Force redirect even if signout fails
                     router.push("/login?message=password-changed");
                 }
             }, 1500);
         } catch (error: unknown) {
-            console.error("Error changing password:", error);
             const errorMessage =
                 error instanceof Error
                     ? error.message

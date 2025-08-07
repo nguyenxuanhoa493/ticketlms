@@ -73,9 +73,6 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser
     const { id } = await params;
     const body = await request.json();
     
-    console.log("PUT /api/tickets/[id] - Request body:", body);
-    console.log("PUT /api/tickets/[id] - User role:", user.role);
-    
     // Check if user has permission to update this ticket
     const { data: existingTicket } = await supabase
         .from("tickets")
@@ -108,19 +105,14 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser
     // Add updated_at timestamp
     finalBody.updated_at = new Date().toISOString();
     
-    console.log("PUT /api/tickets/[id] - Final body:", finalBody);
-    
     const { data, error } = await executeQuery(
         supabase.from("tickets").update(finalBody).eq("id", id).select().single(),
         "updating ticket"
     );
     
     if (error) {
-        console.error("PUT /api/tickets/[id] - Error:", error);
         return error;
     }
-    
-    console.log("PUT /api/tickets/[id] - Success:", data);
     return createSuccessResponse(data, "Ticket updated successfully");
 });
 

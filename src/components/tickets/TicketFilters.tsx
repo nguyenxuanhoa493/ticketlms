@@ -61,29 +61,12 @@ export function TicketFilters({
 
     // Auto search when filters change
     useEffect(() => {
-        console.log("=== FILTERS CHANGED ===");
-        console.log("selectedStatus:", selectedStatus);
-        console.log("selectedOrganization:", selectedOrganization);
-        console.log("selectedSort:", selectedSort);
-
         const timeoutId = setTimeout(() => {
-            console.log("=== AUTO SEARCH TRIGGERED ===");
             onSearch();
         }, 300); // Debounce 300ms
 
         return () => clearTimeout(timeoutId);
     }, [selectedStatus, selectedOrganization, selectedSort]);
-
-    // Debug logging
-    console.log("TicketFilters - isAdmin:", isAdmin);
-    console.log("TicketFilters - organizations:", organizations);
-    console.log("TicketFilters - organizations type:", typeof organizations);
-    console.log("TicketFilters - organizations length:", organizations?.length);
-    console.log("TicketFilters - selectedOrganization:", selectedOrganization);
-    console.log(
-        "TicketFilters - organizations array check:",
-        Array.isArray(organizations)
-    );
 
     return (
         <div className="space-y-4">
@@ -96,8 +79,6 @@ export function TicketFilters({
                         <Select
                             value={selectedOrganization}
                             onValueChange={(value) => {
-                                console.log("=== ORGANIZATION SELECTED ===");
-                                console.log("Selected value:", value);
                                 setSelectedOrganization(value);
                             }}
                         >
@@ -131,10 +112,6 @@ export function TicketFilters({
                                 {organizations &&
                                     organizations.length > 0 &&
                                     (() => {
-                                        console.log(
-                                            "Rendering organizations:",
-                                            organizations
-                                        );
                                         return organizations.map((org) => (
                                             <SelectItem
                                                 key={org.id}
