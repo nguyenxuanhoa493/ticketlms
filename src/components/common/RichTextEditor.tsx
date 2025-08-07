@@ -70,7 +70,55 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             // Handle image paste
             const file = imageItem.getAsFile();
             if (file) {
-                await handleImageUpload(file);
+                console.log(
+                    "Pasted image file:",
+                    file.name,
+                    file.type,
+                    file.size
+                );
+
+                // Validate file type
+                const allowedTypes = [
+                    "image/jpeg",
+                    "image/jpg",
+                    "image/png",
+                    "image/gif",
+                    "image/webp",
+                ];
+
+                if (!allowedTypes.includes(file.type)) {
+                    console.error("Invalid file type:", file.type);
+                    alert(`Loại file không được hỗ trợ: ${file.type}`);
+                    return;
+                }
+
+                // Validate file size (5MB)
+                const maxSize = 5 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    console.error("File too large:", file.size);
+                    alert("File quá lớn. Tối đa 5MB");
+                    return;
+                }
+
+                try {
+                    await handleImageUpload(file);
+                } catch (error) {
+                    console.error("Error uploading pasted image:", error);
+                    // Fallback: insert as base64 data URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target?.result as string;
+                        if (dataUrl) {
+                            console.log("Inserting image as base64 fallback");
+                            insertImage(dataUrl, "Pasted Image");
+                        }
+                    };
+                    reader.onerror = (e) => {
+                        console.error("FileReader error:", e);
+                        alert("Không thể xử lý ảnh đã paste");
+                    };
+                    reader.readAsDataURL(file);
+                }
                 return;
             }
         }
@@ -196,11 +244,45 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     const handleImageUpload = async (file: File) => {
         setUploading(true);
         try {
+            // Ensure file has a name (common issue with pasted files)
+            if (!file.name || file.name === "") {
+                const timestamp = Date.now();
+                const extension = file.type.split("/")[1] || "png";
+                file = new File(
+                    [file],
+                    `pasted-image-${timestamp}.${extension}`,
+                    {
+                        type: file.type,
+                        lastModified: file.lastModified,
+                    }
+                );
+            } else if (!file.name.includes(".")) {
+                // File has name but no extension
+                const timestamp = Date.now();
+                const extension = file.type.split("/")[1] || "png";
+                file = new File(
+                    [file],
+                    `${file.name}-${timestamp}.${extension}`,
+                    {
+                        type: file.type,
+                        lastModified: file.lastModified,
+                    }
+                );
+            }
+
+            console.log(
+                "Starting image upload for file:",
+                file.name,
+                file.type,
+                file.size
+            );
+
             // Get current user session
             const {
                 data: { session },
             } = await supabase.auth.getSession();
             if (!session) {
+                console.error("No session found");
                 alert("Bạn cần đăng nhập để upload ảnh");
                 return;
             }
@@ -208,7 +290,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             const formData = new FormData();
             formData.append("file", file);
 
-            const response = await fetch("/api/upload/image", {
+            console.log("Sending upload request...");
+            const response = await fetch("/api/upload/simple", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${session.access_token}`,
@@ -216,17 +299,46 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 body: formData,
             });
 
-            const result = await response.json();
+            console.log("Upload response status:", response.status);
 
-            if (result.success) {
-                // Insert image into editor
-                insertImage(result.url, file.name);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(
+                    "Upload failed with status:",
+                    response.status,
+                    errorText
+                );
+                throw new Error(
+                    `Upload failed: ${response.status} ${errorText}`
+                );
+            }
+
+            const result = await response.json();
+            console.log("Upload result:", result);
+
+            if (result.success && result.data?.url) {
+                // Insert image into editor with actual uploaded URL
+                insertImage(result.data.url, file.name);
             } else {
-                alert(result.error || "Lỗi upload ảnh");
+                console.error(
+                    "Upload failed:",
+                    result.error || "Unknown error"
+                );
+                const errorMessage =
+                    result.error ||
+                    result.message ||
+                    "Lỗi upload ảnh không xác định";
+                alert(errorMessage);
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error("Upload error:", error);
-            alert("Lỗi upload ảnh");
+            alert(
+                `Lỗi upload ảnh: ${
+                    error instanceof Error ? error.message : "Unknown error"
+                }`
+            );
+            throw error; // Re-throw để fallback có thể xử lý
         } finally {
             setUploading(false);
         }

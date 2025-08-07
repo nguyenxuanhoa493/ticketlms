@@ -102,7 +102,7 @@ export default function ImageCropper({
 
                     // Upload to server
                     console.log("Uploading avatar...");
-                    const response = await fetch("/api/upload/avatar", {
+                    const response = await fetch("/api/upload/avatar-simple", {
                         method: "POST",
                         body: formData,
                     });
@@ -119,30 +119,8 @@ export default function ImageCropper({
                     }
 
                     // Notify parent component
-                    onAvatarChange(result.url);
+                    onAvatarChange(result.data?.url || result.url);
                     setSelectedImage(null);
-
-                    // Auto-save avatar to profile immediately
-                    try {
-                        const profileResponse = await fetch("/api/profile", {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                avatar_url: result.url,
-                            }),
-                        });
-
-                        if (profileResponse.ok) {
-                            // Trigger navigation bar update
-                            window.dispatchEvent(
-                                new CustomEvent("profileUpdated")
-                            );
-                        }
-                    } catch (error) {
-                        console.error("Error auto-saving avatar:", error);
-                    }
 
                     toast({
                         title: "Thành công",
@@ -209,9 +187,6 @@ export default function ImageCropper({
 
                     <div className="flex-1">
                         <p className="text-sm font-medium">Avatar</p>
-                        <p className="text-xs text-gray-500">
-                            Ảnh sẽ được tự động crop về 100x100px
-                        </p>
                     </div>
                 </div>
 
@@ -255,9 +230,7 @@ export default function ImageCropper({
             {/* Crop Preview */}
             {selectedImage && (
                 <div className="border rounded-lg p-4 bg-gray-50">
-                    <div className="text-sm font-medium mb-2">
-                        Preview (sẽ được crop về 100x100px):
-                    </div>
+                    <div className="text-sm font-medium mb-2">Preview:</div>
 
                     <div className="space-y-4">
                         {/* Original image (hidden) */}
@@ -301,21 +274,13 @@ export default function ImageCropper({
                             }}
                         />
 
-                        {/* Crop preview and info */}
-                        <div className="flex items-center space-x-4">
-                            {/* Crop preview */}
-                            <div className="w-20 h-20 border-2 border-blue-500 rounded-full overflow-hidden">
+                        {/* Crop preview */}
+                        <div className="flex justify-center">
+                            <div className="w-24 h-24 border-2 border-blue-500 rounded-full overflow-hidden bg-white">
                                 <canvas
                                     ref={canvasRef}
                                     className="w-full h-full"
                                 />
-                            </div>
-
-                            <div className="flex-1">
-                                <p className="text-sm">
-                                    Ảnh sẽ được crop tự động để vừa khung vuông
-                                    100x100px
-                                </p>
                             </div>
                         </div>
 
