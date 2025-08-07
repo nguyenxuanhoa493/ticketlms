@@ -1,7 +1,7 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { Database } from "@/types/database";
+import { createApiClient, createAdminApiClient } from "./supabase/server-client";
 
 // Types
 export interface AuthenticatedUser {
@@ -20,38 +20,14 @@ export interface ApiResponse<T = any> {
     message?: string;
 }
 
-// Supabase client factory
+// Supabase client factory - sử dụng singleton pattern
 export const createApiSupabaseClient = (cookieStore: any) => {
-    return createServerClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-        }
-    );
+    return createApiClient(cookieStore);
 };
 
-// Admin Supabase client factory
+// Admin Supabase client factory - sử dụng singleton pattern
 export const createAdminSupabaseClient = (cookieStore: any) => {
-    return createServerClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-            },
-        }
-    );
+    return createAdminApiClient(cookieStore);
 };
 
 // Authentication middleware

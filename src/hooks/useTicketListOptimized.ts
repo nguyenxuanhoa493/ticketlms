@@ -31,7 +31,7 @@ export function useTicketListOptimized() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("all");
     const [selectedOrganization, setSelectedOrganization] = useState("all");
-    const [selectedSort, setSelectedSort] = useState("status_asc");
+    const [selectedSort, setSelectedSort] = useState("status_asc"); // Mặc định sắp xếp theo trạng thái: Mở > Đang làm > Đóng
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -49,8 +49,8 @@ export function useTicketListOptimized() {
             params.status = selectedStatus;
         if (selectedOrganization && selectedOrganization !== "all")
             params.organization_id = selectedOrganization;
-        if (selectedSort && selectedSort !== "status_asc")
-            params.sort = selectedSort;
+        // Luôn gửi sort parameter để đảm bảo sắp xếp mặc định được áp dụng
+        params.sort = selectedSort;
 
         return params;
     }, [
@@ -83,19 +83,31 @@ export function useTicketListOptimized() {
     const updateTicketMutation = useUpdateTicket();
     const deleteTicketMutation = useDeleteTicket();
 
-    // Extract data
-    const tickets = ticketsData?.tickets || ticketsData || [];
-    const organizations =
-        organizationsData?.organizations || organizationsData || [];
+    // Extract data - đảm bảo luôn có dữ liệu hợp lệ
+    const tickets = Array.isArray(ticketsData?.tickets)
+        ? ticketsData.tickets
+        : [];
+    const organizations = Array.isArray(organizationsData?.organizations)
+        ? organizationsData.organizations
+        : Array.isArray(organizationsData)
+        ? organizationsData
+        : [];
 
-    // Pagination data
+    // Pagination data - đảm bảo luôn có giá trị hợp lệ
     const pagination = ticketsData?.pagination || {
         page: 1,
         totalPages: 0,
         total: 0,
     };
-    const totalPages = pagination.totalPages;
-    const totalItems = pagination.total;
+    const totalItems = pagination.total || 0;
+    const totalPages = totalItems === 0 ? 0 : pagination.totalPages || 0;
+
+    // Validation: đảm bảo currentPage không vượt quá totalPages
+    const validCurrentPage =
+        totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
+
+    // Nếu totalItems = 0, đảm bảo currentPage = 1
+    const finalCurrentPage = totalItems === 0 ? 1 : validCurrentPage;
 
     // Loading state
     const loading = ticketsLoading || userLoading || organizationsLoading;
@@ -140,6 +152,12 @@ export function useTicketListOptimized() {
     const handleOpenDialog = (ticket?: Ticket) => {
         if (ticket) {
             setEditingTicket(ticket);
+            // For editing, use ticket's organization_id or user's organization_id for non-admin
+            const orgId =
+                currentUser?.role !== "admin" && currentUser?.organization_id
+                    ? currentUser.organization_id
+                    : ticket.organization_id || "";
+
             setFormData({
                 title: ticket.title || "",
                 description: ticket.description || "",
@@ -147,7 +165,7 @@ export function useTicketListOptimized() {
                 priority: ticket.priority || "medium",
                 platform: ticket.platform || "web",
                 status: ticket.status || "open",
-                organization_id: ticket.organization_id || "",
+                organization_id: orgId,
                 expected_completion_date:
                     ticket.expected_completion_date || null,
                 closed_at: ticket.closed_at || null,
@@ -259,7 +277,7 @@ export function useTicketListOptimized() {
         selectedOrganization,
         selectedSort,
         hasActiveFilters,
-        currentPage,
+        currentPage: finalCurrentPage,
         totalPages,
         totalItems,
         itemsPerPage,

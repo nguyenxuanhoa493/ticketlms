@@ -1,5 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { getServerClient } from "@/lib/supabase/server-client";
 
 export interface DashboardStats {
     totalOrganizations: number;
@@ -37,18 +36,7 @@ export async function getDashboardStats(
     userRole?: string,
     organizationId?: string
 ): Promise<DashboardStats> {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-        }
-    );
+    const supabase = await getServerClient();
 
     let stats: DashboardStats = {
         totalOrganizations: 0,
@@ -161,18 +149,7 @@ export async function getRecentTickets(
     userRole?: string,
     organizationId?: string
 ): Promise<Ticket[]> {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-        }
-    );
+    const supabase = await getServerClient();
 
     let recentTickets: Ticket[] = [];
     try {
@@ -221,18 +198,7 @@ export async function getRecentTickets(
 export async function getRecentNotifications(
     userId: string
 ): Promise<Notification[]> {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-        }
-    );
+    const supabase = await getServerClient();
 
     let recentNotifications: Notification[] = [];
     try {

@@ -55,7 +55,7 @@ import {
     Filter,
     X,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 
 interface Organization {
     id: string;
@@ -708,8 +708,8 @@ export default function UsersPage() {
                                     {submitting
                                         ? "Đang lưu..."
                                         : editingUser
-                                          ? "Cập nhật"
-                                          : "Tạo mới"}
+                                        ? "Cập nhật"
+                                        : "Tạo mới"}
                                 </Button>
                             </DialogFooter>
                         </form>

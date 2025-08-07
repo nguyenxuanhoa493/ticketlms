@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -55,11 +55,12 @@ export const metadata: Metadata = {
         apple: "/favicon.png",
     },
     manifest: "/manifest.json",
-    viewport: {
-        width: "device-width",
-        initialScale: 1,
-        maximumScale: 1,
-    },
+};
+
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
 };
 
 export default function RootLayout({

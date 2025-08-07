@@ -12,7 +12,7 @@ import {
     Image,
     Upload,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import LinkModal from "../modals/LinkModal";
 
 interface RichTextEditorProps {

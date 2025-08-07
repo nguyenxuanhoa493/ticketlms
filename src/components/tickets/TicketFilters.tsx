@@ -103,7 +103,7 @@ export function TicketFilters({
                                                     0
                                                 );
                                             return totalOpenTickets > 0 ? (
-                                                <span className="ml-1 text-xs text-gray-500">
+                                                <span className="ml-1 text-xs text-blue-600 font-medium">
                                                     ({totalOpenTickets})
                                                 </span>
                                             ) : null;
@@ -124,7 +124,7 @@ export function TicketFilters({
                                                         null &&
                                                     org.openTicketsCount >
                                                         0 && (
-                                                        <span className="ml-1 text-xs text-gray-500">
+                                                        <span className="ml-1 text-xs text-blue-600 font-medium">
                                                             (
                                                             {
                                                                 org.openTicketsCount
@@ -183,7 +183,7 @@ export function TicketFilters({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="status_asc">
-                                Trạng thái (Mở → Đang làm → Đóng)
+                                Trạng thái (Mở → Đang làm → Đóng) ⭐
                             </SelectItem>
                             <SelectItem value="created_at_desc">
                                 Mới nhất

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { getServerClient } from "@/lib/supabase/server-client";
 import type { Metadata } from "next";
 import {
     DashboardHeader,
@@ -33,19 +32,7 @@ function LoadingSpinner() {
 }
 
 async function DashboardContent() {
-    const cookieStore = await cookies();
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-        }
-    );
+    const supabase = await getServerClient();
 
     const {
         data: { user },

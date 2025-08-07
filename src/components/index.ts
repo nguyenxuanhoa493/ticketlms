@@ -22,5 +22,8 @@ export * from "./tickets";
 // Dashboard Components
 export * from "./dashboard";
 
+// Report Components
+export * from "./reports";
+
 // Provider Components
 export * from "./providers";

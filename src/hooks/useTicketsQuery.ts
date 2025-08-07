@@ -31,7 +31,9 @@ const fetchTickets = async (params: {
             throw new Error(`Failed to fetch tickets: ${response.status}`);
         }
     }
-    return response.json();
+    const data = await response.json();
+
+    return data;
 };
 
 const fetchCurrentUser = async () => {

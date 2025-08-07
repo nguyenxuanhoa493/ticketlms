@@ -28,20 +28,35 @@ export const GET = withAuth(
         // Get open tickets count for each organization
         const organizationsWithCount = await Promise.all(
             (data || []).map(async (org: Organization) => {
-                const { count, error: countError } = await supabase
-                    .from("tickets")
-                    .select("*", { count: "exact", head: true })
-                    .eq("organization_id", org.id)
-                    .neq("status", "closed");
+                try {
+                    const { count, error: countError } = await supabase
+                        .from("tickets")
+                        .select("*", { count: "exact", head: true })
+                        .eq("organization_id", org.id)
+                        .neq("status", "closed");
 
-                if (countError) {
-                    // Silent error handling
+                    if (countError) {
+                        console.error(
+                            "Error getting open tickets count:",
+                            countError
+                        );
+                    }
+
+                    return {
+                        ...org,
+                        openTicketsCount: count || 0,
+                    };
+                } catch (error) {
+                    console.error(
+                        "Error processing organization:",
+                        org.id,
+                        error
+                    );
+                    return {
+                        ...org,
+                        openTicketsCount: 0,
+                    };
                 }
-
-                return {
-                    ...org,
-                    openTicketsCount: count || 0,
-                };
             })
         );
 

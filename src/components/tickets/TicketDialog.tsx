@@ -109,6 +109,14 @@ export function TicketDialog({
                                         vị
                                     </p>
                                 )}
+                                {["admin", "manager"].includes(
+                                    currentUser?.role || ""
+                                ) &&
+                                    !formData.organization_id && (
+                                        <p className="text-sm text-red-500">
+                                            Vui lòng chọn đơn vị
+                                        </p>
+                                    )}
                             </div>
 
                             <div className="space-y-2 md:col-span-8">
