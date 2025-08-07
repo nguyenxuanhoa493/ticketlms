@@ -20,8 +20,12 @@ import { TicketTable } from "@/components/tickets/TicketTable";
 import { TicketFilters } from "@/components/tickets/TicketFilters";
 import { TicketDialog } from "@/components/tickets/TicketDialog";
 import { useTicketListOptimized } from "@/hooks/useTicketListOptimized";
+import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 
 export default function TicketsPage() {
+    // Hook để lắng nghe profile update events
+    useProfileUpdate();
+
     const {
         tickets,
         organizations,

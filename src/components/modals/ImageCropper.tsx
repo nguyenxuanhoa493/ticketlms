@@ -102,7 +102,7 @@ export default function ImageCropper({
 
                     // Upload to server
                     console.log("Uploading avatar...");
-                    const response = await fetch("/api/upload/avatar-simple", {
+                    const response = await fetch("/api/upload?type=avatar", {
                         method: "POST",
                         body: formData,
                     });

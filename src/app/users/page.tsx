@@ -56,6 +56,7 @@ import {
     X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/browser-client";
+import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 
 interface Organization {
     id: string;
@@ -98,6 +99,9 @@ interface FilterState {
 }
 
 export default function UsersPage() {
+    // Hook để lắng nghe profile update events
+    useProfileUpdate();
+
     const [users, setUsers] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);

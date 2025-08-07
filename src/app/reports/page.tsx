@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
 import { useTicketReports, useOrganizations } from "@/hooks/useTicketReports";
+import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 import {
     ReportHeader,
     ReportFilters,
@@ -12,6 +13,9 @@ import {
 } from "@/components/reports";
 
 export default function ReportsPage() {
+    // Hook để lắng nghe profile update events
+    useProfileUpdate();
+
     const [period, setPeriod] = useState("30");
     const [organizationId, setOrganizationId] = useState<string | undefined>(
         ""

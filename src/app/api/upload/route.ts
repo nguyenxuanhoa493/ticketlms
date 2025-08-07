@@ -5,29 +5,68 @@ import { createSuccessResponse } from "@/lib/api-utils";
 export const POST = withFileUpload(
     async (request: NextRequest, user: any, supabase: any, file: File) => {
         try {
-            console.log("=== Image Upload API Called ===");
-            console.log("Image upload - File received:", {
+            console.log("=== Unified Upload API Called ===");
+            console.log("File received:", {
                 name: file.name,
                 type: file.type,
                 size: file.size,
-                lastModified: file.lastModified,
             });
 
-            console.log("Image upload - User:", {
+            console.log("User:", {
                 id: user.id,
                 email: user.email,
                 role: user.role,
             });
 
-            console.log("Supabase client:", !!supabase);
-            console.log("Supabase storage:", !!supabase?.storage);
+            // Get upload type from query params
+            const url = new URL(request.url);
+            const uploadType = url.searchParams.get("type") || "image"; // "avatar" or "image"
+            const shouldCrop = uploadType === "avatar";
+
+            console.log("Upload type:", uploadType, "Should crop:", shouldCrop);
+
+            // Validate file type
+            const allowedTypes = [
+                "image/jpeg",
+                "image/jpg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                return NextResponse.json(
+                    {
+                        error: `Invalid file type. Allowed types: ${allowedTypes.join(
+                            ", "
+                        )}`,
+                    },
+                    { status: 400 }
+                );
+            }
+
+            // Validate file size (5MB for images, 2MB for avatars)
+            const maxSize = shouldCrop ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                return NextResponse.json(
+                    {
+                        error: `File too large. Maximum size is ${
+                            shouldCrop ? "2MB" : "5MB"
+                        }`,
+                    },
+                    { status: 400 }
+                );
+            }
 
             // Generate unique filename
             const timestamp = Date.now();
             const randomString = Math.random().toString(36).substring(2, 15);
             const fileExt =
                 file.name.split(".").pop() || file.type.split("/")[1] || "png";
-            const fileName = `images/${timestamp}_${randomString}.${fileExt}`;
+
+            // Determine folder based on upload type
+            const folder = shouldCrop ? "avatars" : "images";
+            const fileName = `${folder}/${timestamp}_${randomString}.${fileExt}`;
 
             console.log("Generated filename:", fileName);
             console.log("Attempting to upload to bucket: ticket-attachments");
@@ -70,14 +109,15 @@ export const POST = withFileUpload(
                     filename: fileName,
                     size: file.size,
                     type: file.type,
-                    message: "Image upload successful",
+                    uploadType: uploadType,
+                    message: `${uploadType} upload successful`,
                 },
-                "File uploaded successfully"
+                `${uploadType} uploaded successfully`
             );
         } catch (error) {
-            console.error("Image upload error:", error);
+            console.error("Upload error:", error);
             return NextResponse.json(
-                { error: "Image upload failed", details: error },
+                { error: "Upload failed", details: error },
                 { status: 500 }
             );
         }

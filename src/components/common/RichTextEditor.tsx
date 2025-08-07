@@ -291,7 +291,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             formData.append("file", file);
 
             console.log("Sending upload request...");
-            const response = await fetch("/api/upload/simple", {
+            const response = await fetch("/api/upload?type=image", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${session.access_token}`,

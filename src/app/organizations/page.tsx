@@ -40,6 +40,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Plus, Search, Edit, Trash2, Building } from "lucide-react";
+import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 
 interface Organization {
     id: string;
@@ -50,6 +51,9 @@ interface Organization {
 }
 
 export default function OrganizationsPage() {
+    // Hook để lắng nghe profile update events
+    useProfileUpdate();
+
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -310,8 +314,8 @@ export default function OrganizationsPage() {
                                     {submitting
                                         ? "Đang lưu..."
                                         : editingOrg
-                                          ? "Cập nhật"
-                                          : "Tạo mới"}
+                                        ? "Cập nhật"
+                                        : "Tạo mới"}
                                 </Button>
                             </DialogFooter>
                         </form>

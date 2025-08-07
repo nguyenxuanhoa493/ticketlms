@@ -1,0 +1,99 @@
+-- Setup Storage Bucket and RLS Policies for TicketLMS
+-- This migration creates the ticket-attachments bucket and configures proper permissions
+
+-- Step 1: Create the bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'ticket-attachments',
+    'ticket-attachments',
+    true,
+    5242880, -- 5MB in bytes
+    ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET
+    public = EXCLUDED.public,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- Step 2: Enable RLS on storage.objects table
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Step 3: Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Allow authenticated users to upload" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to update" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read access" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to delete own files" ON storage.objects;
+
+-- Step 4: Create policies for authenticated users to upload
+CREATE POLICY "Allow authenticated users to upload" ON storage.objects
+FOR INSERT WITH CHECK (
+    bucket_id = 'ticket-attachments' 
+    AND auth.role() = 'authenticated'
+);
+
+-- Step 5: Create policies for authenticated users to update their files
+CREATE POLICY "Allow authenticated users to update" ON storage.objects
+FOR UPDATE USING (
+    bucket_id = 'ticket-attachments' 
+    AND auth.role() = 'authenticated'
+);
+
+-- Step 6: Create policies for public read access (so images can be viewed)
+CREATE POLICY "Allow public read access" ON storage.objects
+FOR SELECT USING (bucket_id = 'ticket-attachments');
+
+-- Step 7: Create policies for users to delete their own files
+CREATE POLICY "Allow users to delete own files" ON storage.objects
+FOR DELETE USING (
+    bucket_id = 'ticket-attachments' 
+    AND auth.role() = 'authenticated'
+);
+
+-- Step 8: Create folders structure (optional - folders are created automatically when files are uploaded)
+-- This is just for documentation purposes
+
+-- Verify the setup
+DO $$
+BEGIN
+    -- Check if bucket exists
+    IF EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'ticket-attachments') THEN
+        RAISE NOTICE '✅ Bucket ticket-attachments created successfully';
+    ELSE
+        RAISE NOTICE '❌ Failed to create bucket ticket-attachments';
+    END IF;
+
+    -- Check if RLS is enabled
+    IF EXISTS (
+        SELECT 1 FROM pg_tables 
+        WHERE tablename = 'objects' 
+        AND schemaname = 'storage'
+    ) THEN
+        RAISE NOTICE '✅ RLS is enabled on storage.objects';
+    ELSE
+        RAISE NOTICE '❌ RLS not enabled on storage.objects';
+    END IF;
+
+    -- Check if policies exist
+    IF EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'objects' 
+        AND schemaname = 'storage'
+        AND policyname = 'Allow authenticated users to upload'
+    ) THEN
+        RAISE NOTICE '✅ Upload policy created successfully';
+    ELSE
+        RAISE NOTICE '❌ Upload policy not found';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'objects' 
+        AND schemaname = 'storage'
+        AND policyname = 'Allow public read access'
+    ) THEN
+        RAISE NOTICE '✅ Read policy created successfully';
+    ELSE
+        RAISE NOTICE '❌ Read policy not found';
+    END IF;
+
+END $$;

@@ -51,7 +51,9 @@ export default async function UsersLayout({
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Top Navigation */}
-            <DashboardNav user={{ id: user.id, email: user.email!, profile }} />
+            <DashboardNav
+                user={{ id: user.id, email: user.email!, profile }}
+            />
 
             {/* Main content with top padding for fixed nav */}
             <main className="pt-16">

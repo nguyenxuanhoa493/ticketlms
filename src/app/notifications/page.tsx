@@ -28,6 +28,7 @@ import {
     User,
     Building,
 } from "lucide-react";
+import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 
 interface Notification {
     id: string;
@@ -41,6 +42,9 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+    // Hook để lắng nghe profile update events
+    useProfileUpdate();
+
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<"all" | "unread">("all");

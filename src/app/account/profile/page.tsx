@@ -189,7 +189,8 @@ export default function ProfilePage() {
                                 Avatar
                             </CardTitle>
                             <p className="text-sm text-gray-600">
-                                Ảnh đại diện sẽ được tự động lưu khi upload
+                                Ảnh đại diện sẽ được tự động lưu ngay sau khi
+                                upload thành công
                             </p>
                         </CardHeader>
                         <CardContent>
@@ -198,11 +199,80 @@ export default function ProfilePage() {
                                     currentAvatar={
                                         formData.avatar_url || undefined
                                     }
-                                    onAvatarChange={(avatarUrl) => {
+                                    onAvatarChange={async (avatarUrl) => {
                                         setFormData((prev) => ({
                                             ...prev,
                                             avatar_url: avatarUrl || "",
                                         }));
+
+                                        // Auto-save avatar immediately after upload
+                                        if (avatarUrl) {
+                                            try {
+                                                const requestData = {
+                                                    full_name:
+                                                        formData.full_name,
+                                                    avatar_url: avatarUrl,
+                                                    // Chỉ admin mới có thể thay đổi role và organization
+                                                    ...(profile?.role ===
+                                                        "admin" && {
+                                                        role: formData.role,
+                                                        organization_id:
+                                                            formData.organization_id,
+                                                    }),
+                                                };
+
+                                                const response = await fetch(
+                                                    "/api/profile",
+                                                    {
+                                                        method: "PUT",
+                                                        headers: {
+                                                            "Content-Type":
+                                                                "application/json",
+                                                        },
+                                                        body: JSON.stringify(
+                                                            requestData
+                                                        ),
+                                                    }
+                                                );
+
+                                                const result =
+                                                    await response.json();
+
+                                                if (!response.ok) {
+                                                    throw new Error(
+                                                        result.error ||
+                                                            "Failed to update profile"
+                                                    );
+                                                }
+
+                                                // Update profile with new data
+                                                setProfile(result.data);
+
+                                                // Trigger navigation bar update
+                                                window.dispatchEvent(
+                                                    new CustomEvent(
+                                                        "profileUpdated"
+                                                    )
+                                                );
+
+                                                toast({
+                                                    title: "Thành công",
+                                                    description:
+                                                        "Avatar đã được lưu tự động",
+                                                });
+                                            } catch (error) {
+                                                console.error(
+                                                    "Auto-save avatar failed:",
+                                                    error
+                                                );
+                                                toast({
+                                                    title: "Lỗi",
+                                                    description:
+                                                        "Không thể lưu avatar tự động",
+                                                    variant: "destructive",
+                                                });
+                                            }
+                                        }
                                     }}
                                     disabled={saving}
                                 />
