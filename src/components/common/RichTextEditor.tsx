@@ -247,10 +247,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             // Ensure file has a name (common issue with pasted files)
             if (!file.name || file.name === "") {
                 const timestamp = Date.now();
+                const randomId = Math.random().toString(36).substring(2, 15);
                 const extension = file.type.split("/")[1] || "png";
                 file = new File(
                     [file],
-                    `pasted-image-${timestamp}.${extension}`,
+                    `pasted-image-${timestamp}-${randomId}.${extension}`,
                     {
                         type: file.type,
                         lastModified: file.lastModified,
@@ -259,10 +260,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             } else if (!file.name.includes(".")) {
                 // File has name but no extension
                 const timestamp = Date.now();
+                const randomId = Math.random().toString(36).substring(2, 15);
                 const extension = file.type.split("/")[1] || "png";
                 file = new File(
                     [file],
-                    `${file.name}-${timestamp}.${extension}`,
+                    `${file.name}-${timestamp}-${randomId}.${extension}`,
                     {
                         type: file.type,
                         lastModified: file.lastModified,

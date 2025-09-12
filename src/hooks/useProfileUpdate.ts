@@ -5,6 +5,9 @@ export function useProfileUpdate() {
     const queryClient = useQueryClient();
 
     useEffect(() => {
+        // Chỉ chạy trên client side
+        if (typeof window === "undefined") return;
+
         const handleProfileUpdate = () => {
             // Invalidate và refetch current user data và organizations
             queryClient.invalidateQueries({ queryKey: ["currentUser"] });

@@ -25,6 +25,12 @@ export const getServerClient = async () => {
                     get(name: string) {
                         return cookieStore.get(name)?.value;
                     },
+                    set(name: string, value: string, options: any) {
+                        cookieStore.set(name, value, options);
+                    },
+                    remove(name: string, options: any) {
+                        cookieStore.delete(name);
+                    },
                 },
             }
         );
@@ -44,6 +50,12 @@ export const getAdminClient = () => {
                 cookies: {
                     get(name: string) {
                         return undefined;
+                    },
+                    set() {
+                        // No-op for admin client
+                    },
+                    remove() {
+                        // No-op for admin client
                     },
                 },
                 auth: {
@@ -65,6 +77,12 @@ export const createApiClient = (cookieStore: any) => {
             get(name: string) {
                 return cookieStore.get(name)?.value;
             },
+            set(name: string, value: string, options: any) {
+                cookieStore.set(name, value, options);
+            },
+            remove(name: string, options: any) {
+                cookieStore.delete(name);
+            },
         },
     });
 };
@@ -77,6 +95,12 @@ export const createAdminApiClient = (cookieStore: any) => {
         cookies: {
             get(name: string) {
                 return cookieStore.get(name)?.value;
+            },
+            set() {
+                // No-op for admin client
+            },
+            remove() {
+                // No-op for admin client
             },
         },
         auth: {

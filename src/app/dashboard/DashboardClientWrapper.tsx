@@ -7,6 +7,7 @@ import {
     RecentNotifications,
 } from "@/components/dashboard";
 import { useProfileUpdate } from "@/hooks/useProfileUpdate";
+import { ClientOnly } from "@/components/common/ClientOnly";
 
 interface DashboardClientWrapperProps {
     stats: any;
@@ -17,6 +18,46 @@ interface DashboardClientWrapperProps {
 }
 
 export function DashboardClientWrapper({
+    stats,
+    recentTickets,
+    recentNotifications,
+    profile,
+    user,
+}: DashboardClientWrapperProps) {
+    return (
+        <ClientOnly
+            fallback={
+                <div className="space-y-8">
+                    <div className="animate-pulse">
+                        <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[...Array(4)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="bg-white p-6 rounded-lg shadow animate-pulse"
+                            >
+                                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            }
+        >
+            <DashboardContent
+                stats={stats}
+                recentTickets={recentTickets}
+                recentNotifications={recentNotifications}
+                profile={profile}
+                user={user}
+            />
+        </ClientOnly>
+    );
+}
+
+function DashboardContent({
     stats,
     recentTickets,
     recentNotifications,

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase/browser-client";
+import { getBrowserClient } from "@/lib/supabase/browser-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +74,7 @@ export default function LoginForm() {
         setSuccessMessage(null);
 
         try {
+            const supabase = getBrowserClient();
             const { data: authData, error } =
                 await supabase.auth.signInWithPassword({
                     email: data.email,

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LoginPageClient from "./login-client";
+import { AuthDebug } from "@/components/debug/AuthDebug";
 
 export const metadata: Metadata = {
     title: "Đăng nhập - TicketLMS",
@@ -12,5 +13,14 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-    return <LoginPageClient />;
+    return (
+        <div>
+            <LoginPageClient />
+            {process.env.NODE_ENV === "development" && (
+                <div className="fixed bottom-4 right-4 max-w-sm">
+                    <AuthDebug />
+                </div>
+            )}
+        </div>
+    );
 }

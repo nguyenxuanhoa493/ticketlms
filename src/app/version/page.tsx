@@ -30,7 +30,7 @@ async function getVersionInfo() {
         version: process.env.NEXT_PUBLIC_VERSION || "1.0.0",
         commitHash: process.env.NEXT_PUBLIC_COMMIT_HASH || "development",
         buildTime:
-            process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString(),
+            process.env.NEXT_PUBLIC_BUILD_TIME || "2024-01-01T00:00:00.000Z",
         environment: process.env.NODE_ENV || "development",
     };
 }

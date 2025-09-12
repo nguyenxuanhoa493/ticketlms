@@ -60,12 +60,15 @@ export async function middleware(request: NextRequest) {
 
     // Redirect to login if accessing any route without auth (except public paths)
     if (!user) {
-        return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Redirect to dashboard if logged in user tries to access auth pages
-    if (pathname === "/login" || pathname === "/register") {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+        // Chỉ redirect nếu không phải là trang login/register
+        if (pathname !== "/login" && pathname !== "/register") {
+            return NextResponse.redirect(new URL("/login", request.url));
+        }
+    } else {
+        // Redirect to dashboard if logged in user tries to access auth pages
+        if (pathname === "/login" || pathname === "/register") {
+            return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
     }
 
     return response;
