@@ -1,7 +1,6 @@
 // Re-export từ singleton client để backward compatibility
 export {
     getBrowserClient,
-    resetBrowserClient,
     supabase,
     supabaseClient,
     resetClients,

@@ -1,9 +1,5 @@
 // Re-export từ browser client để tránh import next/headers trong client-side
-export {
-    getBrowserClient,
-    resetBrowserClient,
-    supabase,
-} from "./browser-client";
+export { getBrowserClient, supabase } from "./browser-client";
 
 // Legacy exports for backward compatibility
 import { createClient } from "@supabase/supabase-js";
@@ -26,8 +22,7 @@ export const supabaseClient = createClient<Database>(
 
 // Combined reset function
 export const resetClients = () => {
-    const { resetBrowserClient } = require("./browser-client");
     const { resetServerClients } = require("./server-client");
-    resetBrowserClient();
+    // Browser client doesn't need reset as it's stateless
     resetServerClients();
 };

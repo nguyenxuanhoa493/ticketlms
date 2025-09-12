@@ -1,7 +1,6 @@
 // Export browser client functions
 export {
     getBrowserClient,
-    resetBrowserClient,
     supabase,
     supabaseClient,
     resetClients,
