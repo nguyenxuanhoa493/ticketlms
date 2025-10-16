@@ -209,7 +209,14 @@ export default function UsersPage() {
         try {
             setLoading(true);
 
-            const response = await fetch("/api/users");
+            // Add timestamp to prevent caching
+            const timestamp = new Date().getTime();
+            const response = await fetch(`/api/users?_t=${timestamp}`, {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                }
+            });
             const data = await response.json();
 
             if (!response.ok) {
@@ -218,15 +225,14 @@ export default function UsersPage() {
 
             // API trả về paginated response với data.users
             setUsers(data.data || []);
-        } catch (error: any) {
+        } catch (error: unknown) {
             const errorMessage =
                 error instanceof Error
                     ? error.message
                     : "Failed to fetch users";
             toast({
                 title: "Lỗi",
-                description:
-                    error.message || "Không thể tải danh sách người dùng",
+                description: errorMessage || "Không thể tải danh sách người dùng",
                 variant: "destructive",
             });
             // Đảm bảo users luôn là array ngay cả khi có lỗi
@@ -382,11 +388,11 @@ export default function UsersPage() {
 
             handleCloseDialog();
             fetchUsers();
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: "Lỗi",
                 description:
-                    error.message || "Không thể lưu thông tin người dùng",
+                    error instanceof Error ? error.message : "Không thể lưu thông tin người dùng",
                 variant: "destructive",
             });
         } finally {
@@ -431,10 +437,10 @@ export default function UsersPage() {
             });
 
             handleCloseResetPassword();
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể reset mật khẩu",
+                description: error instanceof Error ? error.message : "Không thể reset mật khẩu",
                 variant: "destructive",
             });
         } finally {
@@ -459,10 +465,10 @@ export default function UsersPage() {
             });
 
             fetchUsers();
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: "Lỗi",
-                description: error.message || "Không thể xóa người dùng",
+                description: error instanceof Error ? error.message : "Không thể xóa người dùng",
                 variant: "destructive",
             });
         }
@@ -683,13 +689,14 @@ export default function UsersPage() {
                                     </div>
                                 )}
                                 <div className="space-y-2">
-                                    <Label htmlFor="password">
+                                    <Label htmlFor="user_password">
                                         {editingUser
                                             ? "Mật khẩu mới (để trống nếu không đổi)"
                                             : "Mật khẩu *"}
                                     </Label>
                                     <Input
-                                        id="password"
+                                        id="user_password"
+                                        name="user_password"
                                         type="password"
                                         placeholder="••••••••"
                                         value={formData.password}
@@ -699,6 +706,7 @@ export default function UsersPage() {
                                                 password: e.target.value,
                                             }))
                                         }
+                                        autoComplete="new-password"
                                         required={!editingUser}
                                     />
                                 </div>
@@ -729,41 +737,45 @@ export default function UsersPage() {
                 open={isResetPasswordOpen}
                 onOpenChange={setIsResetPasswordOpen}
             >
-                <DialogContent>
+                <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader>
                         <DialogTitle>Reset Mật khẩu</DialogTitle>
                         <DialogDescription>
                             Đặt mật khẩu mới cho {resetPasswordUser?.full_name}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="new_password">Mật khẩu mới *</Label>
-                            <Input
-                                id="new_password"
-                                type="password"
-                                placeholder="••••••••"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                required
-                            />
+                    <form onSubmit={(e) => { e.preventDefault(); handleResetPassword(); }}>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="reset_new_password">Mật khẩu mới *</Label>
+                                <Input
+                                    id="reset_new_password"
+                                    name="reset_new_password"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    autoComplete="new-password"
+                                    required
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCloseResetPassword}
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            onClick={handleResetPassword}
-                            disabled={submitting}
-                        >
-                            {submitting ? "Đang cập nhật..." : "Reset Mật khẩu"}
-                        </Button>
-                    </DialogFooter>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleCloseResetPassword}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={submitting}
+                            >
+                                {submitting ? "Đang cập nhật..." : "Reset Mật khẩu"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -782,6 +794,8 @@ export default function UsersPage() {
                             <div className="relative w-full sm:w-80">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <Input
+                                    type="search"
+                                    name="user_search"
                                     placeholder="Tìm kiếm theo tên hoặc email..."
                                     value={filters.search}
                                     onChange={(e) =>
@@ -790,6 +804,7 @@ export default function UsersPage() {
                                             search: e.target.value,
                                         }))
                                     }
+                                    autoComplete="off"
                                     className="pl-10"
                                 />
                             </div>
@@ -1033,9 +1048,9 @@ export default function UsersPage() {
                                                             Bạn có chắc chắn
                                                             muốn xóa người dùng{" "}
                                                             <strong>
-                                                                "
+                                                                &quot;
                                                                 {user.full_name}
-                                                                "
+                                                                &quot;
                                                             </strong>
                                                             ? Hành động này
                                                             không thể hoàn tác

@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
                 };
             }
 
-            const content: any[] = [];
+            const content: Array<{ type: string; content?: unknown[]; attrs?: Record<string, unknown>; text?: string }> = [];
 
             // Step 1: Convert HTML to plain text first
             const convertHtmlToPlainText = (htmlContent: string) => {

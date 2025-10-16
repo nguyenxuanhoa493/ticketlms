@@ -6,8 +6,10 @@ import {
     executeQuery,
     AuthenticatedUser
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
-export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string, commentId: string }> }) => {
+export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string; commentId: string }> };
     const { id: ticketId, commentId } = await params;
     const body = await request.json();
     const { content } = body;
@@ -47,7 +49,8 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser
     return createSuccessResponse(data, "Comment updated successfully");
 });
 
-export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string, commentId: string }> }) => {
+export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string; commentId: string }> };
     const { id: ticketId, commentId } = await params;
     
     // Check if comment exists and user has permission

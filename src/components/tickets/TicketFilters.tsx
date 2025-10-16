@@ -48,24 +48,23 @@ export function TicketFilters({
         setSearchTerm(e.target.value);
     };
 
-    // Auto search when search term changes
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
             onSearch();
-        }, 500); // Debounce 500ms for search
-
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm]);
+        }
+    };
 
     const isAdmin = currentUser?.role === "admin";
 
-    // Auto search when filters change
+    // Auto search when filters change (but not search term)
     useEffect(() => {
+        // Skip auto-search on initial mount
         const timeoutId = setTimeout(() => {
             onSearch();
         }, 300); // Debounce 300ms
 
         return () => clearTimeout(timeoutId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedStatus, selectedOrganization, selectedSort]);
 
     return (
@@ -210,9 +209,10 @@ export function TicketFilters({
                 {/* Search Bar */}
                 <div className="flex-1 min-w-[200px] relative">
                     <Input
-                        placeholder="Tìm kiếm theo tiêu đề..."
+                        placeholder="Tìm kiếm theo tiêu đề (nhấn Enter)..."
                         value={searchTerm}
                         onChange={handleSearchChange}
+                        onKeyPress={handleKeyPress}
                         className="pr-10"
                     />
                     <button

@@ -6,22 +6,23 @@ import {
     checkUserPermission,
     checkOrganizationAccess,
 } from "./api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
 // Middleware wrapper for API routes that require authentication
 export const withAuth = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: any,
-        ...args: any[]
+        supabase: TypedSupabaseClient,
+        ...args: unknown[]
     ) => Promise<NextResponse>
 ) => {
-    return async (request: NextRequest, ...args: any[]): Promise<NextResponse> => {
+    return async (request: NextRequest, ...args: unknown[]): Promise<NextResponse> => {
         try {
             const { user, error, supabase } = await authenticateUser();
 
             if (error) return error;
-            if (!user) {
+            if (!user || !supabase) {
                 return NextResponse.json(
                     { error: "User not authenticated" },
                     { status: 401 }
@@ -41,16 +42,16 @@ export const withRole = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: any,
-        ...args: any[]
+        supabase: TypedSupabaseClient,
+        ...args: unknown[]
     ) => Promise<NextResponse>
 ) => {
     return withAuth(
         async (
             request: NextRequest,
             user: AuthenticatedUser,
-            supabase: any,
-            ...args: any[]
+            supabase: TypedSupabaseClient,
+            ...args: unknown[]
         ) => {
             if (!checkUserPermission(user, requiredRoles)) {
                 return NextResponse.json(
@@ -69,10 +70,22 @@ export const withAdmin = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: any
+        supabase: TypedSupabaseClient
     ) => Promise<NextResponse>
 ) => {
-    return withRole("admin", handler);
+    return withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
+        console.log("[withAdmin] User attempting access:", { id: user.id, email: user.email, role: user.role });
+        
+        if (!checkUserPermission(user, "admin")) {
+            console.error("[withAdmin] Permission denied - user role:", user.role);
+            return NextResponse.json(
+                { error: "Insufficient permissions. Admin role required." },
+                { status: 403 }
+            );
+        }
+        
+        return await handler(request, user, supabase);
+    });
 };
 
 // Middleware wrapper for manager and admin routes
@@ -80,7 +93,7 @@ export const withManager = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: any
+        supabase: TypedSupabaseClient
     ) => Promise<NextResponse>
 ) => {
     return withRole(["admin", "manager"], handler);
@@ -91,7 +104,7 @@ export const withOrganizationAccess = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: any,
+        supabase: TypedSupabaseClient,
         targetOrgId?: string
     ) => Promise<NextResponse>
 ) => {
@@ -99,7 +112,7 @@ export const withOrganizationAccess = (
         async (
             request: NextRequest,
             user: AuthenticatedUser,
-            supabase: any
+            supabase: TypedSupabaseClient
         ) => {
             // Extract organization_id from request body or params
             const body = await request.json().catch(() => ({}));
@@ -124,7 +137,7 @@ export const withFileUpload = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: any,
+        supabase: TypedSupabaseClient,
         file: File
     ) => Promise<NextResponse>
 ) => {
@@ -132,7 +145,7 @@ export const withFileUpload = (
         async (
             request: NextRequest,
             user: AuthenticatedUser,
-            supabase: any
+            supabase: TypedSupabaseClient
         ) => {
             try {
                 const formData = await request.formData();

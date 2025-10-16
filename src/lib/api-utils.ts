@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { Database } from "@/types/database";
+import { TypedSupabaseClient, CookieStore } from "@/types/supabase";
 import { createApiClient, createAdminApiClient } from "./supabase/server-client";
 
 // Types
@@ -13,7 +14,7 @@ export interface AuthenticatedUser {
     avatar_url?: string | null;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
     success?: boolean;
     data?: T;
     error?: string;
@@ -21,12 +22,12 @@ export interface ApiResponse<T = any> {
 }
 
 // Supabase client factory - sử dụng singleton pattern
-export const createApiSupabaseClient = (cookieStore: any) => {
+export const createApiSupabaseClient = (cookieStore: CookieStore) => {
     return createApiClient(cookieStore);
 };
 
 // Admin Supabase client factory - sử dụng singleton pattern
-export const createAdminSupabaseClient = (cookieStore: any) => {
+export const createAdminSupabaseClient = (cookieStore: CookieStore) => {
     return createAdminApiClient(cookieStore);
 };
 
@@ -34,7 +35,7 @@ export const createAdminSupabaseClient = (cookieStore: any) => {
 export const authenticateUser = async (): Promise<{
     user: AuthenticatedUser | null;
     error: NextResponse | null;
-    supabase: any;
+    supabase: TypedSupabaseClient | null;
 }> => {
     try {
         const cookieStore = await cookies();
@@ -45,6 +46,7 @@ export const authenticateUser = async (): Promise<{
         } = await supabase.auth.getUser();
 
         if (!user) {
+            console.error("[authenticateUser] No user found in session");
             return {
                 user: null,
                 error: NextResponse.json(
@@ -55,6 +57,8 @@ export const authenticateUser = async (): Promise<{
             };
         }
 
+        console.log("[authenticateUser] Auth user found:", { id: user.id, email: user.email });
+
         // Get user profile
         const { data: profile, error: profileError } = await supabase
             .from("profiles")
@@ -63,6 +67,7 @@ export const authenticateUser = async (): Promise<{
             .single();
 
         if (profileError) {
+            console.error("[authenticateUser] Profile fetch failed:", profileError);
             return {
                 user: null,
                 error: NextResponse.json(
@@ -73,6 +78,8 @@ export const authenticateUser = async (): Promise<{
             };
         }
 
+        console.log("[authenticateUser] Profile found:", { role: profile.role, full_name: profile.full_name });
+
         const authenticatedUser: AuthenticatedUser = {
             id: user.id,
             email: user.email || "",
@@ -81,6 +88,13 @@ export const authenticateUser = async (): Promise<{
             organization_id: profile.organization_id,
             avatar_url: profile.avatar_url,
         };
+
+        console.log("[authenticateUser] User authenticated:", {
+            id: authenticatedUser.id,
+            email: authenticatedUser.email,
+            role: authenticatedUser.role,
+            full_name: authenticatedUser.full_name
+        });
 
         return {
             user: authenticatedUser,
@@ -123,7 +137,7 @@ export const createSuccessResponse = <T>(
 
 // Validation helpers
 export const validateRequiredFields = (
-    body: any,
+    body: Record<string, unknown>,
     requiredFields: string[]
 ): { isValid: boolean; error?: NextResponse } => {
     for (const field of requiredFields) {
@@ -171,7 +185,7 @@ export const parsePaginationParams = (searchParams: URLSearchParams) => {
 
 // Common query builders
 export const buildBaseQuery = (
-    supabase: any,
+    supabase: TypedSupabaseClient,
     table: string,
     user: AuthenticatedUser
 ) => {
@@ -241,7 +255,7 @@ export const generateUniqueFileName = (
 
 // Database operation utilities
 export const executeQuery = async <T>(
-    query: Promise<{ data: T | null; error: any }>,
+    query: Promise<{ data: T | null; error: { message: string } | null }> | PromiseLike<{ data: T | null; error: { message: string } | null }>,
     context: string
 ): Promise<{ data: T | null; error: NextResponse | null }> => {
     try {
@@ -271,14 +285,14 @@ export const executeQuery = async <T>(
 
 // User data fetching utilities
 export const fetchUserData = async (
-    supabase: any,
+    supabase: TypedSupabaseClient,
     userIds: string[]
-): Promise<Record<string, any>> => {
+): Promise<Record<string, Database["public"]["Tables"]["profiles"]["Row"]>> => {
     if (userIds.length === 0) return {};
 
     const { data: users, error } = await supabase
         .from("profiles")
-        .select("id, full_name, avatar_url, role, organization_id")
+        .select("*")
         .in("id", userIds);
 
     if (error) {
@@ -286,7 +300,7 @@ export const fetchUserData = async (
     }
 
     return (
-        users?.reduce((acc: Record<string, any>, user: any) => {
+        users?.reduce((acc: Record<string, Database["public"]["Tables"]["profiles"]["Row"]>, user: Database["public"]["Tables"]["profiles"]["Row"]) => {
             acc[user.id] = user;
             return acc;
         }, {}) || {}
@@ -295,7 +309,7 @@ export const fetchUserData = async (
 
 // Ticket-specific utilities
 export const buildTicketQuery = (
-    supabase: any,
+    supabase: TypedSupabaseClient,
     user: AuthenticatedUser,
     filters: {
         status?: string;
@@ -356,7 +370,7 @@ export const buildTicketQuery = (
 
 // Notification utilities
 export const createNotification = async (
-    supabase: any,
+    supabase: TypedSupabaseClient,
     notification: {
         user_id: string;
         type: string;
@@ -401,8 +415,8 @@ export const buildPaginatedResponse = <T>(
 };
 
 export const buildTicketResponse = (
-    ticket: any,
-    userData: Record<string, any>
+    ticket: Database["public"]["Tables"]["tickets"]["Row"],
+    userData: Record<string, Database["public"]["Tables"]["profiles"]["Row"]>
 ) => {
     return {
         ...ticket,

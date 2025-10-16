@@ -7,14 +7,17 @@ import {
     fetchUserData,
     AuthenticatedUser,
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
+import { Database } from "@/types/database";
 
 export const GET = withAuth(
     async (
         request: NextRequest,
         user: AuthenticatedUser,
-        supabase: any,
-        { params }: { params: Promise<{ id: string }> }
+        supabase: TypedSupabaseClient,
+        ...args: unknown[]
     ) => {
+        const { params } = args[0] as { params: Promise<{ id: string }> };
         const { id: ticketId } = await params;
 
         // Check if user has access to this ticket
@@ -53,11 +56,11 @@ export const GET = withAuth(
         if (error) return error;
 
         // Fetch user data for comments
-        const comments = (data as any[]) || [];
+        const comments = (data as Database["public"]["Tables"]["comments"]["Row"][]) || [];
         const userIds = new Set<string>();
 
         if (comments.length > 0) {
-            comments.forEach((comment: any) => {
+            comments.forEach((comment: Database["public"]["Tables"]["comments"]["Row"]) => {
                 if (comment.user_id) userIds.add(comment.user_id);
             });
         }
@@ -67,7 +70,7 @@ export const GET = withAuth(
         // Merge user data into comments
         const commentsWithUsers =
             comments.length > 0
-                ? comments.map((comment: any) => ({
+                ? comments.map((comment: Database["public"]["Tables"]["comments"]["Row"]) => ({
                       ...comment,
                       user: comment.user_id
                           ? userData[comment.user_id] || null
@@ -83,9 +86,10 @@ export const POST = withAuth(
     async (
         request: NextRequest,
         user: AuthenticatedUser,
-        supabase: any,
-        { params }: { params: Promise<{ id: string }> }
+        supabase: TypedSupabaseClient,
+        ...args: unknown[]
     ) => {
+        const { params } = args[0] as { params: Promise<{ id: string }> };
         const { id: ticketId } = await params;
         const body = await request.json();
         const { content } = body;

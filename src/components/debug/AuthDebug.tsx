@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
+import type { Session, User } from "@supabase/supabase-js";
 
 export function AuthDebug() {
-    const [session, setSession] = useState<any>(null);
-    const [user, setUser] = useState<any>(null);
+    const [session, setSession] = useState<Session | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -69,7 +70,7 @@ export function AuthDebug() {
                         <strong>Email:</strong> {user.email}
                     </div>
                 )}
-                {session && (
+                {session && session.expires_at && (
                     <div>
                         <strong>Expires:</strong>{" "}
                         {new Date(session.expires_at * 1000).toLocaleString()}

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { withAuth } from "@/lib/api-middleware";
 import {
     validateRequiredFields,
@@ -6,9 +6,10 @@ import {
     executeQuery,
     AuthenticatedUser,
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
 export const GET = withAuth(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const { data, error } = await executeQuery(
             supabase
                 .from("profiles")
@@ -36,7 +37,7 @@ export const GET = withAuth(
 );
 
 export const PUT = withAuth(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const body = await request.json();
         const { full_name, role, organization_id, avatar_url } = body;
 
@@ -47,7 +48,7 @@ export const PUT = withAuth(
         }
 
         // Only admin can change role and organization
-        const updateData: any = {
+        const updateData: Record<string, string | null> = {
             full_name: full_name?.trim(),
             avatar_url: avatar_url || null,
         };

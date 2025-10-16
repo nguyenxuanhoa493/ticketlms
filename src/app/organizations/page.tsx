@@ -450,7 +450,7 @@ export default function OrganizationsPage() {
                                                             Bạn có chắc chắn
                                                             muốn xóa đơn vị{" "}
                                                             <strong>
-                                                                "{org.name}"
+                                                                &quot;{org.name}&quot;
                                                             </strong>
                                                             ? Hành động này
                                                             không thể hoàn tác.

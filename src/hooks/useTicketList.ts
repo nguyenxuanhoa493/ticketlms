@@ -133,7 +133,7 @@ export function useTicketList() {
 
     // Search handler
     const handleSearch = () => {
-        const filters: any = {};
+        const filters: Record<string, string> = {};
         if (searchTerm) filters.search = searchTerm;
         if (selectedStatus && selectedStatus !== "all")
             filters.status = selectedStatus;
@@ -161,7 +161,7 @@ export function useTicketList() {
     // Pagination handlers
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
-        const filters: any = {};
+        const filters: Record<string, string> = {};
         if (searchTerm) filters.search = searchTerm;
         if (selectedStatus && selectedStatus !== "all")
             filters.status = selectedStatus;
@@ -176,7 +176,7 @@ export function useTicketList() {
     const handleItemsPerPageChange = (newItemsPerPage: number) => {
         setItemsPerPage(newItemsPerPage);
         setCurrentPage(1); // Reset to first page when changing items per page
-        const filters: any = {};
+        const filters: Record<string, string> = {};
         if (searchTerm) filters.search = searchTerm;
         if (selectedStatus && selectedStatus !== "all")
             filters.status = selectedStatus;
@@ -334,7 +334,7 @@ export function useTicketList() {
     const getDeadlineCountdown = (
         expectedDate: string | null,
         status: string
-    ) => {
+    ): { text: string; color: string; isOverdue: boolean } | null => {
         if (!expectedDate || status === "closed") return null;
 
         const now = new Date();
@@ -342,7 +342,33 @@ export function useTicketList() {
         const diffMs = expected.getTime() - now.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        return { days: diffDays };
+        const isOverdue = diffDays < 0;
+        const absDays = Math.abs(diffDays);
+        
+        let text: string;
+        let color: string;
+        
+        if (isOverdue) {
+            text = `Quá hạn ${absDays} ngày`;
+            color = "text-red-600";
+        } else if (diffDays === 0) {
+            text = "Hôm nay";
+            color = "text-orange-600";
+        } else if (diffDays === 1) {
+            text = "Ngày mai";
+            color = "text-yellow-600";
+        } else if (diffDays <= 3) {
+            text = `Còn ${diffDays} ngày`;
+            color = "text-yellow-600";
+        } else if (diffDays <= 7) {
+            text = `Còn ${diffDays} ngày`;
+            color = "text-blue-600";
+        } else {
+            text = `Còn ${diffDays} ngày`;
+            color = "text-gray-600";
+        }
+
+        return { text, color, isOverdue };
     };
 
     // Check if has active filters

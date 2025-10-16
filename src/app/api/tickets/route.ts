@@ -6,14 +6,15 @@ import {
     parsePaginationParams,
     executeQuery,
     buildTicketQuery,
-    buildPaginatedResponse,
     fetchUserData,
     handleApiError,
     AuthenticatedUser,
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
+import { Database } from "@/types/database";
 
 // Helper function to clean timestamp fields
-const cleanTimestampFields = (data: any) => {
+const cleanTimestampFields = (data: Record<string, unknown>) => {
     const cleaned = { ...data };
 
     // Convert empty strings to null for timestamp fields that can be set during creation
@@ -33,7 +34,7 @@ const cleanTimestampFields = (data: any) => {
 };
 
 export const GET = withAuth(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const { searchParams } = new URL(request.url);
         const { page, limit, offset } = parsePaginationParams(searchParams);
 
@@ -150,11 +151,11 @@ export const GET = withAuth(
         if (error) return error;
 
         // Fetch user data for created_by and assigned_to
-        const tickets = (data as any[]) || [];
+        const tickets = (data as Database["public"]["Tables"]["tickets"]["Row"][]) || [];
         const userIds = new Set<string>();
 
         if (tickets.length > 0) {
-            tickets.forEach((ticket: any) => {
+            tickets.forEach((ticket: Database["public"]["Tables"]["tickets"]["Row"]) => {
                 if (ticket.created_by) userIds.add(ticket.created_by);
                 if (ticket.assigned_to) userIds.add(ticket.assigned_to);
             });
@@ -165,7 +166,7 @@ export const GET = withAuth(
         // Merge user data into tickets
         const ticketsWithUsers =
             tickets.length > 0
-                ? tickets.map((ticket: any) => ({
+                ? tickets.map((ticket: Database["public"]["Tables"]["tickets"]["Row"]) => ({
                       ...ticket,
                       created_user: ticket.created_by
                           ? userData[ticket.created_by] || null
@@ -193,7 +194,7 @@ export const GET = withAuth(
 );
 
 export const POST = withAuth(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const body = await request.json();
         const {
             title,

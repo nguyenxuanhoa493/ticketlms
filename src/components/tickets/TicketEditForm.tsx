@@ -15,14 +15,14 @@ import {
     PlatformBadge,
 } from "@/components/badges";
 import { Calendar } from "lucide-react";
-import { TicketFormData, Organization } from "@/types";
+import { TicketFormData, Organization, CurrentUser } from "@/types";
 import RichTextEditor from "@/components/common/RichTextEditor";
 
 interface TicketEditFormProps {
     formData: TicketFormData;
     setFormData: React.Dispatch<React.SetStateAction<TicketFormData>>;
     organizations: Organization[];
-    currentUser: any;
+    currentUser: CurrentUser | null;
 }
 
 export function TicketEditForm({
@@ -38,7 +38,7 @@ export function TicketEditForm({
                 <div className="space-y-2 md:col-span-3">
                     <Label htmlFor="organization_id">Đơn vị</Label>
                     <Select
-                        value={formData.organization_id}
+                        value={formData.organization_id || ""}
                         onValueChange={(value) =>
                             setFormData((prev) => ({
                                 ...prev,
@@ -48,15 +48,24 @@ export function TicketEditForm({
                         disabled={!["admin", "manager"].includes(currentUser?.role || "")}
                     >
                         <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Chọn đơn vị">
+                                {formData.organization_id && organizations.length > 0
+                                    ? organizations.find((org) => org.id === formData.organization_id)?.name || "Chọn đơn vị"
+                                    : "Chọn đơn vị"}
+                            </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                            {Array.isArray(organizations) &&
+                            {Array.isArray(organizations) && organizations.length > 0 ? (
                                 organizations.map((org) => (
                                     <SelectItem key={org.id} value={org.id}>
                                         {org.name}
                                     </SelectItem>
-                                ))}
+                                ))
+                            ) : (
+                                <div className="px-2 py-1.5 text-sm text-gray-500">
+                                    Đang tải...
+                                </div>
+                            )}
                         </SelectContent>
                     </Select>
                     {!["admin", "manager"].includes(currentUser?.role || "") && (

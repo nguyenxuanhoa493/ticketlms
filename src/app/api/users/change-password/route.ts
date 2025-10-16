@@ -5,10 +5,11 @@ import {
     createSuccessResponse,
     AuthenticatedUser
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
-export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
     const body = await request.json();
-    const { current_password, new_password } = body;
+    const { new_password } = body;
     
     // Validate required fields
     const validation = validateRequiredFields(body, ["current_password", "new_password"]);

@@ -21,8 +21,8 @@ export const supabaseClient = createClient<Database>(
 );
 
 // Combined reset function
-export const resetClients = () => {
-    const { resetServerClients } = require("./server-client");
+export const resetClients = async () => {
+    const { resetServerClients } = await import("./server-client");
     // Browser client doesn't need reset as it's stateless
     resetServerClients();
 };

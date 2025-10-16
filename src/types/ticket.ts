@@ -24,6 +24,12 @@ export interface Ticket {
     };
 }
 
+export interface JiraStatus {
+    status: string;
+    statusCategory: string;
+    lastFetched: number;
+}
+
 export interface Organization {
     id: string;
     name: string;

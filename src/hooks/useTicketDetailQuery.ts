@@ -9,6 +9,7 @@ import {
     Comment,
     TicketFormData,
 } from "@/types";
+import { useCurrentUser, useOrganizations } from "./useTicketsQuery";
 
 // API functions
 const fetchTicketDetail = async (ticketId: string) => {
@@ -231,32 +232,16 @@ export function useTicketDetailQuery(ticketId: string) {
         select: organizeComments, // Transform comments to tree structure
     });
 
-    const { data: currentUser } = useQuery({
-        queryKey: ["currentUser"],
-        queryFn: async () => {
-            const response = await fetch("/api/current-user");
-            if (!response.ok) {
-                throw new Error("Failed to fetch current user");
-            }
-            return response.json();
-        },
-        staleTime: 10 * 60 * 1000, // 10 phút
-        gcTime: 30 * 60 * 1000, // 30 phút
-    });
-
-    const { data: organizations = [] } = useQuery({
-        queryKey: ["organizations"],
-        queryFn: async () => {
-            const response = await fetch("/api/organizations");
-            if (!response.ok) {
-                throw new Error("Failed to fetch organizations");
-            }
-            const data = await response.json();
-            return data.organizations || data || [];
-        },
-        staleTime: 10 * 60 * 1000, // 10 phút
-        gcTime: 30 * 60 * 1000, // 30 phút
-    });
+    // Use shared hooks from useTicketsQuery to leverage cache
+    const { data: currentUser } = useCurrentUser();
+    const { data: organizationsData } = useOrganizations();
+    
+    // Extract organizations array
+    const organizations = Array.isArray(organizationsData?.organizations)
+        ? organizationsData.organizations
+        : Array.isArray(organizationsData)
+        ? organizationsData
+        : [];
 
     // Mutations
     const createCommentMutation = useMutation({

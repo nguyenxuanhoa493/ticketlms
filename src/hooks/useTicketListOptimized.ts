@@ -12,12 +12,12 @@ import { Ticket, TicketFormData } from "@/types";
 export function useTicketListOptimized() {
     // State cho UI
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+    const [editingTicket, setEditingTicket] = useState<Ticket | undefined>(undefined);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [ticketToDelete, setTicketToDelete] = useState<{
         id: string;
         title: string;
-    } | null>(null);
+    } | null | undefined>(null);
     const [formData, setFormData] = useState<TicketFormData>({
         title: "",
         description: "",
@@ -34,6 +34,7 @@ export function useTicketListOptimized() {
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState("");
+    const [appliedSearchTerm, setAppliedSearchTerm] = useState(""); // Actually applied search term
     const [selectedStatus, setSelectedStatus] = useState("all");
     const [selectedOrganization, setSelectedOrganization] = useState("all");
     const [selectedSort, setSelectedSort] = useState("status_asc"); // Mặc định sắp xếp theo trạng thái: Mở > Đang làm > Đóng
@@ -44,12 +45,12 @@ export function useTicketListOptimized() {
 
     // Build query params
     const queryParams = useMemo(() => {
-        const params: any = {
+        const params: Record<string, string | number> = {
             page: currentPage,
             limit: itemsPerPage,
         };
 
-        if (searchTerm) params.search = searchTerm;
+        if (appliedSearchTerm) params.search = appliedSearchTerm;
         if (selectedStatus && selectedStatus !== "all")
             params.status = selectedStatus;
         if (selectedOrganization && selectedOrganization !== "all")
@@ -61,7 +62,7 @@ export function useTicketListOptimized() {
     }, [
         currentPage,
         itemsPerPage,
-        searchTerm,
+        appliedSearchTerm,
         selectedStatus,
         selectedOrganization,
         selectedSort,
@@ -126,7 +127,7 @@ export function useTicketListOptimized() {
 
     // Check if has active filters
     const hasActiveFilters = Boolean(
-        searchTerm ||
+        appliedSearchTerm ||
             (selectedStatus && selectedStatus !== "all") ||
             (selectedOrganization && selectedOrganization !== "all") ||
             (selectedSort && selectedSort !== "status_asc")
@@ -134,11 +135,13 @@ export function useTicketListOptimized() {
 
     // Handlers
     const handleSearch = () => {
+        setAppliedSearchTerm(searchTerm); // Apply the search term
         setCurrentPage(1); // Reset to first page when searching
     };
 
     const handleClearFilters = () => {
         setSearchTerm("");
+        setAppliedSearchTerm(""); // Clear applied search term
         setSelectedStatus("all");
         setSelectedOrganization("all");
         setSelectedSort("status_asc");
@@ -178,7 +181,7 @@ export function useTicketListOptimized() {
                 only_show_in_admin: ticket.only_show_in_admin || false,
             });
         } else {
-            setEditingTicket(null);
+            setEditingTicket(undefined);
             // Auto-set organization_id for non-admin users
             const defaultOrgId =
                 currentUser?.role !== "admin" && currentUser?.organization_id
@@ -204,7 +207,7 @@ export function useTicketListOptimized() {
 
     const handleCloseDialog = () => {
         setDialogOpen(false);
-        setEditingTicket(null);
+        setEditingTicket(undefined);
         // Reset organization_id based on user role
         const defaultOrgId =
             currentUser?.role !== "admin" && currentUser?.organization_id
@@ -269,7 +272,7 @@ export function useTicketListOptimized() {
     const getDeadlineCountdown = (
         expectedDate: string | null,
         status: string
-    ) => {
+    ): { text: string; color: string; isOverdue: boolean } | null => {
         if (!expectedDate || status === "closed") return null;
 
         const now = new Date();
@@ -277,7 +280,33 @@ export function useTicketListOptimized() {
         const diffMs = expected.getTime() - now.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        return { days: diffDays };
+        const isOverdue = diffDays < 0;
+        const absDays = Math.abs(diffDays);
+        
+        let text: string;
+        let color: string;
+        
+        if (isOverdue) {
+            text = `Quá hạn ${absDays} ngày`;
+            color = "text-red-600";
+        } else if (diffDays === 0) {
+            text = "Hôm nay";
+            color = "text-orange-600";
+        } else if (diffDays === 1) {
+            text = "Ngày mai";
+            color = "text-yellow-600";
+        } else if (diffDays <= 3) {
+            text = `Còn ${diffDays} ngày`;
+            color = "text-yellow-600";
+        } else if (diffDays <= 7) {
+            text = `Còn ${diffDays} ngày`;
+            color = "text-blue-600";
+        } else {
+            text = `Còn ${diffDays} ngày`;
+            color = "text-gray-600";
+        }
+
+        return { text, color, isOverdue };
     };
 
     return {

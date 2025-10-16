@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withFileUpload } from "@/lib/api-middleware";
-import { createSuccessResponse } from "@/lib/api-utils";
+import { createSuccessResponse, AuthenticatedUser } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
 export const POST = withFileUpload(
-    async (request: NextRequest, user: any, supabase: any, file: File) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, file: File) => {
         try {
             console.log("=== Unified Upload API Called ===");
             console.log("File received:", {
@@ -79,12 +80,6 @@ export const POST = withFileUpload(
 
             if (uploadError) {
                 console.error("Storage upload error:", uploadError);
-                console.error("Upload error details:", {
-                    message: uploadError.message,
-                    statusCode: uploadError.statusCode,
-                    error: uploadError.error,
-                    details: uploadError.details,
-                });
                 return NextResponse.json(
                     {
                         error: "Failed to upload file to storage",

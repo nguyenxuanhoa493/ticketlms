@@ -19,6 +19,7 @@ export const createServerClient = () => {
     console.warn(
         "createServerClient is deprecated. Use getAdminClient instead."
     );
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getAdminClient } = require("./supabase/client");
     return getAdminClient();
 };

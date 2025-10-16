@@ -21,6 +21,7 @@ import {
     handleApiError,
     AuthenticatedUser,
 } from "./api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
 // Template cho CRUD API routes
 export const createCRUDTemplate = (
@@ -33,7 +34,7 @@ export const createCRUDTemplate = (
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const { searchParams } = new URL(request.url);
                 const { page, limit, offset } =
@@ -79,7 +80,7 @@ export const createCRUDTemplate = (
 
                 return NextResponse.json(
                     buildPaginatedResponse(
-                        (data as any[]) || [],
+                        (data as unknown[]) || [],
                         count || 0,
                         page,
                         limit
@@ -93,7 +94,7 @@ export const createCRUDTemplate = (
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const body = await request.json();
 
@@ -138,7 +139,7 @@ export const createCRUDTemplate = (
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const body = await request.json();
                 const { id, ...updateData } = body;
@@ -199,7 +200,7 @@ export const createCRUDTemplate = (
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const { searchParams } = new URL(request.url);
                 const id = searchParams.get("id");
@@ -262,7 +263,7 @@ export const createFileUploadTemplate = (
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any,
+                supabase: TypedSupabaseClient,
                 file: File
             ) => {
                 // Validate file
@@ -316,7 +317,7 @@ export const createNotificationTemplate = () => {
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const { searchParams } = new URL(request.url);
                 const unreadOnly = searchParams.get("unread_only") === "true";
@@ -342,7 +343,7 @@ export const createNotificationTemplate = () => {
                 return NextResponse.json({
                     notifications: data || [],
                     unread_count: unreadOnly
-                        ? (data as any[])?.length || 0
+                        ? (data as unknown[])?.length || 0
                         : null,
                 });
             }
@@ -352,7 +353,7 @@ export const createNotificationTemplate = () => {
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const body = await request.json();
                 const { user_id, type, title, message, ticket_id, comment_id } =
@@ -407,7 +408,7 @@ export const createTicketTemplate = () => {
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const { searchParams } = new URL(request.url);
                 const { page, limit, offset } =
@@ -447,7 +448,7 @@ export const createTicketTemplate = () => {
 
                 return NextResponse.json(
                     buildPaginatedResponse(
-                        (data as any[]) || [],
+                        (data as unknown[]) || [],
                         count || 0,
                         page,
                         limit
@@ -460,7 +461,7 @@ export const createTicketTemplate = () => {
             async (
                 request: NextRequest,
                 user: AuthenticatedUser,
-                supabase: any
+                supabase: TypedSupabaseClient
             ) => {
                 const body = await request.json();
                 const {

@@ -486,7 +486,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             const container = range.commonAncestorContainer;
 
             // Check if we're inside a list
-            let listElement =
+            const listElement =
                 container.nodeType === Node.ELEMENT_NODE
                     ? (container as Element).closest("ul, ol")
                     : container.parentElement?.closest("ul, ol");

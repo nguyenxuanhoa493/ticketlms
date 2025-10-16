@@ -3,6 +3,10 @@ export * from "./ticket";
 
 // Export database types if needed
 export * from "./database";
+
+// Export supabase types
+export * from "./supabase";
+
 import { Database } from "./database";
 
 // Extended types for API responses

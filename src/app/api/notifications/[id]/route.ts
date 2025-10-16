@@ -5,8 +5,10 @@ import {
     executeQuery,
     AuthenticatedUser
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 
-export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
     const body = await request.json();
     const { is_read } = body;
@@ -36,7 +38,8 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser
     return createSuccessResponse(data, "Notification updated successfully");
 });
 
-export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
     
     // Check if notification belongs to user

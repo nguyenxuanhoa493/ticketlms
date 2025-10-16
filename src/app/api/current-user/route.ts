@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-middleware";
 import { AuthenticatedUser } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
 import { NextRequest } from "next/server";
 
 export const GET = withAuth(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         // Get organization info separately if user has one
         let organizationData = null;
         if (user.organization_id) {

@@ -8,8 +8,10 @@ import {
     handleApiError,
     AuthenticatedUser
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
+import { Database } from "@/types/database";
 
-export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
     const { searchParams } = new URL(request.url);
     const unreadOnly = searchParams.get("unread_only") === "true";
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -30,11 +32,11 @@ export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser
     
     return NextResponse.json({
         notifications: data || [],
-        unread_count: unreadOnly ? ((data as any[])?.length || 0) : null,
+        unread_count: unreadOnly ? ((data as Database["public"]["Tables"]["notifications"]["Row"][])?.length || 0) : null,
     });
 });
 
-export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
     const body = await request.json();
     const { user_id, type, title, message, ticket_id, comment_id } = body;
     

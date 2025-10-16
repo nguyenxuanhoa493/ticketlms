@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +20,14 @@ import {
 import { Pagination } from "@/components/ui/pagination";
 import { Ticket, CurrentUser } from "@/types";
 import { ExternalLink, Trash2 } from "lucide-react";
+import { TicketDetailSheet } from "./TicketDetailSheet";
+import { JiraStatusBadge } from "@/components/badges";
 
 interface TicketTableProps {
     tickets: Ticket[];
     currentUser: CurrentUser | null;
     onDelete: (id: string, title: string) => Promise<void>;
-    getDeadlineCountdown: (expectedDate: string | null, status: string) => any;
+    getDeadlineCountdown: (expectedDate: string | null, status: string) => { text: string; color: string; isOverdue: boolean } | null;
     // Pagination props
     currentPage: number;
     totalPages: number;
@@ -48,6 +50,50 @@ export function TicketTable({
     onItemsPerPageChange,
 }: TicketTableProps) {
     const router = useRouter();
+    const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [jiraStatuses, setJiraStatuses] = useState<Record<string, { status: string; statusCategory: string }>>({});
+    const [loadingJira, setLoadingJira] = useState(false);
+
+    // Fetch Jira statuses for all tickets with jira_link
+    useEffect(() => {
+        const fetchJiraStatuses = async () => {
+            const ticketsWithJira = tickets.filter((t) => t.jira_link);
+            if (ticketsWithJira.length === 0) return;
+
+            setLoadingJira(true);
+            try {
+                const response = await fetch("/api/jira/batch-status", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        jiraLinks: ticketsWithJira.map((t) => t.jira_link),
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setJiraStatuses(data.statuses || {});
+                }
+            } catch (error) {
+                console.error("Failed to fetch Jira statuses:", error);
+            } finally {
+                setLoadingJira(false);
+            }
+        };
+
+        fetchJiraStatuses();
+    }, [tickets]);
+
+    const handleTicketClick = (ticketId: string) => {
+        setSelectedTicketId(ticketId);
+        setSheetOpen(true);
+    };
+
+    const handleOpenInNewTab = (ticketId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        window.open(`/tickets/${ticketId}`, "_blank");
+    };
 
     return (
         <div className="space-y-4">
@@ -79,13 +125,18 @@ export function TicketTable({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {tickets?.map((ticket, index) => (
+                        {tickets?.map((ticket, index) => {
+                            const jiraStatus = ticket.jira_link ? jiraStatuses[ticket.jira_link] : null;
+                            const isJiraDone = jiraStatus?.statusCategory?.toLowerCase() === "done";
+                            return (
                             <TableRow
                                 key={ticket.id}
-                                className="cursor-pointer hover:bg-gray-50"
-                                onClick={() =>
-                                    router.push(`/tickets/${ticket.id}`)
-                                }
+                                className={`cursor-pointer transition-colors ${
+                                    isJiraDone 
+                                        ? "bg-green-50 hover:bg-green-100" 
+                                        : "hover:bg-gray-50"
+                                }`}
+                                onClick={() => handleTicketClick(ticket.id)}
                             >
                                 <TableCell className="py-2 text-center w-12">
                                     {(currentPage - 1) * itemsPerPage +
@@ -121,10 +172,19 @@ export function TicketTable({
                                 </TableCell>
                                 {currentUser?.role === "admin" && (
                                     <TableCell className="py-2 w-auto">
-                                        <JiraBadge
-                                            jiraLink={ticket.jira_link}
-                                            size="sm"
-                                        />
+                                        {ticket.jira_link ? (
+                                            <JiraStatusBadge
+                                                status={jiraStatus?.status}
+                                                statusCategory={jiraStatus?.statusCategory}
+                                                jiraLink={ticket.jira_link}
+                                                loading={loadingJira && !jiraStatus}
+                                            />
+                                        ) : (
+                                            <JiraBadge
+                                                jiraLink={ticket.jira_link}
+                                                size="sm"
+                                            />
+                                        )}
                                     </TableCell>
                                 )}
 
@@ -150,34 +210,18 @@ export function TicketTable({
                                                     );
                                                 if (!countdown) return null;
 
-                                                const isOverdue =
-                                                    countdown.days < 0;
-                                                const isUrgent =
-                                                    countdown.days <= 3 &&
-                                                    countdown.days >= 0;
-                                                const isWarning =
-                                                    countdown.days <= 7 &&
-                                                    countdown.days > 3;
-
-                                                let textColor = "text-gray-600";
                                                 let bgColor = "bg-gray-100";
-
-                                                if (isOverdue || isUrgent) {
-                                                    textColor = "text-red-600";
+                                                if (countdown.isOverdue) {
                                                     bgColor = "bg-red-100";
-                                                } else if (isWarning) {
-                                                    textColor =
-                                                        "text-orange-600";
+                                                } else if (countdown.color.includes("orange") || countdown.color.includes("yellow")) {
                                                     bgColor = "bg-orange-100";
                                                 }
 
                                                 return (
                                                     <div
-                                                        className={`text-xs px-2 py-1 rounded-full ${bgColor} ${textColor} font-medium`}
+                                                        className={`text-xs px-2 py-1 rounded-full ${bgColor} ${countdown.color} font-medium`}
                                                     >
-                                                        {countdown.days > 0
-                                                            ? `+${countdown.days} ngày`
-                                                            : `${countdown.days} ngày`}
+                                                        {countdown.text}
                                                     </div>
                                                 );
                                             })()}
@@ -302,7 +346,8 @@ export function TicketTable({
                                     </div>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </div>
@@ -315,6 +360,14 @@ export function TicketTable({
                 itemsPerPage={itemsPerPage}
                 onPageChange={onPageChange}
                 onItemsPerPageChange={onItemsPerPageChange}
+            />
+
+            {/* Ticket Detail Sheet */}
+            <TicketDetailSheet
+                ticketId={selectedTicketId}
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                jiraStatuses={jiraStatuses}
             />
         </div>
     );

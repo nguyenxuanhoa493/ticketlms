@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-middleware";
 import {
-    validateRequiredFields,
     createSuccessResponse,
     executeQuery,
     fetchUserData,
     AuthenticatedUser
 } from "@/lib/api-utils";
+import { TypedSupabaseClient } from "@/types/supabase";
+import { Database } from "@/types/database";
 
 // Helper function to clean timestamp fields
-const cleanTimestampFields = (data: any) => {
+const cleanTimestampFields = (data: Record<string, unknown>) => {
     const cleaned = { ...data };
     
     // Convert empty strings to null for timestamp fields that can be updated
@@ -28,7 +29,8 @@ const cleanTimestampFields = (data: any) => {
     return cleaned;
 };
 
-export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
     
     const { data, error } = await executeQuery(
@@ -46,12 +48,15 @@ export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser
     if (error) return error;
     
     // Check organization access
-    if (user.role !== "admin" && (data as any).organization_id !== user.organization_id) {
+    if (user.role !== "admin" && data && (data as Database["public"]["Tables"]["tickets"]["Row"]).organization_id !== user.organization_id) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
     
     // Fetch user data for created_by and assigned_to
-    const ticket = data as any;
+    const ticket = data as Database["public"]["Tables"]["tickets"]["Row"] | null;
+    if (!ticket) {
+        return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+    }
     const userIds = new Set<string>();
     
     if (ticket.created_by) userIds.add(ticket.created_by);
@@ -69,7 +74,8 @@ export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser
     return NextResponse.json(ticketWithUsers);
 });
 
-export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
     const body = await request.json();
     
@@ -116,7 +122,8 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser
     return createSuccessResponse(data, "Ticket updated successfully");
 });
 
-export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: any, { params }: { params: Promise<{ id: string }> }) => {
+export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
     
     // Check if user has permission to delete this ticket

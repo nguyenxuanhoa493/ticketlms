@@ -103,7 +103,7 @@ export function convertHtmlToJiraADF(html: string): JiraADFContent {
         };
     }
 
-    const content: any[] = [];
+    const content: { type: string; content?: unknown[]; attrs?: Record<string, unknown>; text?: string }[] = [];
 
     // Step 1: Convert HTML to plain text first
     const plainTextResult = convertHtmlToPlainText(html);
@@ -330,7 +330,7 @@ export function convertHtmlToJiraADF(html: string): JiraADFContent {
         version: 1,
         content:
             content.length > 0
-                ? content
+                ? (content as JiraADFContent["content"])
                 : [
                       {
                           type: "paragraph",

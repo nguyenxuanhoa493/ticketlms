@@ -6,12 +6,13 @@ import {
     AuthenticatedUser,
 } from "@/lib/api-utils";
 import { Database } from "@/types/database";
+import { TypedSupabaseClient } from "@/types/supabase";
 
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
 // GET - Filter organizations based on user role
 export const GET = withAuth(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         let query = supabase.from("organizations").select("*");
 
         // Apply organization filter for non-admin users
@@ -66,7 +67,7 @@ export const GET = withAuth(
 
 // POST - Chỉ admin mới có thể tạo organization
 export const POST = withAdmin(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const body = await request.json();
         const { name, description } = body;
 
@@ -88,7 +89,7 @@ export const POST = withAdmin(
 
 // PUT - Chỉ admin mới có thể cập nhật organization
 export const PUT = withAdmin(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const body = await request.json();
         const { id, name, description } = body;
 
@@ -113,7 +114,7 @@ export const PUT = withAdmin(
 
 // DELETE - Chỉ admin mới có thể xóa organization
 export const DELETE = withAdmin(
-    async (request: NextRequest, user: AuthenticatedUser, supabase: any) => {
+    async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get("id");
 

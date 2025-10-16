@@ -65,7 +65,7 @@ export function validatePassword(password: string): PasswordValidation {
 /**
  * Validate required field
  */
-export function validateRequired(value: any, fieldName: string): string | null {
+export function validateRequired(value: unknown, fieldName: string): string | null {
     if (!value || (typeof value === 'string' && value.trim() === '')) {
         return `${fieldName} là bắt buộc`;
     }
@@ -143,7 +143,7 @@ export function validateDateTimeFormat(datetime: string): boolean {
 /**
  * Get validation error message for common fields
  */
-export function getFieldErrorMessage(fieldName: string, value: any, rules: {
+export function getFieldErrorMessage(fieldName: string, value: unknown, rules: {
     required?: boolean;
     email?: boolean;
     minLength?: number;
@@ -165,7 +165,7 @@ export function getFieldErrorMessage(fieldName: string, value: any, rules: {
     }
     
     // Email validation
-    if (rules.email && !validateEmail(value)) {
+    if (rules.email && typeof value === 'string' && !validateEmail(value)) {
         return "Email không hợp lệ";
     }
     
@@ -178,22 +178,22 @@ export function getFieldErrorMessage(fieldName: string, value: any, rules: {
     }
     
     // URL validation
-    if (rules.url && !validateUrl(value)) {
+    if (rules.url && typeof value === 'string' && !validateUrl(value)) {
         return "URL không hợp lệ";
     }
     
     // Phone validation
-    if (rules.phone && !validatePhoneNumber(value)) {
+    if (rules.phone && typeof value === 'string' && !validatePhoneNumber(value)) {
         return "Số điện thoại không hợp lệ";
     }
     
     // Date validation
-    if (rules.date && !validateDateFormat(value)) {
+    if (rules.date && typeof value === 'string' && !validateDateFormat(value)) {
         return "Định dạng ngày không hợp lệ (YYYY-MM-DD)";
     }
     
     // Datetime validation
-    if (rules.datetime && !validateDateTimeFormat(value)) {
+    if (rules.datetime && typeof value === 'string' && !validateDateTimeFormat(value)) {
         return "Định dạng ngày giờ không hợp lệ (YYYY-MM-DDTHH:mm)";
     }
     

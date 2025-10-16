@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import RichTextEditor from "@/components/common/RichTextEditor";
-import { TicketFormData, Organization } from "@/types";
+import { TicketFormData, Organization, Ticket } from "@/types";
 import {
     TicketTypeBadge,
     TicketStatusBadge,
@@ -37,7 +37,7 @@ interface TicketDialogProps {
     organizations: Organization[];
     onSubmit: (e: React.FormEvent) => Promise<void>;
     submitting: boolean;
-    editingTicket?: any; // Ticket being edited, if any
+    editingTicket?: Ticket; // Ticket being edited, if any
     currentUser?: {
         role: "admin" | "manager" | "user";
     } | null;

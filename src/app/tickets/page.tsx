@@ -233,7 +233,7 @@ export default function TicketsPage() {
                         <AlertDialogDescription>
                             Bạn có chắc chắn muốn xóa ticket{" "}
                             <span className="font-semibold">
-                                "{ticketToDelete?.title}"
+                                &quot;{ticketToDelete?.title}&quot;
                             </span>
                             ? Hành động này không thể hoàn tác.
                         </AlertDialogDescription>
