@@ -87,37 +87,18 @@ export default function LoginForm() {
             }
 
             if (authData.user && authData.session) {
-                // Verify session is set properly
-                const {
-                    data: { session },
-                } = await supabase.auth.getSession();
-
-                if (session) {
-                    // Reduced wait time for better UX
-                    await new Promise((resolve) => setTimeout(resolve, 500));
-
-                    // Test if we can get user with the session
-                    const {
-                        data: { user },
-                    } = await supabase.auth.getUser();
-
-                    if (user) {
-                        redirectToDashboard();
-
-                        // Fallback with shorter delay
-                        setTimeout(() => {
-                            if (window.location.pathname === "/login") {
-                                window.location.href = "/dashboard";
-                            }
-                        }, 1500);
-                    } else {
-                        setError("Session không hợp lệ. Vui lòng thử lại.");
+                // Login successful, redirect immediately
+                // The middleware will handle session verification
+                redirectToDashboard();
+                
+                // Fallback redirect
+                setTimeout(() => {
+                    if (window.location.pathname === "/login") {
+                        window.location.href = "/dashboard";
                     }
-                } else {
-                    setError("Không thể tạo session. Vui lòng thử lại.");
-                }
+                }, 1000);
             } else {
-                setError("Đăng nhập không thành công.");
+                setError("Đăng nhập không thành công. Vui lòng kiểm tra email và mật khẩu.");
             }
         } catch (err) {
             setError("Đã xảy ra lỗi không mong đợi. Vui lòng thử lại.");
