@@ -22,27 +22,45 @@ export const createMiddlewareClient = (
                     value: string,
                     options: Record<string, unknown>
                 ) {
+                    // Override cookie options to ensure proper isolation
+                    const cookieOptions = {
+                        ...options,
+                        sameSite: 'lax' as const,
+                        secure: process.env.NODE_ENV === 'production',
+                        httpOnly: true,
+                        path: '/',
+                    };
+                    
                     request.cookies.set({
                         name,
                         value,
-                        ...options,
+                        ...cookieOptions,
                     });
                     response.cookies.set({
                         name,
                         value,
-                        ...options,
+                        ...cookieOptions,
                     });
                 },
                 remove(name: string, options: Record<string, unknown>) {
+                    const cookieOptions = {
+                        ...options,
+                        sameSite: 'lax' as const,
+                        secure: process.env.NODE_ENV === 'production',
+                        httpOnly: true,
+                        path: '/',
+                        maxAge: 0,
+                    };
+                    
                     request.cookies.set({
                         name,
                         value: "",
-                        ...options,
+                        ...cookieOptions,
                     });
                     response.cookies.set({
                         name,
                         value: "",
-                        ...options,
+                        ...cookieOptions,
                     });
                 },
             },

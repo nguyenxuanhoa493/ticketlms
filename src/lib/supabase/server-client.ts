@@ -27,10 +27,24 @@ export const getServerClient = async () => {
                         return cookieStore.get(name)?.value;
                     },
                     set(name: string, value: string, options: CookieOptions) {
-                        cookieStore.set(name, value, options);
+                        // Ensure proper cookie isolation
+                        cookieStore.set(name, value, {
+                            ...options,
+                            sameSite: 'lax',
+                            secure: process.env.NODE_ENV === 'production',
+                            httpOnly: true,
+                            path: '/',
+                        });
                     },
                     remove(name: string, options: CookieOptions) {
-                        cookieStore.delete(name);
+                        cookieStore.set(name, '', {
+                            ...options,
+                            sameSite: 'lax',
+                            secure: process.env.NODE_ENV === 'production',
+                            httpOnly: true,
+                            path: '/',
+                            maxAge: 0,
+                        });
                     },
                 },
             }
@@ -79,10 +93,23 @@ export const createApiClient = (cookieStore: CookieStore) => {
                 return cookieStore.get(name)?.value;
             },
             set(name: string, value: string, options?: Record<string, unknown>) {
-                cookieStore.set(name, value, options);
+                // Ensure proper cookie isolation
+                cookieStore.set(name, value, {
+                    ...options,
+                    sameSite: 'lax',
+                    secure: process.env.NODE_ENV === 'production',
+                    httpOnly: true,
+                    path: '/',
+                });
             },
             remove(name: string) {
-                cookieStore.delete(name);
+                cookieStore.set(name, '', {
+                    sameSite: 'lax',
+                    secure: process.env.NODE_ENV === 'production',
+                    httpOnly: true,
+                    path: '/',
+                    maxAge: 0,
+                });
             },
         },
     });
