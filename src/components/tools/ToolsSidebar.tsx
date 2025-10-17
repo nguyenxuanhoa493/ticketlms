@@ -2,48 +2,81 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Settings, PlayCircle, Server, Workflow } from "lucide-react";
+import { Settings, PlayCircle, Server, Workflow, ChevronDown, ChevronRight, FileCode } from "lucide-react";
 
 interface ToolsSidebarProps {
     userRole: string;
 }
 
-const navigation = [
+interface SubMenuItem {
+    id: string;
+    name: string;
+    href: string;
+}
+
+interface MenuItem {
+    name: string;
+    href: string;
+    icon: any;
+    roles: string[];
+    badge?: string;
+    subItems?: SubMenuItem[];
+}
+
+const navigation: MenuItem[] = [
     {
         name: "Call API",
         href: "/tools/api-runner",
         icon: PlayCircle,
         roles: ["admin"],
-        description: "Chạy API requests",
-        badge: undefined,
     },
     {
         name: "API Auto",
         href: "/tools/api-auto",
         icon: Workflow,
         roles: ["admin"],
-        description: "Luồng tự động hóa",
         badge: "NEW",
+        subItems: [
+            {
+                id: "clone-program",
+                name: "Clone chương trình",
+                href: "/tools/api-auto?flow=clone-program",
+            },
+        ],
     },
     {
         name: "Cấu hình môi trường",
         href: "/tools/environments",
         icon: Server,
         roles: ["admin"],
-        description: "Quản lý API environments",
-        badge: undefined,
     },
 ];
 
 export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
     const pathname = usePathname();
+    const [expandedItems, setExpandedItems] = useState<Set<string>>(
+        new Set(["API Auto"]) // Default expand API Auto
+    );
 
     // Filter navigation based on user role
     const filteredNavigation = navigation.filter((item) => {
         if (!item.roles) return true;
         return item.roles.includes(userRole);
     });
+
+    const toggleExpanded = (itemName: string) => {
+        setExpandedItems((prev) => {
+            const next = new Set(prev);
+            if (next.has(itemName)) {
+                next.delete(itemName);
+            } else {
+                next.add(itemName);
+            }
+            return next;
+        });
+    };
 
     return (
         <div className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)]">
@@ -60,42 +93,90 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
 
                 <nav className="space-y-1">
                     {filteredNavigation.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = pathname === item.href || pathname.startsWith(item.href);
+                        const isExpanded = expandedItems.has(item.name);
                         const Icon = item.icon;
+                        const hasSubItems = item.subItems && item.subItems.length > 0;
 
                         return (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                className={cn(
-                                    "group flex items-start gap-3 px-3 py-3 text-sm font-medium rounded-lg transition-colors",
-                                    isActive
-                                        ? "bg-blue-50 text-blue-700"
-                                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                                )}
-                            >
-                                <Icon
-                                    className={cn(
-                                        "w-5 h-5 mt-0.5 flex-shrink-0",
-                                        isActive
-                                            ? "text-blue-600"
-                                            : "text-gray-400 group-hover:text-gray-600"
-                                    )}
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between">
-                                        <span className="truncate">{item.name}</span>
+                            <div key={item.name}>
+                                {/* Main Menu Item */}
+                                <div className="flex items-center">
+                                    <Link
+                                        href={item.href}
+                                        className={cn(
+                                            "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors flex-1",
+                                            isActive && !hasSubItems
+                                                ? "bg-blue-50 text-blue-700"
+                                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                        )}
+                                    >
+                                        <Icon
+                                            className={cn(
+                                                "w-5 h-5 flex-shrink-0",
+                                                isActive && !hasSubItems
+                                                    ? "text-blue-600"
+                                                    : "text-gray-400 group-hover:text-gray-600"
+                                            )}
+                                        />
+                                        <span className="flex-1 truncate">{item.name}</span>
                                         {item.badge && (
-                                            <span className="ml-2 px-2 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-full flex-shrink-0">
+                                            <span className="px-2 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-full flex-shrink-0">
                                                 {item.badge}
                                             </span>
                                         )}
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                        {item.description}
-                                    </p>
+                                    </Link>
+
+                                    {/* Expand/Collapse Button */}
+                                    {hasSubItems && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                toggleExpanded(item.name);
+                                            }}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            {isExpanded ? (
+                                                <ChevronDown className="w-4 h-4 text-gray-500" />
+                                            ) : (
+                                                <ChevronRight className="w-4 h-4 text-gray-500" />
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
-                            </Link>
+
+                                {/* Sub Menu Items */}
+                                {hasSubItems && isExpanded && (
+                                    <div className="ml-6 mt-1 space-y-1">
+                                        {item.subItems!.map((subItem) => {
+                                            const isSubActive = pathname.includes(subItem.href);
+
+                                            return (
+                                                <Link
+                                                    key={subItem.id}
+                                                    href={subItem.href}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
+                                                        isSubActive
+                                                            ? "bg-blue-50 text-blue-700 font-medium"
+                                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                    )}
+                                                >
+                                                    <FileCode
+                                                        className={cn(
+                                                            "w-4 h-4 flex-shrink-0",
+                                                            isSubActive
+                                                                ? "text-blue-600"
+                                                                : "text-gray-400"
+                                                        )}
+                                                    />
+                                                    <span className="truncate">{subItem.name}</span>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </nav>
