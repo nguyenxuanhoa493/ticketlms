@@ -89,7 +89,7 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
     };
 
     return (
-        <div className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)]">
+        <div className="w-80 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)]">
             <div className="p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -193,7 +193,9 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                     {isGroupExpanded && (
                                                         <div className="ml-6 space-y-1">
                                                             {group.items.map((subItem) => {
-                                                                const isSubActive = pathname.includes(subItem.href);
+                                                                // Use same logic as top navigation
+                                                                const isSubActive = pathname === subItem.href || 
+                                                                    pathname.includes(subItem.href.split('?')[0] + '?');
 
                                                                 return (
                                                                     <Link
