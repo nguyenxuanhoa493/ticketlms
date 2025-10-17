@@ -92,13 +92,8 @@ export function AutoFlowTree({ folders, selectedFlowId, onFlowSelect }: AutoFlow
                                                     isSelected ? "text-blue-600" : "text-gray-400"
                                                 )}
                                             />
-                                            <div className="flex-1 text-left min-w-0">
-                                                <div className="truncate">{flow.name}</div>
-                                                {flow.description && (
-                                                    <div className="text-xs text-gray-500 truncate">
-                                                        {flow.description}
-                                                    </div>
-                                                )}
+                                            <div className="flex-1 text-left min-w-0 truncate">
+                                                {flow.name}
                                             </div>
                                         </button>
                                     );

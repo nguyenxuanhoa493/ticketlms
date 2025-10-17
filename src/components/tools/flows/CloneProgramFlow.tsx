@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface Program {
@@ -47,6 +52,10 @@ export function CloneProgramFlow({
     const [cloneResult, setCloneResult] = useState<any>(null);
     const [historyExpanded, setHistoryExpanded] = useState(false);
 
+    // Status filters
+    const [statusApproved, setStatusApproved] = useState(true);
+    const [statusQueued, setStatusQueued] = useState(false);
+
     // Step 1: Get list of programs
     const handleGetPrograms = async () => {
         if (!environmentId) {
@@ -58,12 +67,53 @@ export function CloneProgramFlow({
             return;
         }
 
+        // Build status array
+        const statuses: string[] = [];
+        if (statusApproved) statuses.push("approved");
+        if (statusQueued) statuses.push("queued");
+
+        if (statuses.length === 0) {
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng chọn ít nhất một trạng thái",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setLoading(true);
         setPrograms([]);
         setSelectedProgram(null);
         setCloneResult(null);
 
         try {
+            // First, get STAGING content-tlx programs
+            const stagingResponse = await fetch(
+                "/api/tools/auto-flow/clone-program",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        environment_id: environmentId,
+                        dmn: "contenttlx",
+                        user_code: userCode || undefined,
+                        pass: pass || undefined,
+                        step: "get_programs",
+                        statuses,
+                    }),
+                }
+            );
+
+            const stagingData = await stagingResponse.json();
+
+            if (!stagingResponse.ok) {
+                throw new Error(
+                    stagingData.error ||
+                        "Failed to get programs from content-tlx"
+                );
+            }
+
+            // Then get from user's selected environment
             const response = await fetch("/api/tools/auto-flow/clone-program", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -73,6 +123,7 @@ export function CloneProgramFlow({
                     user_code: userCode || undefined,
                     pass: pass || undefined,
                     step: "get_programs",
+                    statuses,
                 }),
             });
 
@@ -82,14 +133,26 @@ export function CloneProgramFlow({
                 throw new Error(data.error || "Failed to get programs");
             }
 
-            setPrograms(data.data.programs || []);
-            setRequestHistory(data.requestHistory || []);
+            // Merge programs from both sources
+            const stagingPrograms = stagingData.data.programs || [];
+            const envPrograms = data.data.programs || [];
+            const allPrograms = [...stagingPrograms, ...envPrograms];
+
+            // Remove duplicates by iid
+            const uniquePrograms = Array.from(
+                new Map(allPrograms.map((p) => [p.iid, p])).values()
+            );
+
+            setPrograms(uniquePrograms);
+            setRequestHistory([
+                ...(stagingData.requestHistory || []),
+                ...(data.requestHistory || []),
+            ]);
             setExecutionTime(data.executionTime || 0);
 
             toast({
                 title: "Thành công",
-                description:
-                    data.message || `Tìm thấy ${data.data.programs.length} chương trình`,
+                description: `Tìm thấy ${uniquePrograms.length} chương trình`,
             });
         } catch (error: any) {
             toast({
@@ -157,6 +220,41 @@ export function CloneProgramFlow({
 
     return (
         <div className="space-y-3">
+            {/* Status Filters */}
+            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border">
+                <Label className="text-sm font-medium">Trạng thái:</Label>
+                <div className="flex items-center gap-2">
+                    <Checkbox
+                        id="status-approved"
+                        checked={statusApproved}
+                        onCheckedChange={(checked) =>
+                            setStatusApproved(checked as boolean)
+                        }
+                    />
+                    <label
+                        htmlFor="status-approved"
+                        className="text-sm cursor-pointer"
+                    >
+                        Đã duyệt (approved)
+                    </label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Checkbox
+                        id="status-queued"
+                        checked={statusQueued}
+                        onCheckedChange={(checked) =>
+                            setStatusQueued(checked as boolean)
+                        }
+                    />
+                    <label
+                        htmlFor="status-queued"
+                        className="text-sm cursor-pointer"
+                    >
+                        Chưa duyệt (queued)
+                    </label>
+                </div>
+            </div>
+
             {/* Actions */}
             <div className="flex gap-2">
                 <Button
@@ -177,21 +275,23 @@ export function CloneProgramFlow({
                     )}
                 </Button>
 
-                <Button
-                    onClick={handleCloneProgram}
-                    disabled={loading || !selectedProgram}
-                    variant="default"
-                    size="sm"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Đang clone...
-                        </>
-                    ) : (
-                        "Clone"
-                    )}
-                </Button>
+                {selectedProgram && (
+                    <Button
+                        onClick={handleCloneProgram}
+                        disabled={loading}
+                        variant="default"
+                        size="sm"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Đang clone...
+                            </>
+                        ) : (
+                            "Clone chương trình"
+                        )}
+                    </Button>
+                )}
             </div>
 
             {/* Program Selection Table */}
@@ -206,6 +306,9 @@ export function CloneProgramFlow({
                                     <th className="p-2 text-left w-16">STT</th>
                                     <th className="p-2 text-left w-20">IID</th>
                                     <th className="p-2 text-left">Tên</th>
+                                    <th className="p-2 text-left w-32">
+                                        Trạng thái
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -213,20 +316,47 @@ export function CloneProgramFlow({
                                     <tr
                                         key={program.iid}
                                         className={`border-t hover:bg-gray-50 cursor-pointer ${
-                                            selectedProgram === program.iid ? "bg-blue-50" : ""
+                                            selectedProgram === program.iid
+                                                ? "bg-blue-50"
+                                                : ""
                                         }`}
-                                        onClick={() => setSelectedProgram(program.iid)}
+                                        onClick={() =>
+                                            setSelectedProgram(program.iid)
+                                        }
                                     >
                                         <td className="p-2 text-center">
                                             <input
                                                 type="radio"
-                                                checked={selectedProgram === program.iid}
-                                                onChange={() => setSelectedProgram(program.iid)}
+                                                checked={
+                                                    selectedProgram ===
+                                                    program.iid
+                                                }
+                                                onChange={() =>
+                                                    setSelectedProgram(
+                                                        program.iid
+                                                    )
+                                                }
                                             />
                                         </td>
                                         <td className="p-2">{index + 1}</td>
-                                        <td className="p-2 font-mono text-xs">{program.iid}</td>
+                                        <td className="p-2 font-mono text-xs">
+                                            {program.iid}
+                                        </td>
                                         <td className="p-2">{program.name}</td>
+                                        <td className="p-2">
+                                            <span
+                                                className={`px-2 py-1 text-xs rounded-full ${
+                                                    program.status ===
+                                                    "approved"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-yellow-100 text-yellow-700"
+                                                }`}
+                                            >
+                                                {program.status === "approved"
+                                                    ? "Đã duyệt"
+                                                    : "Chưa duyệt"}
+                                            </span>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -279,7 +409,10 @@ export function CloneProgramFlow({
                         {historyExpanded && (
                             <div className="px-3 pb-3 space-y-2">
                                 {requestHistory.map((req, index) => (
-                                    <RequestHistoryItem key={index} request={req} />
+                                    <RequestHistoryItem
+                                        key={index}
+                                        request={req}
+                                    />
                                 ))}
                             </div>
                         )}
@@ -306,13 +439,19 @@ function RequestHistoryItem({ request }: { request: RequestHistory }) {
             <div className="p-2 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                     <span className="font-semibold">{request.method}</span>
-                    <span className={`font-semibold ${statusColor}`}>{request.statusCode}</span>
-                    <span className="text-gray-600">{request.responseTime}ms</span>
+                    <span className={`font-semibold ${statusColor}`}>
+                        {request.statusCode}
+                    </span>
+                    <span className="text-gray-600">
+                        {request.responseTime}ms
+                    </span>
                 </div>
             </div>
 
             {/* URL */}
-            <div className="px-2 pb-2 text-xs text-gray-600 truncate">{request.url}</div>
+            <div className="px-2 pb-2 text-xs text-gray-600 truncate">
+                {request.url}
+            </div>
 
             {/* Payload */}
             <Collapsible open={payloadOpen} onOpenChange={setPayloadOpen}>

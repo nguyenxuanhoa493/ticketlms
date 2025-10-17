@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
             pass,
             step, // 'get_programs' or 'clone'
             program_iid, // For clone step
+            statuses, // For get_programs step
         } = body;
 
         // Validate required fields
@@ -105,8 +106,12 @@ export async function POST(request: NextRequest) {
         // Execute based on step
         if (step === "get_programs") {
             // Step 1: Get list of programs
+            const programStatuses = statuses && Array.isArray(statuses) && statuses.length > 0
+                ? statuses
+                : ["approved"];
+            
             const result = await lmsClient.getListProgram({
-                status: ["approved", "queued"],
+                status: programStatuses,
             });
 
             const executionTime = Date.now() - startTime;
