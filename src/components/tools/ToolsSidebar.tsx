@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Settings, PlayCircle, Server, Workflow, ChevronDown, ChevronRight, FileCode } from "lucide-react";
+import { Settings, PlayCircle, Server, Workflow, ChevronDown, ChevronRight, FileCode, FolderOpen, Folder } from "lucide-react";
 
 interface ToolsSidebarProps {
     userRole: string;
@@ -16,13 +16,18 @@ interface SubMenuItem {
     href: string;
 }
 
+interface SubMenuGroup {
+    name: string;
+    items: SubMenuItem[];
+}
+
 interface MenuItem {
     name: string;
     href: string;
     icon: any;
     roles: string[];
     badge?: string;
-    subItems?: SubMenuItem[];
+    subGroups?: SubMenuGroup[];
 }
 
 const navigation: MenuItem[] = [
@@ -38,11 +43,16 @@ const navigation: MenuItem[] = [
         icon: Workflow,
         roles: ["admin"],
         badge: "NEW",
-        subItems: [
+        subGroups: [
             {
-                id: "clone-program",
-                name: "Clone chương trình",
-                href: "/tools/api-auto?flow=clone-program",
+                name: "Admin",
+                items: [
+                    {
+                        id: "clone-program",
+                        name: "Clone chương trình",
+                        href: "/tools/api-auto?flow=clone-program",
+                    },
+                ],
             },
         ],
     },
@@ -57,7 +67,7 @@ const navigation: MenuItem[] = [
 export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
     const pathname = usePathname();
     const [expandedItems, setExpandedItems] = useState<Set<string>>(
-        new Set(["API Auto"]) // Default expand API Auto
+        new Set(["API Auto", "Admin"]) // Default expand API Auto and Admin group
     );
 
     // Filter navigation based on user role
@@ -96,7 +106,7 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                         const isActive = pathname === item.href || pathname.startsWith(item.href);
                         const isExpanded = expandedItems.has(item.name);
                         const Icon = item.icon;
-                        const hasSubItems = item.subItems && item.subItems.length > 0;
+                        const hasSubGroups = item.subGroups && item.subGroups.length > 0;
 
                         return (
                             <div key={item.name}>
@@ -106,7 +116,7 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                         href={item.href}
                                         className={cn(
                                             "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors flex-1",
-                                            isActive && !hasSubItems
+                                            isActive && !hasSubGroups
                                                 ? "bg-blue-50 text-blue-700"
                                                 : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                         )}
@@ -114,7 +124,7 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                         <Icon
                                             className={cn(
                                                 "w-5 h-5 flex-shrink-0",
-                                                isActive && !hasSubItems
+                                                isActive && !hasSubGroups
                                                     ? "text-blue-600"
                                                     : "text-gray-400 group-hover:text-gray-600"
                                             )}
@@ -128,7 +138,7 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                     </Link>
 
                                     {/* Expand/Collapse Button */}
-                                    {hasSubItems && (
+                                    {hasSubGroups && (
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -145,33 +155,64 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                     )}
                                 </div>
 
-                                {/* Sub Menu Items */}
-                                {hasSubItems && isExpanded && (
-                                    <div className="ml-6 mt-1 space-y-1">
-                                        {item.subItems!.map((subItem) => {
-                                            const isSubActive = pathname.includes(subItem.href);
+                                {/* Sub Menu Groups */}
+                                {hasSubGroups && isExpanded && (
+                                    <div className="ml-3 mt-1 space-y-1">
+                                        {item.subGroups!.map((group) => {
+                                            const isGroupExpanded = expandedItems.has(group.name);
 
                                             return (
-                                                <Link
-                                                    key={subItem.id}
-                                                    href={subItem.href}
-                                                    className={cn(
-                                                        "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
-                                                        isSubActive
-                                                            ? "bg-blue-50 text-blue-700 font-medium"
-                                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                                    )}
-                                                >
-                                                    <FileCode
-                                                        className={cn(
-                                                            "w-4 h-4 flex-shrink-0",
-                                                            isSubActive
-                                                                ? "text-blue-600"
-                                                                : "text-gray-400"
+                                                <div key={group.name}>
+                                                    {/* Group Header */}
+                                                    <button
+                                                        onClick={() => toggleExpanded(group.name)}
+                                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                                                    >
+                                                        {isGroupExpanded ? (
+                                                            <ChevronDown className="w-3 h-3 text-gray-500" />
+                                                        ) : (
+                                                            <ChevronRight className="w-3 h-3 text-gray-500" />
                                                         )}
-                                                    />
-                                                    <span className="truncate">{subItem.name}</span>
-                                                </Link>
+                                                        {isGroupExpanded ? (
+                                                            <FolderOpen className="w-3 h-3 text-blue-500" />
+                                                        ) : (
+                                                            <Folder className="w-3 h-3 text-blue-500" />
+                                                        )}
+                                                        <span>{group.name}</span>
+                                                    </button>
+
+                                                    {/* Group Items */}
+                                                    {isGroupExpanded && (
+                                                        <div className="ml-6 space-y-1">
+                                                            {group.items.map((subItem) => {
+                                                                const isSubActive = pathname.includes(subItem.href);
+
+                                                                return (
+                                                                    <Link
+                                                                        key={subItem.id}
+                                                                        href={subItem.href}
+                                                                        className={cn(
+                                                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
+                                                                            isSubActive
+                                                                                ? "bg-blue-50 text-blue-700 font-medium"
+                                                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                                        )}
+                                                                    >
+                                                                        <FileCode
+                                                                            className={cn(
+                                                                                "w-4 h-4 flex-shrink-0",
+                                                                                isSubActive
+                                                                                    ? "text-blue-600"
+                                                                                    : "text-gray-400"
+                                                                            )}
+                                                                        />
+                                                                        <span className="truncate">{subItem.name}</span>
+                                                                    </Link>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             );
                                         })}
                                     </div>

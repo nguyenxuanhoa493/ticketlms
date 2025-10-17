@@ -33,7 +33,16 @@ export default function ApiAutoPage() {
             const response = await fetch("/api/tools/environments");
             if (response.ok) {
                 const data = await response.json();
-                setEnvironments(data.data || []);
+                const envs = data.data || [];
+                setEnvironments(envs);
+                
+                // Set default to STAGING if available
+                const stagingEnv = envs.find((e: Environment) => 
+                    e.name.toUpperCase().includes("STAGING")
+                );
+                if (stagingEnv && !selectedEnvironment) {
+                    setSelectedEnvironment(stagingEnv.id);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch environments:", error);

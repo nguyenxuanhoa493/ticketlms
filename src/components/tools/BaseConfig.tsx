@@ -55,7 +55,7 @@ export function BaseConfig({
                         <SelectContent>
                             {environments.map((env) => (
                                 <SelectItem key={env.id} value={env.id}>
-                                    {env.name} ({env.dmn})
+                                    {env.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>

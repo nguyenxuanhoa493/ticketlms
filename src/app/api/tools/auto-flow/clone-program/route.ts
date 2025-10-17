@@ -5,6 +5,38 @@ import { decrypt } from "@/lib/encryption";
 import { LmsClient } from "@/lib/lms";
 import { LmsEnvironment } from "@/lib/lms/base-client";
 
+// Server-side cache for LMS clients
+// Key format: {userId}-{environmentId}-{dmn}-{userCode}
+const lmsClientCache = new Map<string, { client: LmsClient; timestamp: number }>();
+const CACHE_MAX_AGE = 30 * 60 * 1000; // 30 minutes
+
+function getCacheKey(userId: string, envId: string, dmn: string, userCode: string): string {
+    return `${userId}-${envId}-${dmn}-${userCode}`;
+}
+
+function getCachedClient(userId: string, envId: string, dmn: string, userCode: string): LmsClient | null {
+    const key = getCacheKey(userId, envId, dmn, userCode);
+    const cached = lmsClientCache.get(key);
+    
+    if (!cached) return null;
+    
+    const age = Date.now() - cached.timestamp;
+    if (age > CACHE_MAX_AGE) {
+        lmsClientCache.delete(key);
+        return null;
+    }
+    
+    return cached.client;
+}
+
+function setCachedClient(userId: string, envId: string, dmn: string, userCode: string, client: LmsClient): void {
+    const key = getCacheKey(userId, envId, dmn, userCode);
+    lmsClientCache.set(key, {
+        client,
+        timestamp: Date.now(),
+    });
+}
+
 /**
  * POST /api/tools/auto-flow/clone-program
  * Execute Clone Program auto flow
@@ -98,8 +130,30 @@ export async function POST(request: NextRequest) {
             base_params: environment.base_params || {},
         };
 
-        // Create LMS client
-        const lmsClient = new LmsClient(lmsEnv);
+        // Try to get cached client
+        const cacheKey = getCacheKey(user.id, environment_id, lmsEnv.dmn, finalUserCode);
+        let client = getCachedClient(user.id, environment_id, lmsEnv.dmn, finalUserCode);
+        
+        if (client) {
+            console.log(`[LMS Cache HIT] ${cacheKey}`);
+        } else {
+            console.log(`[LMS Cache MISS] ${cacheKey} - Creating new client`);
+            client = new LmsClient(lmsEnv);
+            
+            // Login to verify credentials
+            try {
+                await client.login();
+                // Cache on successful login
+                setCachedClient(user.id, environment_id, lmsEnv.dmn, finalUserCode, client);
+                console.log(`[LMS Cache SET] ${cacheKey}`);
+            } catch (loginError: any) {
+                console.error("[LMS Login Failed]", loginError);
+                return NextResponse.json(
+                    { error: `Login failed: ${loginError.message}` },
+                    { status: 401 }
+                );
+            }
+        }
 
         const startTime = Date.now();
 
@@ -110,7 +164,7 @@ export async function POST(request: NextRequest) {
                 ? statuses
                 : ["approved"];
             
-            const result = await lmsClient.getListProgram({
+            const result = await client.getListProgram({
                 status: programStatuses,
             });
 
@@ -149,7 +203,7 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            const result = await lmsClient.cloneProgram({
+            const result = await client.cloneProgram({
                 program_iid: parseInt(program_iid),
             });
 

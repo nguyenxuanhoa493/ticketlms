@@ -142,15 +142,6 @@ export function CloneProgramFlow({
             return;
         }
 
-        if (!dmn) {
-            toast({
-                title: "Lỗi",
-                description: "Vui lòng nhập DMN để clone",
-                variant: "destructive",
-            });
-            return;
-        }
-
         setLoading(true);
         setLoadingMessage(`Đang clone chương trình #${selectedProgram} vào ${dmn}...`);
         setCloneResult(null);
@@ -262,8 +253,8 @@ export function CloneProgramFlow({
                 {selectedProgram && (
                     <Button
                         onClick={handleCloneProgram}
-                        disabled={loading || !dmn}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        disabled={loading}
+                        className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                         size="sm"
                     >
                         {loading ? (
