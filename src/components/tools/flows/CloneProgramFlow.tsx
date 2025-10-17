@@ -69,6 +69,15 @@ export function CloneProgramFlow({
             return;
         }
 
+        if (!dmn) {
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng nhập domain",
+                variant: "destructive",
+            });
+            return;
+        }
+
         // Build status array
         const statuses: string[] = [];
         if (statusApproved) statuses.push("approved");
@@ -138,6 +147,15 @@ export function CloneProgramFlow({
             toast({
                 title: "Lỗi",
                 description: "Vui lòng chọn chương trình cần clone",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (!dmn) {
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng nhập domain để clone",
                 variant: "destructive",
             });
             return;

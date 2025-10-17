@@ -62,17 +62,18 @@ export function BaseConfig({
                     </Select>
                 </div>
 
-                {/* DMN */}
+                {/* Domain */}
                 <div className="space-y-1.5">
                     <Label htmlFor="dmn" className="text-xs font-medium">
-                        DMN
+                        Domain *
                     </Label>
                     <Input
                         id="dmn"
                         value={dmn}
                         onChange={(e) => onDmnChange(e.target.value)}
-                        placeholder="Để trống = môi trường"
+                        placeholder="Nhập domain"
                         className="h-9"
+                        required
                     />
                 </div>
 
