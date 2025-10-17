@@ -66,6 +66,7 @@ export default function ApiRunnerPage() {
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [loadedTemplateInfo, setLoadedTemplateInfo] = useState<{ name: string; description: string } | null>(null);
+    const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
 
     // Load environments, templates, and folders
     useEffect(() => {
@@ -133,31 +134,50 @@ export default function ApiRunnerPage() {
                 return;
             }
 
+            // Check if updating existing template
+            const isUpdate = loadedTemplateId !== null;
+            const httpMethod = isUpdate ? "PUT" : "POST";
+            const requestBody = isUpdate ? {
+                id: loadedTemplateId,
+                name: templateName,
+                description: templateDescription,
+                folder_id: selectedFolderId,
+                environment_id: selectedEnvId || null,
+                path,
+                method, // API method (GET/POST/PUT/DELETE)
+                payload: parsedPayload,
+                dmn,
+                user_code: userCode,
+                password: password || null,
+            } : {
+                name: templateName,
+                description: templateDescription,
+                folder_id: selectedFolderId,
+                environment_id: selectedEnvId || null,
+                path,
+                method, // API method (GET/POST/PUT/DELETE)
+                payload: parsedPayload,
+                dmn,
+                user_code: userCode,
+                password: password || null,
+            };
+
             const res = await fetch("/api/tools/templates", {
-                method: "POST",
+                method: httpMethod,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: templateName,
-                    description: templateDescription,
-                    folder_id: selectedFolderId,
-                    environment_id: selectedEnvId || null,
-                    path,
-                    method,
-                    payload: parsedPayload,
-                    dmn,
-                    user_code: userCode,
-                    password: password || null,
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const data = await res.json();
 
             if (data.success) {
-                alert("Template đã được lưu!");
+                alert(isUpdate ? "Template đã được cập nhật!" : "Template đã được lưu!");
                 setShowSaveDialog(false);
                 setTemplateName("");
                 setTemplateDescription("");
                 setSelectedFolderId(null);
+                setLoadedTemplateId(null);
+                setLoadedTemplateInfo(null);
                 fetchTemplates();
                 fetchFolders();
             } else {
@@ -180,7 +200,9 @@ export default function ApiRunnerPage() {
         setPassword(template.password || "");
         setPayload(JSON.stringify(template.payload, null, 2));
         
-        // Set loaded template info for display
+        // Set loaded template ID and info for update
+        setLoadedTemplateId(template.id);
+        
         if (template.description) {
             setLoadedTemplateInfo({
                 name: template.name,
@@ -465,16 +487,23 @@ export default function ApiRunnerPage() {
                         </DialogContent>
                     </Dialog>
 
-                    <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+                    <Dialog open={showSaveDialog} onOpenChange={(open) => {
+                        setShowSaveDialog(open);
+                        if (open && loadedTemplateInfo) {
+                            // Pre-fill form when updating existing template
+                            setTemplateName(loadedTemplateInfo.name);
+                            setTemplateDescription(loadedTemplateInfo.description);
+                        }
+                    }}>
                         <DialogTrigger asChild>
                             <Button variant="outline">
                                 <Save className="w-4 h-4 mr-2" />
-                                Save Template
+                                {loadedTemplateId ? "Cập nhật Template" : "Save Template"}
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
                             <DialogHeader>
-                                <DialogTitle>Lưu Template</DialogTitle>
+                                <DialogTitle>{loadedTemplateId ? "Cập nhật Template" : "Lưu Template"}</DialogTitle>
                             </DialogHeader>
                             <div className="grid grid-cols-[300px_1fr] gap-4 flex-1 overflow-hidden">
                                 {/* Left: Folder Manager */}
@@ -541,7 +570,7 @@ export default function ApiRunnerPage() {
                                         </Button>
                                         <Button onClick={handleSaveTemplate}>
                                             <Save className="w-4 h-4 mr-2" />
-                                            Lưu Template
+                                            {loadedTemplateId ? "Cập nhật" : "Lưu Template"}
                                         </Button>
                                     </div>
                                 </div>
