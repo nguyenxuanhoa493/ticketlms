@@ -196,25 +196,32 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                                         key={subItem.id}
                                                                         href={subItem.href}
                                                                         className={cn(
-                                                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200 relative",
+                                                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200 relative group/item",
                                                                             isSubActive
-                                                                                ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
-                                                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                                                ? "bg-gradient-to-r from-blue-50 to-blue-50/50 text-blue-700 font-medium shadow-sm border border-blue-100"
+                                                                                : "text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent hover:text-gray-900 border border-transparent"
                                                                         )}
                                                                     >
-                                                                        {/* Active indicator - left border */}
+                                                                        {/* Active indicator - left border with glow */}
                                                                         {isSubActive && (
-                                                                            <span className="absolute left-0 top-0.5 bottom-0.5 w-1 bg-blue-600 rounded-r-full" />
+                                                                            <>
+                                                                                <span className="absolute left-0 top-0.5 bottom-0.5 w-1 bg-gradient-to-b from-blue-500 via-blue-600 to-blue-500 rounded-r-full shadow-sm" />
+                                                                                <span className="absolute left-0 top-0.5 bottom-0.5 w-1 bg-blue-600 rounded-r-full animate-pulse" />
+                                                                            </>
                                                                         )}
                                                                         <FileCode
                                                                             className={cn(
-                                                                                "w-4 h-4 flex-shrink-0 transition-colors",
+                                                                                "w-4 h-4 flex-shrink-0 transition-all duration-200",
                                                                                 isSubActive
-                                                                                    ? "text-blue-600"
-                                                                                    : "text-gray-400"
+                                                                                    ? "text-blue-600 scale-110"
+                                                                                    : "text-gray-400 group-hover/item:text-gray-600 group-hover/item:scale-105"
                                                                             )}
                                                                         />
-                                                                        <span className="truncate">{subItem.name}</span>
+                                                                        <span className="truncate flex-1">{subItem.name}</span>
+                                                                        {/* Active badge */}
+                                                                        {isSubActive && (
+                                                                            <span className="flex items-center justify-center w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                                                                        )}
                                                                     </Link>
                                                                 );
                                                             })}

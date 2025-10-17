@@ -57,15 +57,25 @@ export default function ApiAutoPage() {
         }
     }, [selectedEnvironment, environments]);
 
-    // Get flow title based on param
-    const getFlowTitle = () => {
+    // Get flow info based on param
+    const getFlowInfo = () => {
         switch (flowParam) {
             case "clone-program":
-                return "Clone chương trình";
+                return {
+                    name: "Clone chương trình",
+                    description: "Sao chép chương trình giữa các môi trường",
+                    group: "Admin",
+                };
             default:
-                return "API Auto";
+                return {
+                    name: "Chọn flow",
+                    description: "Vui lòng chọn một flow từ menu bên trái",
+                    group: "",
+                };
         }
     };
+
+    const flowInfo = getFlowInfo();
 
     // Render flow component based on selection
     const renderFlowComponent = () => {
@@ -89,9 +99,34 @@ export default function ApiAutoPage() {
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">{getFlowTitle()}</h1>
+        <div className="space-y-6">
+            {/* Header with breadcrumb */}
+            <div className="bg-gradient-to-r from-blue-50 via-blue-50/50 to-transparent border-l-4 border-blue-600 pl-4 py-3 rounded-r-lg shadow-sm">
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                    <span>API Auto</span>
+                    {flowInfo.group && (
+                        <>
+                            <span className="text-gray-400">›</span>
+                            <span>{flowInfo.group}</span>
+                        </>
+                    )}
+                    <span className="text-gray-400">›</span>
+                    <span className="text-blue-700 font-medium">{flowInfo.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        {flowInfo.name}
+                    </h1>
+                    {flowParam === "clone-program" && (
+                        <span className="px-2.5 py-1 text-xs font-semibold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 rounded-full border border-blue-200 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                            Active Flow
+                        </span>
+                    )}
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                    {flowInfo.description}
+                </p>
             </div>
 
             {/* Base Config */}
