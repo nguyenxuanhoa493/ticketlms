@@ -12,6 +12,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { JsonViewer } from "@/components/tools/JsonViewer";
 
 interface Program {
     iid: number;
@@ -359,9 +360,7 @@ export function CloneProgramFlow({
                         <p className="text-sm font-semibold text-green-900 mb-2">
                             Clone thành công!
                         </p>
-                        <pre className="text-xs bg-white p-2 rounded overflow-auto max-h-[200px]">
-                            {JSON.stringify(cloneResult, null, 2)}
-                        </pre>
+                        <JsonViewer data={cloneResult} maxHeight="200px" />
                     </div>
                 )}
 
@@ -444,9 +443,9 @@ function RequestHistoryItem({ request }: { request: RequestHistory }) {
                     </span>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <pre className="text-xs bg-white p-2 m-2 rounded overflow-auto max-h-[150px]">
-                        {JSON.stringify(request.payload, null, 2)}
-                    </pre>
+                    <div className="p-2">
+                        <JsonViewer data={request.payload} maxHeight="150px" />
+                    </div>
                 </CollapsibleContent>
             </Collapsible>
 
@@ -461,9 +460,9 @@ function RequestHistoryItem({ request }: { request: RequestHistory }) {
                     <span className="font-medium">Response Preview</span>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <pre className="text-xs bg-white p-2 m-2 rounded overflow-auto max-h-[200px]">
-                        {JSON.stringify(request.response, null, 2)}
-                    </pre>
+                    <div className="p-2">
+                        <JsonViewer data={request.response} maxHeight="200px" />
+                    </div>
                 </CollapsibleContent>
             </Collapsible>
         </div>
