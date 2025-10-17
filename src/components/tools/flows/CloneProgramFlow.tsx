@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Play } from "lucide-react";
+import { Loader2, Play, Copy, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
     Collapsible,
@@ -45,6 +45,7 @@ export function CloneProgramFlow({
 }: CloneProgramFlowProps) {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState<string>("");
     const [programs, setPrograms] = useState<Program[]>([]);
     const [selectedProgram, setSelectedProgram] = useState<number | null>(null);
     const [requestHistory, setRequestHistory] = useState<RequestHistory[]>([]);
@@ -82,44 +83,19 @@ export function CloneProgramFlow({
         }
 
         setLoading(true);
+        setLoadingMessage("Đang lấy danh sách chương trình từ contenttlx...");
         setPrograms([]);
         setSelectedProgram(null);
         setCloneResult(null);
 
         try {
-            // First, get STAGING content-tlx programs
-            const stagingResponse = await fetch(
-                "/api/tools/auto-flow/clone-program",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        environment_id: environmentId,
-                        dmn: "contenttlx",
-                        user_code: userCode || undefined,
-                        pass: pass || undefined,
-                        step: "get_programs",
-                        statuses,
-                    }),
-                }
-            );
-
-            const stagingData = await stagingResponse.json();
-
-            if (!stagingResponse.ok) {
-                throw new Error(
-                    stagingData.error ||
-                        "Failed to get programs from content-tlx"
-                );
-            }
-
-            // Then get from user's selected environment
+            // Only get from content-tlx
             const response = await fetch("/api/tools/auto-flow/clone-program", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     environment_id: environmentId,
-                    dmn: dmn || undefined,
+                    dmn: "contenttlx",
                     user_code: userCode || undefined,
                     pass: pass || undefined,
                     step: "get_programs",
@@ -130,29 +106,18 @@ export function CloneProgramFlow({
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "Failed to get programs");
+                throw new Error(data.error || "Failed to get programs from contenttlx");
             }
 
-            // Merge programs from both sources
-            const stagingPrograms = stagingData.data.programs || [];
-            const envPrograms = data.data.programs || [];
-            const allPrograms = [...stagingPrograms, ...envPrograms];
-
-            // Remove duplicates by iid
-            const uniquePrograms = Array.from(
-                new Map(allPrograms.map((p) => [p.iid, p])).values()
-            );
-
-            setPrograms(uniquePrograms);
-            setRequestHistory([
-                ...(stagingData.requestHistory || []),
-                ...(data.requestHistory || []),
-            ]);
+            const programs = data.data.programs || [];
+            
+            setPrograms(programs);
+            setRequestHistory(data.requestHistory || []);
             setExecutionTime(data.executionTime || 0);
 
             toast({
                 title: "Thành công",
-                description: `Tìm thấy ${uniquePrograms.length} chương trình`,
+                description: `Tìm thấy ${programs.length} chương trình từ contenttlx`,
             });
         } catch (error: any) {
             toast({
@@ -162,10 +127,11 @@ export function CloneProgramFlow({
             });
         } finally {
             setLoading(false);
+            setLoadingMessage("");
         }
     };
 
-    // Step 2: Clone selected program
+    // Step 2: Clone selected program (using domain input)
     const handleCloneProgram = async () => {
         if (!selectedProgram) {
             toast({
@@ -176,7 +142,17 @@ export function CloneProgramFlow({
             return;
         }
 
+        if (!dmn) {
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng nhập DMN để clone",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setLoading(true);
+        setLoadingMessage(`Đang clone chương trình #${selectedProgram} vào ${dmn}...`);
         setCloneResult(null);
 
         try {
@@ -185,7 +161,7 @@ export function CloneProgramFlow({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     environment_id: environmentId,
-                    dmn: dmn || undefined,
+                    dmn: dmn, // Use domain input for cloning
                     user_code: userCode || undefined,
                     pass: pass || undefined,
                     step: "clone",
@@ -215,11 +191,19 @@ export function CloneProgramFlow({
             });
         } finally {
             setLoading(false);
+            setLoadingMessage("");
         }
     };
 
     return (
         <div className="space-y-3">
+            {/* Loading Status */}
+            {loading && loadingMessage && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <span className="text-sm text-blue-900">{loadingMessage}</span>
+                </div>
+            )}
             {/* Status Filters */}
             <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border">
                 <Label className="text-sm font-medium">Trạng thái:</Label>
@@ -278,8 +262,8 @@ export function CloneProgramFlow({
                 {selectedProgram && (
                     <Button
                         onClick={handleCloneProgram}
-                        disabled={loading}
-                        variant="default"
+                        disabled={loading || !dmn}
+                        className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                     >
                         {loading ? (
@@ -288,7 +272,10 @@ export function CloneProgramFlow({
                                 Đang clone...
                             </>
                         ) : (
-                            "Clone chương trình"
+                            <>
+                                <Copy className="w-4 h-4 mr-2" />
+                                Clone chương trình
+                            </>
                         )}
                     </Button>
                 )}
