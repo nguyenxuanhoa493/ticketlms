@@ -31,7 +31,7 @@ const navigation = [
     },
     {
         name: "Tools",
-        href: "/tools/environments",
+        href: "/tools",
         icon: "tools",
         roles: ["admin"], // Chỉ admin mới thấy
     },

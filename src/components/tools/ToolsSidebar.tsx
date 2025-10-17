@@ -11,19 +11,19 @@ interface ToolsSidebarProps {
 
 const navigation = [
     {
-        name: "Cấu hình môi trường",
-        href: "/tools/environments",
-        icon: Server,
-        roles: ["admin"],
-        description: "Quản lý API environments",
-        badge: undefined,
-    },
-    {
         name: "Call API",
         href: "/tools/api-runner",
         icon: PlayCircle,
         roles: ["admin"],
         description: "Chạy API requests",
+        badge: undefined,
+    },
+    {
+        name: "Cấu hình môi trường",
+        href: "/tools/environments",
+        icon: Server,
+        roles: ["admin"],
+        description: "Quản lý API environments",
         badge: undefined,
     },
 ];
