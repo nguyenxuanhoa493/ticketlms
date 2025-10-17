@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Settings, PlayCircle, Server } from "lucide-react";
+import { Settings, PlayCircle, Server, Workflow } from "lucide-react";
 
 interface ToolsSidebarProps {
     userRole: string;
@@ -17,6 +17,14 @@ const navigation = [
         roles: ["admin"],
         description: "Chạy API requests",
         badge: undefined,
+    },
+    {
+        name: "API Auto",
+        href: "/tools/api-auto",
+        icon: Workflow,
+        roles: ["admin"],
+        description: "Luồng tự động hóa",
+        badge: "NEW",
     },
     {
         name: "Cấu hình môi trường",
