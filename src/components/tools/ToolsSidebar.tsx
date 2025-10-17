@@ -103,7 +103,11 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
 
                 <nav className="space-y-1">
                     {filteredNavigation.map((item) => {
-                        const isActive = pathname === item.href || pathname.startsWith(item.href);
+                        // Check if any sub-item is active
+                        const hasActiveSubItem = item.subGroups?.some(group => 
+                            group.items.some(subItem => pathname.includes(subItem.href))
+                        );
+                        const isActive = (pathname === item.href || pathname.startsWith(item.href)) && !hasActiveSubItem;
                         const isExpanded = expandedItems.has(item.name);
                         const Icon = item.icon;
                         const hasSubGroups = item.subGroups && item.subGroups.length > 0;

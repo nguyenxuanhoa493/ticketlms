@@ -100,25 +100,17 @@ export default function ApiAutoPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header with breadcrumb */}
-            <div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                    <span>API Auto</span>
-                    {flowInfo.group && (
-                        <>
-                            <span className="text-gray-400">›</span>
-                            <span>{flowInfo.group}</span>
-                        </>
-                    )}
-                    <span className="text-gray-400">›</span>
-                    <span className="text-blue-700 font-medium">{flowInfo.name}</span>
-                </div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                    {flowInfo.name}
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                    {flowInfo.description}
-                </p>
+            {/* Breadcrumb only */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>API Auto</span>
+                {flowInfo.group && (
+                    <>
+                        <span className="text-gray-400">›</span>
+                        <span>{flowInfo.group}</span>
+                    </>
+                )}
+                <span className="text-gray-400">›</span>
+                <span className="text-blue-700 font-medium">{flowInfo.name}</span>
             </div>
 
             {/* Base Config */}
