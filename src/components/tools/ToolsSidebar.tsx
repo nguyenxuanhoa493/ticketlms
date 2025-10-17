@@ -105,9 +105,13 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                     {filteredNavigation.map((item) => {
                         // Check if any sub-item is active
                         const hasActiveSubItem = item.subGroups?.some(group => 
-                            group.items.some(subItem => pathname.includes(subItem.href))
+                            group.items.some(subItem => {
+                                const baseHref = subItem.href.split('?')[0];
+                                return pathname === subItem.href || 
+                                    (pathname.includes(baseHref + '?') && pathname.includes(subItem.href.split('?')[1] || ''));
+                            })
                         );
-                        const isActive = (pathname === item.href || pathname.startsWith(item.href)) && !hasActiveSubItem;
+                        const isActive = (pathname === item.href || pathname.startsWith(item.href + '/')) && !hasActiveSubItem;
                         const isExpanded = expandedItems.has(item.name);
                         const Icon = item.icon;
                         const hasSubGroups = item.subGroups && item.subGroups.length > 0;

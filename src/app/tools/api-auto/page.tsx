@@ -53,7 +53,7 @@ export default function ApiAutoPage() {
     useEffect(() => {
         const env = environments.find((e) => e.id === selectedEnvironment);
         if (env) {
-            setDmn(env.dmn);
+            setDmn(env.dmn || "");
         }
     }, [selectedEnvironment, environments]);
 
