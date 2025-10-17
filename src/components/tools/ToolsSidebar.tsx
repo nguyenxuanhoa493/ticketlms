@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Settings, PlayCircle, Server, Workflow, ChevronDown, ChevronRight, FileCode, FolderOpen, Folder } from "lucide-react";
@@ -66,6 +66,7 @@ const navigation: MenuItem[] = [
 
 export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [expandedItems, setExpandedItems] = useState<Set<string>>(
         new Set(["API Auto", "Admin"]) // Default expand API Auto and Admin group
     );
@@ -106,9 +107,18 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                         // Check if any sub-item is active
                         const hasActiveSubItem = item.subGroups?.some(group => 
                             group.items.some(subItem => {
-                                const baseHref = subItem.href.split('?')[0];
-                                return pathname === subItem.href || 
-                                    (pathname.includes(baseHref + '?') && pathname.includes(subItem.href.split('?')[1] || ''));
+                                const [basePath, queryString] = subItem.href.split('?');
+                                const isPathMatch = pathname === basePath;
+                                if (!isPathMatch) return false;
+                                
+                                // Check if query params match
+                                if (queryString) {
+                                    const params = new URLSearchParams(queryString);
+                                    for (const [key, value] of params.entries()) {
+                                        if (searchParams.get(key) !== value) return false;
+                                    }
+                                }
+                                return true;
                             })
                         );
                         const isActive = (pathname === item.href || pathname.startsWith(item.href + '/')) && !hasActiveSubItem;
@@ -197,9 +207,24 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                     {isGroupExpanded && (
                                                         <div className="ml-6 space-y-1">
                                                             {group.items.map((subItem) => {
-                                                                // Use same logic as top navigation
-                                                                const isSubActive = pathname === subItem.href || 
-                                                                    pathname.includes(subItem.href.split('?')[0] + '?');
+                                                                // Check if current flow matches this sub-item
+                                                                const [basePath, queryString] = subItem.href.split('?');
+                                                                const isPathMatch = pathname === basePath;
+                                                                let isSubActive = false;
+                                                                
+                                                                if (isPathMatch && queryString) {
+                                                                    const params = new URLSearchParams(queryString);
+                                                                    let allMatch = true;
+                                                                    for (const [key, value] of params.entries()) {
+                                                                        if (searchParams.get(key) !== value) {
+                                                                            allMatch = false;
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                    isSubActive = allMatch;
+                                                                } else if (isPathMatch && !queryString) {
+                                                                    isSubActive = true;
+                                                                }
 
                                                                 return (
                                                                     <Link

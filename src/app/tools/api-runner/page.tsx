@@ -28,6 +28,8 @@ import {
     File,
     Folder,
     Trash2,
+    RotateCcw,
+    Search,
 } from "lucide-react";
 import { ApiEnvironment, ApiRequestTemplate, FolderTreeNode } from "@/types";
 import {
@@ -67,6 +69,7 @@ export default function ApiRunnerPage() {
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [loadedTemplateInfo, setLoadedTemplateInfo] = useState<{ name: string; description: string } | null>(null);
     const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
+    const [templateSearchQuery, setTemplateSearchQuery] = useState("");
 
     // Load environments, templates, and folders
     useEffect(() => {
@@ -118,6 +121,24 @@ export default function ApiRunnerPage() {
             console.error("Failed to fetch folders:", err);
         }
     };
+
+    // Expand all folders when Load Template dialog opens
+    useEffect(() => {
+        if (showLoadDialog && folders.length > 0) {
+            const getAllFolderIds = (folderList: FolderTreeNode[]): string[] => {
+                const ids: string[] = [];
+                folderList.forEach(folder => {
+                    ids.push(folder.id);
+                    if (folder.children && folder.children.length > 0) {
+                        ids.push(...getAllFolderIds(folder.children));
+                    }
+                });
+                return ids;
+            };
+            setExpandedFolders(new Set(getAllFolderIds(folders)));
+            setTemplateSearchQuery(""); // Reset search when opening dialog
+        }
+    }, [showLoadDialog, folders]);
 
     const handleSaveTemplate = async () => {
         if (!templateName.trim()) {
@@ -249,11 +270,16 @@ export default function ApiRunnerPage() {
     };
 
     const renderTemplatesByFolder = (): React.ReactNode => {
+        // Filter templates by search query
+        const filteredTemplates = templates.filter(t => 
+            t.name.toLowerCase().includes(templateSearchQuery.toLowerCase())
+        );
+
         // Group templates by folder
-        const rootTemplates = templates.filter(t => !t.folder_id);
+        const rootTemplates = filteredTemplates.filter(t => !t.folder_id);
         const folderTemplates = new Map<string, ApiRequestTemplate[]>();
         
-        templates.forEach(t => {
+        filteredTemplates.forEach(t => {
             if (t.folder_id) {
                 if (!folderTemplates.has(t.folder_id)) {
                     folderTemplates.set(t.folder_id, []);
@@ -368,6 +394,11 @@ export default function ApiRunnerPage() {
                         Chưa có template nào
                     </p>
                 )}
+                {templates.length > 0 && filteredTemplates.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-8">
+                        Không tìm thấy template nào phù hợp
+                    </p>
+                )}
             </div>
         );
     };
@@ -457,6 +488,28 @@ export default function ApiRunnerPage() {
         }
     };
 
+    const handleResetForm = () => {
+        setPath("");
+        setMethod("POST");
+        setDmn("");
+        setUserCode("");
+        setPassword("");
+        setPayload("{}");
+        setResponse(null);
+        setError("");
+        setRequestHistory([]);
+        setLoadedTemplateInfo(null);
+        setLoadedTemplateId(null);
+        
+        // Re-select STAGING environment
+        const stagingEnv = environments.find(
+            (env: ApiEnvironment) => env.name.toUpperCase() === "STAGING"
+        );
+        if (stagingEnv) {
+            setSelectedEnvId(stagingEnv.id);
+        }
+    };
+
     const selectedEnv = environments.find((env) => env.id === selectedEnvId);
 
     return (
@@ -470,18 +523,53 @@ export default function ApiRunnerPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleResetForm}
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-300"
+                    >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Làm mới
+                    </Button>
+                    <Button
+                        onClick={handleExecute}
+                        disabled={loading || !selectedEnvId || !path || !dmn}
+                        className="bg-green-600 hover:bg-green-700"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Đang thực thi...
+                            </>
+                        ) : (
+                            <>
+                                <PlayCircle className="w-4 h-4 mr-2" />
+                                Thực thi
+                            </>
+                        )}
+                    </Button>
                     <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
                         <DialogTrigger asChild>
                             <Button variant="outline">
                                 <FolderOpen className="w-4 h-4 mr-2" />
-                                Load Template
+                                Tải Template
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[600px]">
+                        <DialogContent className="max-w-2xl max-h-[600px] flex flex-col">
                             <DialogHeader>
                                 <DialogTitle>Chọn Template</DialogTitle>
                             </DialogHeader>
-                            <div className="overflow-y-auto max-h-[500px]">
+                            {/* Search Input */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Input
+                                    placeholder="Tìm kiếm template..."
+                                    value={templateSearchQuery}
+                                    onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                                    className="pl-9"
+                                />
+                            </div>
+                            <div className="overflow-y-auto flex-1">
                                 {renderTemplatesByFolder()}
                             </div>
                         </DialogContent>
@@ -498,7 +586,7 @@ export default function ApiRunnerPage() {
                         <DialogTrigger asChild>
                             <Button variant="outline">
                                 <Save className="w-4 h-4 mr-2" />
-                                {loadedTemplateId ? "Cập nhật Template" : "Save Template"}
+                                {loadedTemplateId ? "Cập nhật Template" : "Lưu Template"}
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
@@ -730,24 +818,7 @@ export default function ApiRunnerPage() {
                             />
                         </div>
 
-                        {/* Execute Button */}
-                        <Button
-                            onClick={handleExecute}
-                            disabled={loading || !selectedEnvId || !path || !dmn}
-                            className="w-full"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Đang thực thi...
-                                </>
-                            ) : (
-                                <>
-                                    <PlayCircle className="w-4 h-4 mr-2" />
-                                    Thực thi
-                                </>
-                            )}
-                        </Button>
+
                     </CardContent>
                 </Card>
 
