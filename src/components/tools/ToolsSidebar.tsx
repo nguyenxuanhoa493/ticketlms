@@ -111,19 +111,23 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                         return (
                             <div key={item.name}>
                                 {/* Main Menu Item */}
-                                <div className="flex items-center">
+                                <div className="flex items-center relative">
                                     <Link
                                         href={item.href}
                                         className={cn(
-                                            "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors flex-1",
+                                            "group flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex-1 relative",
                                             isActive && !hasSubGroups
-                                                ? "bg-blue-50 text-blue-700"
+                                                ? "bg-blue-50 text-blue-700 shadow-sm"
                                                 : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                         )}
                                     >
+                                        {/* Active indicator - left border */}
+                                        {isActive && !hasSubGroups && (
+                                            <span className="absolute left-0 top-1 bottom-1 w-1 bg-blue-600 rounded-r-full" />
+                                        )}
                                         <Icon
                                             className={cn(
-                                                "w-5 h-5 flex-shrink-0",
+                                                "w-5 h-5 flex-shrink-0 transition-colors",
                                                 isActive && !hasSubGroups
                                                     ? "text-blue-600"
                                                     : "text-gray-400 group-hover:text-gray-600"
@@ -166,19 +170,19 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                     {/* Group Header */}
                                                     <button
                                                         onClick={() => toggleExpanded(group.name)}
-                                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
                                                     >
                                                         {isGroupExpanded ? (
-                                                            <ChevronDown className="w-3 h-3 text-gray-500" />
+                                                            <ChevronDown className="w-3 h-3 text-gray-500 transition-transform" />
                                                         ) : (
-                                                            <ChevronRight className="w-3 h-3 text-gray-500" />
+                                                            <ChevronRight className="w-3 h-3 text-gray-500 transition-transform" />
                                                         )}
                                                         {isGroupExpanded ? (
-                                                            <FolderOpen className="w-3 h-3 text-blue-500" />
+                                                            <FolderOpen className="w-3 h-3 text-blue-500 transition-colors" />
                                                         ) : (
-                                                            <Folder className="w-3 h-3 text-blue-500" />
+                                                            <Folder className="w-3 h-3 text-blue-500 transition-colors" />
                                                         )}
-                                                        <span>{group.name}</span>
+                                                        <span className="transition-colors">{group.name}</span>
                                                     </button>
 
                                                     {/* Group Items */}
@@ -192,15 +196,19 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                                         key={subItem.id}
                                                                         href={subItem.href}
                                                                         className={cn(
-                                                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
+                                                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200 relative",
                                                                             isSubActive
-                                                                                ? "bg-blue-50 text-blue-700 font-medium"
+                                                                                ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
                                                                                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                                                         )}
                                                                     >
+                                                                        {/* Active indicator - left border */}
+                                                                        {isSubActive && (
+                                                                            <span className="absolute left-0 top-0.5 bottom-0.5 w-1 bg-blue-600 rounded-r-full" />
+                                                                        )}
                                                                         <FileCode
                                                                             className={cn(
-                                                                                "w-4 h-4 flex-shrink-0",
+                                                                                "w-4 h-4 flex-shrink-0 transition-colors",
                                                                                 isSubActive
                                                                                     ? "text-blue-600"
                                                                                     : "text-gray-400"
