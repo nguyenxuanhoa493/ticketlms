@@ -16,11 +16,10 @@ export const GET = withAuth(
         supabase: TypedSupabaseClient
     ) => {
         try {
-            // Fetch all folders for current user
+            // Fetch all folders (public for all admins)
             const { data: folders, error: foldersError } = await supabase
                 .from("api_template_folders")
                 .select("*")
-                .eq("created_by", user.id)
                 .order("name", { ascending: true });
 
             if (foldersError) {
@@ -31,11 +30,10 @@ export const GET = withAuth(
                 );
             }
 
-            // Fetch all templates for current user
+            // Fetch all templates (public for all admins)
             const { data: templates, error: templatesError } = await supabase
                 .from("api_request_templates")
-                .select("*")
-                .eq("created_by", user.id);
+                .select("*");
 
             if (templatesError) {
                 console.error("[GET /api/tools/folders] Templates error:", templatesError);
@@ -125,12 +123,11 @@ export const PUT = withAuth(
                 return NextResponse.json({ error: "Folder ID is required" }, { status: 400 });
             }
 
-            // Update folder
+            // Update folder (any admin can update)
             const { data: folder, error: updateError } = await supabase
                 .from("api_template_folders")
                 .update(updates)
                 .eq("id", id)
-                .eq("created_by", user.id)
                 .select()
                 .single();
 
@@ -179,8 +176,7 @@ export const DELETE = withAuth(
             const { data: templates, error: checkError } = await supabase
                 .from("api_request_templates")
                 .select("id")
-                .eq("folder_id", id)
-                .eq("created_by", user.id);
+                .eq("folder_id", id);
 
             if (checkError) {
                 console.error("[DELETE /api/tools/folders] Check error:", checkError);
@@ -197,12 +193,11 @@ export const DELETE = withAuth(
                 );
             }
 
-            // Delete folder
+            // Delete folder (any admin can delete)
             const { error: deleteError } = await supabase
                 .from("api_template_folders")
                 .delete()
-                .eq("id", id)
-                .eq("created_by", user.id);
+                .eq("id", id);
 
             if (deleteError) {
                 console.error("[DELETE /api/tools/folders] Delete error:", deleteError);

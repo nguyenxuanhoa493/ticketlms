@@ -15,14 +15,13 @@ export const GET = withAuth(
         supabase: TypedSupabaseClient
     ) => {
         try {
-            // Fetch all templates for current user with folder info
+            // Fetch all templates (public for all admins) with folder info
             const { data: templates, error } = await supabase
                 .from("api_request_templates")
                 .select(`
                     *,
                     folder:api_template_folders(id, name, description, parent_id)
                 `)
-                .eq("created_by", user.id)
                 .order("name", { ascending: true });
 
             if (error) {
@@ -128,12 +127,11 @@ export const PUT = withAuth(
                 return NextResponse.json({ error: "Template ID is required" }, { status: 400 });
             }
 
-            // Update template
+            // Update template (any admin can update)
             const { data: template, error: updateError } = await supabase
                 .from("api_request_templates")
                 .update(updates)
                 .eq("id", id)
-                .eq("created_by", user.id)
                 .select()
                 .single();
 
@@ -178,12 +176,11 @@ export const DELETE = withAuth(
                 return NextResponse.json({ error: "Template ID is required" }, { status: 400 });
             }
 
-            // Delete template
+            // Delete template (any admin can delete)
             const { error: deleteError } = await supabase
                 .from("api_request_templates")
                 .delete()
-                .eq("id", id)
-                .eq("created_by", user.id);
+                .eq("id", id);
 
             if (deleteError) {
                 console.error("[DELETE /api/tools/templates] Delete error:", deleteError);
