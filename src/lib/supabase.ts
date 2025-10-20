@@ -11,7 +11,6 @@ export {
     getAdminClient,
     createApiClient,
     createAdminApiClient,
-    resetServerClients,
 } from "./supabase/server-client";
 
 // Legacy function - deprecated, sử dụng getAdminClient thay thế

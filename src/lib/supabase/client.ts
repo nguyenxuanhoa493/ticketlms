@@ -20,9 +20,8 @@ export const supabaseClient = createClient<Database>(
     }
 );
 
-// Combined reset function
+// Combined reset function (deprecated - no longer needed as we don't use singletons)
 export const resetClients = async () => {
-    const { resetServerClients } = await import("./server-client");
-    // Browser client doesn't need reset as it's stateless
-    resetServerClients();
+    // No-op: Browser and server clients are now created per-request
+    console.warn("resetClients is deprecated and no longer needed");
 };

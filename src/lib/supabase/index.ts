@@ -12,7 +12,6 @@ export {
     getAdminClient,
     createApiClient,
     createAdminApiClient,
-    resetServerClients,
 } from "./server-client";
 
 // Export middleware client
