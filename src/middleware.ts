@@ -40,35 +40,87 @@ export async function middleware(request: NextRequest) {
         (path) => pathname === path || pathname.startsWith(path)
     );
 
-    // If it's a public path, we don't need to check auth
-    if (isPublicPath) {
-        return response;
-    }
-
     let user = null;
     let session = null;
+    let hasAuthError = false;
 
+    // Only check auth for non-public paths or if we need to redirect logged-in users from auth pages
     try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const { data: userData } = await supabase.auth.getUser();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+
+        // Check for auth errors (invalid/expired tokens)
+        if (sessionError || userError) {
+            hasAuthError = true;
+            console.error("[Middleware] Auth error:", sessionError || userError);
+        }
 
         session = sessionData.session;
         user = userData.user;
     } catch (error) {
-        // Silent error handling
+        hasAuthError = true;
+        console.error("[Middleware] Unexpected auth error:", error);
+    }
+
+    // If auth error detected and on public path, clear cookies without redirect
+    if (hasAuthError && isPublicPath) {
+        console.log("[Middleware] Clearing invalid auth cookies on public path");
+        
+        // Clear all supabase auth cookies on the response
+        const cookiesToClear = [
+            'sb-kffuylebxyifkimtcvxh-auth-token',
+            'sb-kffuylebxyifkimtcvxh-auth-token.0',
+            'sb-kffuylebxyifkimtcvxh-auth-token.1',
+        ];
+        
+        cookiesToClear.forEach(cookieName => {
+            response.cookies.set(cookieName, '', {
+                maxAge: 0,
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                httpOnly: true,
+            });
+        });
+
+        return response;
+    }
+
+    // If auth error detected on protected path, clear cookies and redirect to login
+    if (hasAuthError && !isPublicPath) {
+        console.log("[Middleware] Clearing invalid auth cookies and redirecting to login");
+        
+        // Create redirect response
+        const redirectResponse = NextResponse.redirect(new URL("/login", request.url));
+        
+        // Clear all supabase auth cookies on the redirect response
+        const cookiesToClear = [
+            'sb-kffuylebxyifkimtcvxh-auth-token',
+            'sb-kffuylebxyifkimtcvxh-auth-token.0',
+            'sb-kffuylebxyifkimtcvxh-auth-token.1',
+        ];
+        
+        cookiesToClear.forEach(cookieName => {
+            redirectResponse.cookies.set(cookieName, '', {
+                maxAge: 0,
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                httpOnly: true,
+            });
+        });
+
+        return redirectResponse;
     }
 
     // Redirect to login if accessing any route without auth (except public paths)
-    if (!user) {
-        // Chỉ redirect nếu không phải là trang login/register
-        if (pathname !== "/login" && pathname !== "/register") {
-            return NextResponse.redirect(new URL("/login", request.url));
-        }
-    } else {
-        // Redirect to dashboard if logged in user tries to access auth pages
-        if (pathname === "/login" || pathname === "/register") {
-            return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
+    if (!user && !isPublicPath) {
+        return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Redirect to dashboard if logged in user tries to access auth pages
+    if (user && isPublicPath && pathname !== "/auth/callback" && pathname !== "/auth/confirmed") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     return response;

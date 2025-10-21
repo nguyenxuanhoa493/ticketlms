@@ -1,6 +1,6 @@
 -- Create api_auto_folders table
 CREATE TABLE IF NOT EXISTS public.api_auto_folders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     parent_id UUID REFERENCES public.api_auto_folders(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.api_auto_folders (
 
 -- Create api_auto_flows table
 CREATE TABLE IF NOT EXISTS public.api_auto_flows (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     description TEXT,
     flow_type TEXT NOT NULL, -- 'clone_program', 'create_users', etc.
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.api_auto_flows (
 
 -- Create api_auto_execution_history table
 CREATE TABLE IF NOT EXISTS public.api_auto_execution_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     flow_id UUID NOT NULL REFERENCES public.api_auto_flows(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     inputs JSONB DEFAULT '{}',

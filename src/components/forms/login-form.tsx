@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
+import { clearAuthData, handleAuthError } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,7 +75,11 @@ export default function LoginForm() {
         setSuccessMessage(null);
 
         try {
+            // Clear any existing invalid sessions/cookies first
+            clearAuthData();
+            
             const supabase = getBrowserClient();
+
             const { data: authData, error } =
                 await supabase.auth.signInWithPassword({
                     email: data.email,
@@ -82,16 +87,19 @@ export default function LoginForm() {
                 });
 
             if (error) {
-                setError(`Lỗi đăng nhập: ${error.message}`);
+                // Handle specific auth errors
+                if (!handleAuthError(error)) {
+                    setError(`Lỗi đăng nhập: ${error.message}`);
+                }
                 return;
             }
 
             if (authData.user && authData.session) {
                 // Login successful, redirect immediately
-                // The middleware will handle session verification
+                console.log("Login successful, redirecting...");
                 redirectToDashboard();
                 
-                // Fallback redirect
+                // Fallback redirect with page reload to ensure cookies are set
                 setTimeout(() => {
                     if (window.location.pathname === "/login") {
                         window.location.href = "/dashboard";
@@ -101,7 +109,10 @@ export default function LoginForm() {
                 setError("Đăng nhập không thành công. Vui lòng kiểm tra email và mật khẩu.");
             }
         } catch (err) {
-            setError("Đã xảy ra lỗi không mong đợi. Vui lòng thử lại.");
+            console.error("Login error:", err);
+            if (!handleAuthError(err)) {
+                setError("Đã xảy ra lỗi không mong đợi. Vui lòng thử lại.");
+            }
         } finally {
             setIsLoading(false);
         }
