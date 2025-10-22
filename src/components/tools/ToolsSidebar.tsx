@@ -67,6 +67,11 @@ const navigation: MenuItem[] = [
                         name: "Clone chương trình",
                         href: "/tools/api-auto?flow=clone-program",
                     },
+                    {
+                        id: "fix-syllabus-sequential",
+                        name: "Fix lỗi tuần tự syllabus",
+                        href: "/tools/api-auto?flow=fix-syllabus-sequential",
+                    },
                 ],
             },
         ],

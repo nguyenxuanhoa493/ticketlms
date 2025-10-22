@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiClient } from "@/lib/supabase/server-client";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/encryption";
-import { LmsClient } from "@/lib/lms";
-import { LmsEnvironment } from "@/lib/lms/base-client";
+import {
+    LmsClient,
+    LmsEnvironment,
+    getListProgram,
+    cloneProgram,
+} from "@/lib/lms";
+import { mapRequestHistory } from "@/lib/lms-history-utils";
 
 // Server-side cache for LMS clients
 // Key format: {userId}-{environmentId}-{dmn}-{userCode}
@@ -159,16 +164,22 @@ export async function POST(request: NextRequest) {
 
         // Execute based on step
         if (step === "get_programs") {
+            // Clear history for fresh start (important for cached clients)
+            client.clearHistory();
+            
             // Step 1: Get list of programs
             const programStatuses = statuses && Array.isArray(statuses) && statuses.length > 0
                 ? statuses
                 : ["approved"];
             
-            const result = await client.getListProgram({
+            const result = await getListProgram(client, {
                 status: programStatuses,
             });
 
             const executionTime = Date.now() - startTime;
+            
+            // Get request history from client
+            const history = mapRequestHistory(client);
 
             if (!result.success) {
                 return NextResponse.json(
@@ -176,13 +187,13 @@ export async function POST(request: NextRequest) {
                         success: false,
                         error: result.error,
                         executionTime,
-                        requestHistory: result.requestHistory,
+                        requestHistory: history,
                     },
                     { status: 400 }
                 );
             }
 
-            const programs = result.data?.result || [];
+            const programs = result.programs || [];
 
             return NextResponse.json({
                 success: true,
@@ -191,10 +202,13 @@ export async function POST(request: NextRequest) {
                     total: programs.length,
                 },
                 executionTime,
-                requestHistory: result.requestHistory,
+                requestHistory: history,
                 message: `Found ${programs.length} programs`,
             });
         } else if (step === "clone") {
+            // Clear history for fresh start (important for cached clients)
+            client.clearHistory();
+            
             // Step 2: Clone selected program
             if (!program_iid) {
                 return NextResponse.json(
@@ -203,11 +217,14 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            const result = await client.cloneProgram({
+            const result = await cloneProgram(client, {
                 program_iid: parseInt(program_iid),
             });
 
             const executionTime = Date.now() - startTime;
+            
+            // Get request history from client
+            const history = mapRequestHistory(client);
 
             // Save to execution history
             try {
@@ -224,7 +241,7 @@ export async function POST(request: NextRequest) {
                     status: result.success ? "success" : "failed",
                     error_message: result.error || null,
                     execution_time: executionTime,
-                    request_history: result.requestHistory || [],
+                    request_history: history,
                 });
             } catch (historyError) {
                 console.error("Failed to save execution history:", historyError);
@@ -236,7 +253,7 @@ export async function POST(request: NextRequest) {
                         success: false,
                         error: result.error,
                         executionTime,
-                        requestHistory: result.requestHistory,
+                        requestHistory: history,
                     },
                     { status: 400 }
                 );
@@ -246,7 +263,7 @@ export async function POST(request: NextRequest) {
                 success: true,
                 data: result.data,
                 executionTime,
-                requestHistory: result.requestHistory,
+                requestHistory: history,
                 message: "Program cloned successfully",
             });
         }

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BaseConfig } from "@/components/tools/BaseConfig";
 import { CloneProgramFlow } from "@/components/tools/flows/CloneProgramFlow";
 import { CreateDomainFlow } from "@/components/tools/flows/CreateDomainFlow";
+import { FixSyllabusSequentialFlow } from "@/components/tools/flows/FixSyllabusSequentialFlow";
 
 interface Environment {
     id: string;
@@ -54,13 +55,32 @@ export default function ApiAutoPage() {
     useEffect(() => {
         const env = environments.find((e) => e.id === selectedEnvironment);
         
+        // Always reset first to ensure change detection
+        console.log("[Page] Flow changed to:", flowParam);
+        
         if (flowParam === "create-domain") {
             // Create domain flow defaults
+            console.log("[Page] Setting defaults for create-domain:", { dmn: "system", userCode: "root" });
             setDmn("system");
             setUserCode("root");
-        } else if (env) {
-            // Other flows use environment dmn
-            setDmn(env.dmn || "");
+            setPass(""); // Clear password
+        } else if (flowParam === "fix-syllabus-sequential") {
+            // Fix syllabus flow defaults
+            console.log("[Page] Setting defaults for fix-syllabus:", { dmn: env?.dmn || "" });
+            setDmn(env?.dmn || "");
+            setUserCode("");
+            setPass("");
+        } else if (flowParam === "clone-program") {
+            // Clone program flow defaults
+            console.log("[Page] Setting defaults for clone-program:", { dmn: env?.dmn || "" });
+            setDmn(env?.dmn || "");
+            setUserCode("");
+            setPass("");
+        } else {
+            // Default: use environment dmn
+            setDmn(env?.dmn || "");
+            setUserCode("");
+            setPass("");
         }
     }, [selectedEnvironment, environments, flowParam]);
 
@@ -79,6 +99,12 @@ export default function ApiAutoPage() {
                     description: "Tạo domain mới trong hệ thống",
                     group: "Admin",
                 };
+            case "fix-syllabus-sequential":
+                return {
+                    name: "Fix lỗi tuần tự syllabus",
+                    description: "Tìm kiếm và fix sequential learning settings cho syllabuses",
+                    group: "Admin",
+                };
             default:
                 return {
                     name: "Chọn flow",
@@ -92,10 +118,20 @@ export default function ApiAutoPage() {
 
     // Render flow component based on selection
     const renderFlowComponent = () => {
+        // Wait for environment to be selected
+        if (!selectedEnvironment) {
+            return (
+                <div className="text-center text-gray-500 py-12">
+                    <p>Đang tải environment...</p>
+                </div>
+            );
+        }
+
         switch (flowParam) {
             case "clone-program":
                 return (
                     <CloneProgramFlow
+                        key="clone-program"
                         environmentId={selectedEnvironment}
                         dmn={dmn}
                         userCode={userCode}
@@ -105,10 +141,21 @@ export default function ApiAutoPage() {
             case "create-domain":
                 return (
                     <CreateDomainFlow
+                        key="create-domain"
                         environmentId={selectedEnvironment}
                         dmn={dmn}
                         userCode={userCode}
                         password={pass}
+                    />
+                );
+            case "fix-syllabus-sequential":
+                return (
+                    <FixSyllabusSequentialFlow
+                        key="fix-syllabus-sequential"
+                        environmentId={selectedEnvironment}
+                        dmn={dmn}
+                        userCode={userCode}
+                        pass={pass}
                     />
                 );
             default:

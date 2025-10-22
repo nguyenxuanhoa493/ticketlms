@@ -3,13 +3,16 @@
  */
 
 export * from "./base-client";
+
+// Export function-based APIs
 export * from "./program";
+export * from "./syllabus";
+export * from "./admin";
 
-// Main client that combines all modules
-import { LmsProgramClient } from "./program";
-import { LmsEnvironment } from "./base-client";
+// Main client - simple base client without inheritance
+import { LmsBaseClient, LmsEnvironment } from "./base-client";
 
-export class LmsClient extends LmsProgramClient {
+export class LmsClient extends LmsBaseClient {
     constructor(environment: LmsEnvironment) {
         super(environment);
     }

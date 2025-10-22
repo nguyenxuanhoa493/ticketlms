@@ -8,7 +8,12 @@ import {
 } from "@/lib/api-utils";
 import { TypedSupabaseClient } from "@/types/supabase";
 import { decrypt } from "@/lib/encryption";
-import { LmsClient, getDomainGroups, createDomain } from "@/lib/lms";
+import {
+    LmsClient,
+    searchSyllabus,
+    populateSyllabusSequential,
+    changeStatusSyllabus,
+} from "@/lib/lms";
 import { mapRequestHistory } from "@/lib/lms-history-utils";
 
 // Server-side cache for LMS clients
@@ -55,25 +60,24 @@ export const POST = withAdmin(
             const body = await request.json();
             const {
                 action,
-                environmentId,
+                environment_id,
                 dmn,
-                userCode,
-                password,
-                slug,
-                domainGroup,
+                user_code,
+                pass,
+                syllabusId,   // Database ID - for changeStatus
+                syllabusIid,  // LMS internal ID - for populate
             } = body;
 
-            console.log("[POST /api/tools/auto-flow/create-domain] Action:", action, {
-                environmentId,
+            console.log("[POST /api/tools/auto-flow/fix-syllabus-sequential] Action:", action, {
+                environment_id,
                 dmn,
-                userCode,
-                hasPassword: !!password,
+                user_code,
             });
 
             // Validate required fields
             const validation = validateRequiredFields(body, [
                 "action",
-                "environmentId",
+                "environment_id",
                 "dmn",
             ]);
             if (!validation.isValid) {
@@ -84,7 +88,7 @@ export const POST = withAdmin(
             const envQuery = supabase
                 .from("api_environments")
                 .select("*")
-                .eq("id", environmentId)
+                .eq("id", environment_id)
                 .single();
 
             const { data: environment, error: envError } = await executeQuery(
@@ -102,8 +106,8 @@ export const POST = withAdmin(
             }
 
             // Determine user_code and password
-            const finalUserCode = userCode || dmn;
-            let finalPassword = password;
+            const finalUserCode = user_code || dmn;
+            let finalPassword = pass;
             if (!finalPassword) {
                 try {
                     if (finalUserCode === "root" && environment.pass_root) {
@@ -112,7 +116,7 @@ export const POST = withAdmin(
                         finalPassword = decrypt(environment.pass_master);
                     }
                 } catch (error) {
-                    console.error("[POST /api/tools/auto-flow/create-domain] Decryption failed:", error);
+                    console.error("[POST /api/tools/auto-flow/fix-syllabus-sequential] Decryption failed:", error);
                     return NextResponse.json(
                         { error: "Failed to decrypt credentials" },
                         { status: 500 }
@@ -128,13 +132,13 @@ export const POST = withAdmin(
             }
 
             // Try to get cached client
-            const cacheKey = getCacheKey(user.id, environmentId, dmn, finalUserCode);
-            let lmsClient = getCachedClient(user.id, environmentId, dmn, finalUserCode);
+            const cacheKey = getCacheKey(user.id, environment_id, dmn, finalUserCode);
+            let lmsClient = getCachedClient(user.id, environment_id, dmn, finalUserCode);
             
             if (lmsClient) {
-                console.log(`[create-domain] Using cached client for ${cacheKey}`);
+                console.log(`[fix-syllabus-sequential] Using cached client for ${cacheKey}`);
             } else {
-                console.log(`[create-domain] Creating new client for ${cacheKey}`);
+                console.log(`[fix-syllabus-sequential] Creating new client for ${cacheKey}`);
                 
                 // Create new LMS client
                 lmsClient = new LmsClient({
@@ -149,9 +153,10 @@ export const POST = withAdmin(
                 // Login and cache
                 try {
                     await lmsClient.login();
-                    setCachedClient(user.id, environmentId, dmn, finalUserCode, lmsClient);
+                    setCachedClient(user.id, environment_id, dmn, finalUserCode, lmsClient);
+                    console.log(`[LMS Cache SET] ${cacheKey}`);
                 } catch (loginError: any) {
-                    console.error(`[create-domain] Login failed:`, loginError);
+                    console.error(`[fix-syllabus-sequential] Login failed:`, loginError);
                     return NextResponse.json(
                         { 
                             error: `Login failed: ${loginError.message}`,
@@ -163,12 +168,12 @@ export const POST = withAdmin(
             }
 
             // Handle different actions
-            if (action === "get_domain_groups") {
+            if (action === "search_syllabuses") {
                 // Clear history for new action
                 lmsClient.clearHistory();
                 
-                // Action 1: Get domain groups
-                const result = await getDomainGroups(lmsClient);
+                // Action 1: Search syllabuses
+                const result = await searchSyllabus(lmsClient);
 
                 const history = mapRequestHistory(lmsClient);
 
@@ -185,35 +190,56 @@ export const POST = withAdmin(
 
                 return createSuccessResponse(
                     {
-                        groups: result.data || [],
+                        syllabuses: result.data || [],
+                        count: (result.data || []).length,
                         requestHistory: history,
                     },
-                    "Domain groups fetched successfully"
+                    "Syllabuses fetched successfully"
                 );
-            } else if (action === "create_domain") {
-                // Action 2: Create domain
-                if (!slug || !domainGroup) {
+            } else if (action === "fix_single") {
+                // Clear history for new action
+                lmsClient.clearHistory();
+                
+                // Action 2: Fix single syllabus (populate + change status)
+                if (!syllabusId || !syllabusIid) {
                     return NextResponse.json(
-                        { error: "slug and domainGroup are required" },
+                        { error: "syllabusId and syllabusIid are required" },
                         { status: 400 }
                     );
                 }
 
-                // Clear history for new action
-                lmsClient.clearHistory();
+                // Step 1: Populate sequential (needs iid)
+                const populateResult = await populateSyllabusSequential(lmsClient, {
+                    iid_syllabus: syllabusIid,
+                });
 
-                const result = await createDomain(lmsClient, {
-                    slug,
-                    domainGroup,
+                if (!populateResult.success) {
+                    const history = mapRequestHistory(lmsClient);
+
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: populateResult.error,
+                            requestHistory: history,
+                        },
+                        { status: 500 }
+                    );
+                }
+
+                // Step 2: Change status (refresh) - needs id
+                const statusResult = await changeStatusSyllabus(lmsClient, {
+                    id_syllabus: syllabusId,  // Use database ID
+                    status: "approved",
+                    step: "status",
                 });
 
                 const history = mapRequestHistory(lmsClient);
 
-                if (!result.success) {
+                if (!statusResult.success) {
                     return NextResponse.json(
                         {
                             success: false,
-                            error: result.error,
+                            error: statusResult.error,
                             requestHistory: history,
                         },
                         { status: 500 }
@@ -222,19 +248,20 @@ export const POST = withAdmin(
 
                 return createSuccessResponse(
                     {
-                        result: result.data,
+                        syllabusId,
+                        message: statusResult.message,
                         requestHistory: history,
                     },
-                    "Domain created successfully"
+                    `Syllabus #${syllabusId} fixed successfully`
                 );
             } else {
                 return NextResponse.json(
-                    { error: "Invalid action. Supported: get_domain_groups, create_domain" },
+                    { error: "Invalid action. Supported: search_syllabuses, fix_single" },
                     { status: 400 }
                 );
             }
         } catch (error) {
-            console.error("[POST /api/tools/auto-flow/create-domain] Error:", error);
+            console.error("[POST /api/tools/auto-flow/fix-syllabus-sequential] Error:", error);
             return NextResponse.json(
                 { error: error instanceof Error ? error.message : "Internal server error" },
                 { status: 500 }

@@ -1,8 +1,9 @@
 /**
- * LMS Program APIs
+ * LMS Program APIs - Function-based pattern
+ * Consistent with syllabus.ts and admin.ts
  */
 
-import { LmsBaseClient, LmsSendResult } from "./base-client";
+import { LmsClient } from "./index";
 
 export interface Program {
     iid: number;
@@ -20,6 +21,12 @@ export interface GetListProgramOptions {
     items_per_page?: number;
 }
 
+export interface GetListProgramResult {
+    success: boolean;
+    programs?: Program[];
+    error?: string;
+}
+
 export interface CloneProgramOptions {
     program_iid: number;
     clone_master_data?: number;
@@ -27,19 +34,28 @@ export interface CloneProgramOptions {
     rubric_name_suffix?: string;
 }
 
-export class LmsProgramClient extends LmsBaseClient {
-    /**
-     * Get list of programs
-     */
-    async getListProgram(options: GetListProgramOptions = {}): Promise<LmsSendResult> {
-        const {
-            status = ["approved", "queued"],
-            iid_organizations,
-            include_sub_organizations = 1,
-            page = 1,
-            items_per_page = -1,
-        } = options;
+export interface CloneProgramResult {
+    success: boolean;
+    data?: any;
+    error?: string;
+}
 
+/**
+ * Get list of programs
+ */
+export async function getListProgram(
+    client: LmsClient,
+    options: GetListProgramOptions = {}
+): Promise<GetListProgramResult> {
+    const {
+        status = ["approved", "queued"],
+        iid_organizations,
+        include_sub_organizations = 1,
+        page = 1,
+        items_per_page = -1,
+    } = options;
+
+    try {
         const payload: Record<string, any> = {
             "program_type[]": "program",
             type: "program",
@@ -54,42 +70,57 @@ export class LmsProgramClient extends LmsBaseClient {
             payload.include_sub_organizations = include_sub_organizations;
         }
 
-        console.log("[LmsProgramClient] Getting list of programs...", payload);
-
-        const result = await this.send({
+        const result = await client.send({
             path: "/path/search",
             payload,
             method: "POST",
         });
 
-        // Extract programs from result
-        if (result.success && result.data) {
-            const programs = result.data.result || [];
+        // Check HTTP request success
+        if (!result.success) {
             return {
-                ...result,
-                data: {
-                    ...result.data,
-                    programs, // Make programs easily accessible
-                },
+                success: false,
+                error: result.error || "Failed to get program list",
             };
         }
 
-        return result;
+        // Check LMS API response success field
+        if (result.data?.success === false) {
+            return {
+                success: false,
+                error: result.data?.message || result.data?.msg || "API returned success=false",
+            };
+        }
+
+        const programs = result.data?.result || [];
+
+        return {
+            success: true,
+            programs,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+        };
     }
+}
 
-    /**
-     * Clone a program
-     */
-    async cloneProgram(options: CloneProgramOptions): Promise<LmsSendResult> {
-        const {
-            program_iid,
-            clone_master_data = 1,
-            clone_rubric_even_exist = 0,
-            rubric_name_suffix = "",
-        } = options;
+/**
+ * Clone a program
+ */
+export async function cloneProgram(
+    client: LmsClient,
+    options: CloneProgramOptions
+): Promise<CloneProgramResult> {
+    const {
+        program_iid,
+        clone_master_data = 1,
+        clone_rubric_even_exist = 0,
+        rubric_name_suffix = "",
+    } = options;
 
-        console.log(`[LmsProgramClient] Cloning program ${program_iid}...`);
-
+    try {
         const payload = {
             program_iid,
             clone_master_data,
@@ -97,18 +128,36 @@ export class LmsProgramClient extends LmsBaseClient {
             rubric_name_suffix,
         };
 
-        const result = await this.send({
+        const result = await client.send({
             path: "/program/api/deep-clone",
             payload,
             method: "POST",
         });
 
-        if (result.success) {
-            console.log("[LmsProgramClient] Program cloned successfully", result.data);
-        } else {
-            console.error("[LmsProgramClient] Failed to clone program:", result.error);
+        // Check HTTP request success
+        if (!result.success) {
+            return {
+                success: false,
+                error: result.error || "Failed to clone program",
+            };
         }
 
-        return result;
+        // Check LMS API response success field
+        if (result.data?.success === false) {
+            return {
+                success: false,
+                error: result.data?.message || result.data?.msg || "API returned success=false",
+            };
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+        };
     }
 }

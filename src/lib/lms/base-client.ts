@@ -184,8 +184,8 @@ export class LmsBaseClient {
     async send(options: LmsSendOptions): Promise<LmsSendResult> {
         const { path, payload = {}, method = "POST", dmn, user, pass } = options;
 
-        // Clear history before new request
-        this.requestHistory = [];
+        // Don't clear history - we want to accumulate all requests
+        // this.requestHistory = [];
 
         // Auto-login if no token
         if (!this.token) {
@@ -372,5 +372,12 @@ export class LmsBaseClient {
      */
     getRequestHistory(): LmsRequestHistory[] {
         return this.requestHistory;
+    }
+
+    /**
+     * Clear request history
+     */
+    clearHistory(): void {
+        this.requestHistory = [];
     }
 }

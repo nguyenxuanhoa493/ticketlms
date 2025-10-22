@@ -44,10 +44,19 @@ export async function getDomainGroups(
             },
         });
 
+        // Check HTTP request success
         if (!result.success) {
             return {
                 success: false,
                 error: result.error || "Failed to fetch domain groups",
+            };
+        }
+
+        // Check LMS API response success field
+        if (result.data?.success === false) {
+            return {
+                success: false,
+                error: result.data?.message || result.data?.msg || "API returned success=false",
             };
         }
 
@@ -87,10 +96,20 @@ export async function createDomain(
             },
         });
 
+        // Check HTTP request success
         if (!result.success) {
             return {
                 success: false,
                 error: result.error || "Failed to create domain",
+                requestHistory: result.requestHistory,
+            };
+        }
+
+        // Check LMS API response success field
+        if (result.data?.success === false) {
+            return {
+                success: false,
+                error: result.data?.message || result.data?.msg || "API returned success=false",
                 requestHistory: result.requestHistory,
             };
         }

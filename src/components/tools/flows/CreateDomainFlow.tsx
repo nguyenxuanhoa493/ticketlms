@@ -40,8 +40,12 @@ export function CreateDomainFlow({
     const [selectedGroup, setSelectedGroup] = useState<string>("");
     const [slug, setSlug] = useState<string>("");
     const [result, setResult] = useState<any>(null);
-    const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
     const { toast } = useToast();
+    
+    // Use ref to track if already loading
+    const isLoadingRef = React.useRef(false);
+    const loadedEnvRef = React.useRef<string | null>(null);
+    const hasAttemptedLoad = React.useRef(false);
     
     // Use common LMS request hook
     const {
@@ -54,17 +58,90 @@ export function CreateDomainFlow({
         showToast: false, // We'll handle toasts manually for more control
     });
 
-    // Auto-load domain groups on mount if environmentId is available
+    // Auto-load domain groups on mount or when ready
     React.useEffect(() => {
-        if (environmentId && !autoLoadAttempted && step === "fetch_groups") {
-            setAutoLoadAttempted(true);
-            fetchDomainGroups();
+        console.log("[CreateDomainFlow] Effect triggered:", {
+            environmentId,
+            dmn,
+            step,
+            hasGroups: domainGroups.length > 0,
+            isLoading: isLoadingRef.current,
+            hasAttempted: hasAttemptedLoad.current,
+        });
+        
+        // Prevent duplicate loads
+        if (isLoadingRef.current) {
+            console.log("[CreateDomainFlow] Already loading, skip");
+            return;
         }
-    }, [environmentId, autoLoadAttempted, step]);
+        
+        // Check if already attempted and succeeded
+        if (hasAttemptedLoad.current && domainGroups.length > 0) {
+            console.log("[CreateDomainFlow] Already loaded, skip");
+            return;
+        }
+        
+        // Check all required values are ready
+        if (!environmentId || !dmn) {
+            console.log("[CreateDomainFlow] Not ready yet:", { environmentId, dmn });
+            return;
+        }
+        
+        if (step === "fetch_groups" && domainGroups.length === 0) {
+            console.log("[CreateDomainFlow] Auto-loading domain groups for env:", environmentId);
+            isLoadingRef.current = true;
+            hasAttemptedLoad.current = true;
+            
+            const loadGroups = async () => {
+                setResult(null);
 
+                const result = await executeRequest({
+                    apiEndpoint: "/api/tools/auto-flow/create-domain",
+                    requestBody: {
+                        action: "get_domain_groups",
+                        environmentId,
+                        dmn,
+                        userCode,
+                        password,
+                    },
+                    successMessage: undefined,
+                    errorMessage: "Không thể tải domain groups",
+                });
+
+                if (result.success && result.data) {
+                    const groups = result.data.groups || [];
+                    
+                    console.log("[CreateDomainFlow] Loaded groups:", groups.length);
+                    
+                    setDomainGroups(groups);
+                    setStep("create_domain");
+                    loadedEnvRef.current = environmentId; // Mark as loaded
+                    
+                    // Auto-select first domain group
+                    if (groups.length > 0) {
+                        setSelectedGroup(groups[0].value);
+                        console.log("[CreateDomainFlow] Auto-selected:", groups[0].value);
+                    }
+                    
+                    toast({
+                        title: "Thành công",
+                        description: `Đã tải ${groups.length} domain groups`,
+                    });
+                }
+                
+                isLoadingRef.current = false; // Reset loading flag
+            };
+            
+            loadGroups();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [environmentId, dmn]); // Run when env or dmn changes (ignore other deps to prevent loops)
+    
     const fetchDomainGroups = async () => {
+        // Manual refresh function (for button click)
         setResult(null);
-
+        setDomainGroups([]);
+        
         const result = await executeRequest({
             apiEndpoint: "/api/tools/auto-flow/create-domain",
             requestBody: {
@@ -74,22 +151,17 @@ export function CreateDomainFlow({
                 userCode,
                 password,
             },
-            successMessage: undefined, // We'll show custom message
+            successMessage: undefined,
             errorMessage: "Không thể tải domain groups",
         });
 
         if (result.success && result.data) {
             const groups = result.data.groups || [];
-            
-            console.log("[CreateDomainFlow] Setting groups:", groups.length);
-            
             setDomainGroups(groups);
             setStep("create_domain");
             
-            // Auto-select first domain group
-            if (groups.length > 0 && !selectedGroup) {
+            if (groups.length > 0) {
                 setSelectedGroup(groups[0].value);
-                console.log("[CreateDomainFlow] Auto-selected first group:", groups[0].value);
             }
             
             toast({
@@ -161,8 +233,10 @@ export function CreateDomainFlow({
         setSelectedGroup("");
         setSlug("");
         setResult(null);
-        setAutoLoadAttempted(false);
-        // Auto-load will trigger again due to useEffect
+        // Reset refs to allow re-loading
+        isLoadingRef.current = false;
+        loadedEnvRef.current = null;
+        hasAttemptedLoad.current = false;
     };
 
     return (

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { generateUniqueId } from "@/lib/id-generator";
 
 export interface LmsRequestHistoryItem {
     id: number | string;
@@ -44,7 +45,7 @@ export function useLmsRequest(options: UseLmsRequestOptions = {}) {
      */
     const addLoadingEntry = useCallback((step: string, url: string) => {
         const entry: LmsRequestHistoryItem = {
-            id: Date.now(),
+            id: generateUniqueId(),
             method: "POST",
             url,
             payload: {},
@@ -64,15 +65,19 @@ export function useLmsRequest(options: UseLmsRequestOptions = {}) {
      * Update history with completed requests
      */
     const updateHistory = useCallback((newHistory: any[]) => {
-        const mappedHistory = newHistory.map((item, index) => ({
+        const mappedHistory = newHistory.map((item) => ({
             ...item,
-            id: item.id || Date.now() + index,
+            id: item.id || generateUniqueId(),
             isLoading: false,
             isComplete: true,
             hasError: item.statusCode !== 200,
         }));
 
-        setRequestHistory(mappedHistory);
+        // Remove loading entries and append new history
+        setRequestHistory((prev) => {
+            const withoutLoading = prev.filter((item) => !item.isLoading);
+            return [...withoutLoading, ...mappedHistory];
+        });
     }, []);
 
     /**
@@ -86,7 +91,9 @@ export function useLmsRequest(options: UseLmsRequestOptions = {}) {
             errorMessage,
         }: ExecuteRequestParams) => {
             setLoading(true);
-            setRequestHistory([]);
+            
+            // Don't clear history - append instead
+            // setRequestHistory([]);
 
             try {
                 // Add login loading entry
