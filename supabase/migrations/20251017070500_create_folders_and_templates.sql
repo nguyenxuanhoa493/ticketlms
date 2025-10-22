@@ -47,6 +47,12 @@ CREATE INDEX IF NOT EXISTS idx_templates_environment_id ON api_request_templates
 -- Enable RLS for folders
 ALTER TABLE api_template_folders ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if any
+DROP POLICY IF EXISTS "Users can view their own folders" ON api_template_folders;
+DROP POLICY IF EXISTS "Users can insert their own folders" ON api_template_folders;
+DROP POLICY IF EXISTS "Users can update their own folders" ON api_template_folders;
+DROP POLICY IF EXISTS "Users can delete their own folders" ON api_template_folders;
+
 -- Create RLS Policies for folders
 CREATE POLICY "Users can view their own folders"
     ON api_template_folders FOR SELECT
@@ -70,6 +76,12 @@ CREATE POLICY "Users can delete their own folders"
 
 -- Enable RLS for templates
 ALTER TABLE api_request_templates ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if any
+DROP POLICY IF EXISTS "Users can view their own templates" ON api_request_templates;
+DROP POLICY IF EXISTS "Users can insert their own templates" ON api_request_templates;
+DROP POLICY IF EXISTS "Users can update their own templates" ON api_request_templates;
+DROP POLICY IF EXISTS "Users can delete their own templates" ON api_request_templates;
 
 -- Create RLS Policies for templates
 CREATE POLICY "Users can view their own templates"

@@ -4,7 +4,17 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Settings, PlayCircle, Server, Workflow, ChevronDown, ChevronRight, FileCode, FolderOpen, Folder } from "lucide-react";
+import {
+    Settings,
+    PlayCircle,
+    Server,
+    Workflow,
+    ChevronDown,
+    ChevronRight,
+    FileCode,
+    FolderOpen,
+    Folder,
+} from "lucide-react";
 
 interface ToolsSidebarProps {
     userRole: string;
@@ -47,6 +57,11 @@ const navigation: MenuItem[] = [
             {
                 name: "Admin",
                 items: [
+                    {
+                        id: "create-domain",
+                        name: "Tạo domain",
+                        href: "/tools/api-auto?flow=create-domain",
+                    },
                     {
                         id: "clone-program",
                         name: "Clone chương trình",
@@ -97,34 +112,49 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                         <Settings className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-900">Tools</h2>
-                        <p className="text-xs text-gray-500">Automation & Utilities</p>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                            Tools
+                        </h2>
+                        <p className="text-xs text-gray-500">
+                            Automation & Utilities
+                        </p>
                     </div>
                 </div>
 
                 <nav className="space-y-1">
                     {filteredNavigation.map((item) => {
                         // Check if any sub-item is active
-                        const hasActiveSubItem = item.subGroups?.some(group => 
-                            group.items.some(subItem => {
-                                const [basePath, queryString] = subItem.href.split('?');
+                        const hasActiveSubItem = item.subGroups?.some((group) =>
+                            group.items.some((subItem) => {
+                                const [basePath, queryString] =
+                                    subItem.href.split("?");
                                 const isPathMatch = pathname === basePath;
                                 if (!isPathMatch) return false;
-                                
+
                                 // Check if query params match
                                 if (queryString) {
-                                    const params = new URLSearchParams(queryString);
-                                    for (const [key, value] of params.entries()) {
-                                        if (searchParams.get(key) !== value) return false;
+                                    const params = new URLSearchParams(
+                                        queryString
+                                    );
+                                    for (const [
+                                        key,
+                                        value,
+                                    ] of params.entries()) {
+                                        if (searchParams.get(key) !== value)
+                                            return false;
                                     }
                                 }
                                 return true;
                             })
                         );
-                        const isActive = (pathname === item.href || pathname.startsWith(item.href + '/')) && !hasActiveSubItem;
+                        const isActive =
+                            (pathname === item.href ||
+                                pathname.startsWith(item.href + "/")) &&
+                            !hasActiveSubItem;
                         const isExpanded = expandedItems.has(item.name);
                         const Icon = item.icon;
-                        const hasSubGroups = item.subGroups && item.subGroups.length > 0;
+                        const hasSubGroups =
+                            item.subGroups && item.subGroups.length > 0;
 
                         return (
                             <div key={item.name}>
@@ -151,7 +181,9 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                     : "text-gray-400 group-hover:text-gray-600"
                                             )}
                                         />
-                                        <span className="flex-1 truncate">{item.name}</span>
+                                        <span className="flex-1 truncate">
+                                            {item.name}
+                                        </span>
                                         {item.badge && (
                                             <span className="px-2 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-full flex-shrink-0">
                                                 {item.badge}
@@ -181,13 +213,18 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                 {hasSubGroups && isExpanded && (
                                     <div className="ml-3 mt-1 space-y-1">
                                         {item.subGroups!.map((group) => {
-                                            const isGroupExpanded = expandedItems.has(group.name);
+                                            const isGroupExpanded =
+                                                expandedItems.has(group.name);
 
                                             return (
                                                 <div key={group.name}>
                                                     {/* Group Header */}
                                                     <button
-                                                        onClick={() => toggleExpanded(group.name)}
+                                                        onClick={() =>
+                                                            toggleExpanded(
+                                                                group.name
+                                                            )
+                                                        }
                                                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
                                                     >
                                                         {isGroupExpanded ? (
@@ -200,59 +237,101 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                                                         ) : (
                                                             <Folder className="w-3 h-3 text-blue-500 transition-colors" />
                                                         )}
-                                                        <span className="transition-colors">{group.name}</span>
+                                                        <span className="transition-colors">
+                                                            {group.name}
+                                                        </span>
                                                     </button>
 
                                                     {/* Group Items */}
                                                     {isGroupExpanded && (
                                                         <div className="ml-6 space-y-1">
-                                                            {group.items.map((subItem) => {
-                                                                // Check if current flow matches this sub-item
-                                                                const [basePath, queryString] = subItem.href.split('?');
-                                                                const isPathMatch = pathname === basePath;
-                                                                let isSubActive = false;
-                                                                
-                                                                if (isPathMatch && queryString) {
-                                                                    const params = new URLSearchParams(queryString);
-                                                                    let allMatch = true;
-                                                                    for (const [key, value] of params.entries()) {
-                                                                        if (searchParams.get(key) !== value) {
-                                                                            allMatch = false;
-                                                                            break;
-                                                                        }
-                                                                    }
-                                                                    isSubActive = allMatch;
-                                                                } else if (isPathMatch && !queryString) {
-                                                                    isSubActive = true;
-                                                                }
+                                                            {group.items.map(
+                                                                (subItem) => {
+                                                                    // Check if current flow matches this sub-item
+                                                                    const [
+                                                                        basePath,
+                                                                        queryString,
+                                                                    ] =
+                                                                        subItem.href.split(
+                                                                            "?"
+                                                                        );
+                                                                    const isPathMatch =
+                                                                        pathname ===
+                                                                        basePath;
+                                                                    let isSubActive =
+                                                                        false;
 
-                                                                return (
-                                                                    <Link
-                                                                        key={subItem.id}
-                                                                        href={subItem.href}
-                                                                        className={cn(
-                                                                            "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200 relative",
-                                                                            isSubActive
-                                                                                ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
-                                                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                                                        )}
-                                                                    >
-                                                                        {/* Active indicator - left border */}
-                                                                        {isSubActive && (
-                                                                            <span className="absolute left-0 top-0.5 bottom-0.5 w-1 bg-blue-600 rounded-r-full" />
-                                                                        )}
-                                                                        <FileCode
+                                                                    if (
+                                                                        isPathMatch &&
+                                                                        queryString
+                                                                    ) {
+                                                                        const params =
+                                                                            new URLSearchParams(
+                                                                                queryString
+                                                                            );
+                                                                        let allMatch =
+                                                                            true;
+                                                                        for (const [
+                                                                            key,
+                                                                            value,
+                                                                        ] of params.entries()) {
+                                                                            if (
+                                                                                searchParams.get(
+                                                                                    key
+                                                                                ) !==
+                                                                                value
+                                                                            ) {
+                                                                                allMatch =
+                                                                                    false;
+                                                                                break;
+                                                                            }
+                                                                        }
+                                                                        isSubActive =
+                                                                            allMatch;
+                                                                    } else if (
+                                                                        isPathMatch &&
+                                                                        !queryString
+                                                                    ) {
+                                                                        isSubActive =
+                                                                            true;
+                                                                    }
+
+                                                                    return (
+                                                                        <Link
+                                                                            key={
+                                                                                subItem.id
+                                                                            }
+                                                                            href={
+                                                                                subItem.href
+                                                                            }
                                                                             className={cn(
-                                                                                "w-4 h-4 flex-shrink-0 transition-colors",
+                                                                                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all duration-200 relative",
                                                                                 isSubActive
-                                                                                    ? "text-blue-600"
-                                                                                    : "text-gray-400"
+                                                                                    ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
+                                                                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                                                             )}
-                                                                        />
-                                                                        <span className="truncate">{subItem.name}</span>
-                                                                    </Link>
-                                                                );
-                                                            })}
+                                                                        >
+                                                                            {/* Active indicator - left border */}
+                                                                            {isSubActive && (
+                                                                                <span className="absolute left-0 top-0.5 bottom-0.5 w-1 bg-blue-600 rounded-r-full" />
+                                                                            )}
+                                                                            <FileCode
+                                                                                className={cn(
+                                                                                    "w-4 h-4 flex-shrink-0 transition-colors",
+                                                                                    isSubActive
+                                                                                        ? "text-blue-600"
+                                                                                        : "text-gray-400"
+                                                                                )}
+                                                                            />
+                                                                            <span className="truncate">
+                                                                                {
+                                                                                    subItem.name
+                                                                                }
+                                                                            </span>
+                                                                        </Link>
+                                                                    );
+                                                                }
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -264,8 +343,6 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
                         );
                     })}
                 </nav>
-
-
             </div>
         </div>
     );

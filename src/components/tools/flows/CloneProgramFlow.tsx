@@ -4,31 +4,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Play, Copy, CheckCircle2 } from "lucide-react";
+import { Loader2, Play, Copy, CheckCircle2, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { JsonViewer } from "@/components/tools/JsonViewer";
+import { useLmsRequest } from "@/hooks/useLmsRequest";
+import { RequestHistoryList } from "@/components/tools/api-runner/RequestHistoryList";
 
 interface Program {
     iid: number;
     name: string;
     code: string;
     status: string;
-}
-
-interface RequestHistory {
-    method: string;
-    url: string;
-    payload: Record<string, any>;
-    statusCode: number;
-    responseTime: number;
-    response: any;
-    timestamp: string;
 }
 
 interface CloneProgramFlowProps {
@@ -45,18 +31,31 @@ export function CloneProgramFlow({
     pass,
 }: CloneProgramFlowProps) {
     const { toast } = useToast();
-    const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState<string>("");
     const [programs, setPrograms] = useState<Program[]>([]);
     const [selectedProgram, setSelectedProgram] = useState<number | null>(null);
-    const [requestHistory, setRequestHistory] = useState<RequestHistory[]>([]);
     const [executionTime, setExecutionTime] = useState<number>(0);
     const [cloneResult, setCloneResult] = useState<any>(null);
-    const [historyExpanded, setHistoryExpanded] = useState(false);
 
     // Status filters
     const [statusApproved, setStatusApproved] = useState(true);
     const [statusQueued, setStatusQueued] = useState(false);
+
+    // Use common LMS request hook for both actions
+    const getProgramsRequest = useLmsRequest({ showToast: false });
+    const cloneProgramRequest = useLmsRequest({ showToast: false });
+
+    // Combined state for display
+    const loading = getProgramsRequest.loading || cloneProgramRequest.loading;
+    const requestHistory = [
+        ...getProgramsRequest.requestHistory,
+        ...cloneProgramRequest.requestHistory,
+    ];
+    const historyExpanded = getProgramsRequest.historyExpanded || cloneProgramRequest.historyExpanded;
+    const setHistoryExpanded = (value: boolean) => {
+        getProgramsRequest.setHistoryExpanded(value);
+        cloneProgramRequest.setHistoryExpanded(value);
+    };
 
     // Step 1: Get list of programs
     const handleGetPrograms = async () => {
@@ -92,52 +91,35 @@ export function CloneProgramFlow({
             return;
         }
 
-        setLoading(true);
         setLoadingMessage("Đang lấy danh sách chương trình từ contenttlx...");
         setPrograms([]);
         setSelectedProgram(null);
         setCloneResult(null);
 
-        try {
-            // Only get from content-tlx
-            const response = await fetch("/api/tools/auto-flow/clone-program", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    environment_id: environmentId,
-                    dmn: "contenttlx",
-                    user_code: userCode || undefined,
-                    pass: pass || undefined,
-                    step: "get_programs",
-                    statuses,
-                }),
-            });
+        const result = await getProgramsRequest.executeRequest({
+            apiEndpoint: "/api/tools/auto-flow/clone-program",
+            requestBody: {
+                environment_id: environmentId,
+                dmn: "contenttlx",
+                user_code: userCode || undefined,
+                pass: pass || undefined,
+                step: "get_programs",
+                statuses,
+            },
+            errorMessage: "Failed to get programs from contenttlx",
+        });
 
-            const data = await response.json();
+        setLoadingMessage("");
 
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to get programs from contenttlx");
-            }
-
-            const programs = data.data.programs || [];
-            
+        if (result.success && result.data) {
+            const programs = result.data.programs || [];
             setPrograms(programs);
-            setRequestHistory(data.requestHistory || []);
-            setExecutionTime(data.executionTime || 0);
+            setExecutionTime(result.data.executionTime || 0);
 
             toast({
                 title: "Thành công",
                 description: `Tìm thấy ${programs.length} chương trình từ contenttlx`,
             });
-        } catch (error: any) {
-            toast({
-                title: "Lỗi",
-                description: error.message,
-                variant: "destructive",
-            });
-        } finally {
-            setLoading(false);
-            setLoadingMessage("");
         }
     };
 
@@ -161,47 +143,28 @@ export function CloneProgramFlow({
             return;
         }
 
-        setLoading(true);
         setLoadingMessage(`Đang clone chương trình #${selectedProgram} vào ${dmn}...`);
         setCloneResult(null);
 
-        try {
-            const response = await fetch("/api/tools/auto-flow/clone-program", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    environment_id: environmentId,
-                    dmn: dmn, // Use domain input for cloning
-                    user_code: userCode || undefined,
-                    pass: pass || undefined,
-                    step: "clone",
-                    program_iid: selectedProgram,
-                }),
-            });
+        const result = await cloneProgramRequest.executeRequest({
+            apiEndpoint: "/api/tools/auto-flow/clone-program",
+            requestBody: {
+                environment_id: environmentId,
+                dmn: dmn, // Use domain input for cloning
+                user_code: userCode || undefined,
+                pass: pass || undefined,
+                step: "clone",
+                program_iid: selectedProgram,
+            },
+            successMessage: "Clone chương trình thành công",
+            errorMessage: "Failed to clone program",
+        });
 
-            const data = await response.json();
+        setLoadingMessage("");
 
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to clone program");
-            }
-
-            setCloneResult(data.data);
-            setRequestHistory(data.requestHistory || []);
-            setExecutionTime(data.executionTime || 0);
-
-            toast({
-                title: "Thành công",
-                description: data.message || "Clone chương trình thành công",
-            });
-        } catch (error: any) {
-            toast({
-                title: "Lỗi",
-                description: error.message,
-                variant: "destructive",
-            });
-        } finally {
-            setLoading(false);
-            setLoadingMessage("");
+        if (result.success && result.data) {
+            setCloneResult(result.data);
+            setExecutionTime(result.data.executionTime || 0);
         }
     };
 
@@ -394,107 +357,13 @@ export function CloneProgramFlow({
                     </div>
                 )}
 
-                {/* Request History - Collapsible */}
-                {requestHistory.length > 0 && (
-                    <div className="border rounded-lg">
-                        <button
-                            onClick={() => setHistoryExpanded(!historyExpanded)}
-                            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-                        >
-                            <div className="flex items-center gap-2">
-                                {historyExpanded ? (
-                                    <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                    <ChevronRight className="w-4 h-4" />
-                                )}
-                                <span className="text-sm font-semibold">
-                                    Lịch sử request ({requestHistory.length})
-                                </span>
-                            </div>
-                        </button>
-
-                        {historyExpanded && (
-                            <div className="px-3 pb-3 space-y-2">
-                                {requestHistory.map((req, index) => (
-                                    <RequestHistoryItem
-                                        key={index}
-                                        request={req}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                {/* Request History */}
+                <RequestHistoryList
+                    history={requestHistory}
+                    expanded={historyExpanded}
+                    onToggle={setHistoryExpanded}
+                />
             </div>
-        </div>
-    );
-}
-
-// Request History Item Component
-function RequestHistoryItem({ request }: { request: RequestHistory }) {
-    const [payloadOpen, setPayloadOpen] = useState(false);
-    const [responseOpen, setResponseOpen] = useState(false);
-
-    const statusColor =
-        request.statusCode >= 200 && request.statusCode < 300
-            ? "text-green-600"
-            : "text-red-600";
-
-    return (
-        <div className="border rounded-lg bg-gray-50">
-            {/* Header */}
-            <div className="p-2 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                    <span className="font-semibold">{request.method}</span>
-                    <span className={`font-semibold ${statusColor}`}>
-                        {request.statusCode}
-                    </span>
-                    <span className="text-gray-600">
-                        {request.responseTime}ms
-                    </span>
-                </div>
-            </div>
-
-            {/* URL */}
-            <div className="px-2 pb-2 text-xs text-gray-600 truncate">
-                {request.url}
-            </div>
-
-            {/* Payload */}
-            <Collapsible open={payloadOpen} onOpenChange={setPayloadOpen}>
-                <CollapsibleTrigger className="w-full flex items-center gap-2 px-2 py-1 text-xs text-left hover:bg-gray-100 border-t">
-                    {payloadOpen ? (
-                        <ChevronDown className="w-3 h-3" />
-                    ) : (
-                        <ChevronRight className="w-3 h-3" />
-                    )}
-                    <span className="font-medium">
-                        Payload ({Object.keys(request.payload).length} params)
-                    </span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                    <div className="p-2">
-                        <JsonViewer data={request.payload} maxHeight="150px" />
-                    </div>
-                </CollapsibleContent>
-            </Collapsible>
-
-            {/* Response */}
-            <Collapsible open={responseOpen} onOpenChange={setResponseOpen}>
-                <CollapsibleTrigger className="w-full flex items-center gap-2 px-2 py-1 text-xs text-left hover:bg-gray-100 border-t">
-                    {responseOpen ? (
-                        <ChevronDown className="w-3 h-3" />
-                    ) : (
-                        <ChevronRight className="w-3 h-3" />
-                    )}
-                    <span className="font-medium">Response Preview</span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                    <div className="p-2">
-                        <JsonViewer data={request.response} maxHeight="200px" />
-                    </div>
-                </CollapsibleContent>
-            </Collapsible>
         </div>
     );
 }

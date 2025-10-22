@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { BaseConfig } from "@/components/tools/BaseConfig";
 import { CloneProgramFlow } from "@/components/tools/flows/CloneProgramFlow";
+import { CreateDomainFlow } from "@/components/tools/flows/CreateDomainFlow";
 
 interface Environment {
     id: string;
@@ -49,13 +50,19 @@ export default function ApiAutoPage() {
         }
     };
 
-    // Auto-fill DMN when environment changes
+    // Auto-fill DMN and userCode based on flow and environment
     useEffect(() => {
         const env = environments.find((e) => e.id === selectedEnvironment);
-        if (env) {
+        
+        if (flowParam === "create-domain") {
+            // Create domain flow defaults
+            setDmn("system");
+            setUserCode("root");
+        } else if (env) {
+            // Other flows use environment dmn
             setDmn(env.dmn || "");
         }
-    }, [selectedEnvironment, environments]);
+    }, [selectedEnvironment, environments, flowParam]);
 
     // Get flow info based on param
     const getFlowInfo = () => {
@@ -64,6 +71,12 @@ export default function ApiAutoPage() {
                 return {
                     name: "Clone chương trình",
                     description: "Sao chép chương trình giữa các môi trường",
+                    group: "Admin",
+                };
+            case "create-domain":
+                return {
+                    name: "Tạo domain",
+                    description: "Tạo domain mới trong hệ thống",
                     group: "Admin",
                 };
             default:
@@ -87,6 +100,15 @@ export default function ApiAutoPage() {
                         dmn={dmn}
                         userCode={userCode}
                         pass={pass}
+                    />
+                );
+            case "create-domain":
+                return (
+                    <CreateDomainFlow
+                        environmentId={selectedEnvironment}
+                        dmn={dmn}
+                        userCode={userCode}
+                        password={pass}
                     />
                 );
             default:

@@ -13,13 +13,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+
 import {
     PlayCircle,
     Loader2,
     Copy,
     Check,
-    Clock,
     AlertCircle,
     Save,
     FolderOpen,
@@ -27,7 +26,6 @@ import {
     ChevronDown,
     File,
     Folder,
-    Trash2,
     RotateCcw,
     Search,
 } from "lucide-react";
@@ -39,8 +37,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+
 import { FolderManager } from "@/components/tools/FolderManager";
 import { JsonEditor } from "@/components/tools/JsonEditor";
+import { useToast } from "@/hooks/use-toast";
+import { RequestHistoryList } from "@/components/tools/api-runner/RequestHistoryList";
+import { DeleteTemplateButton } from "@/components/tools/api-runner/DeleteTemplateButton";
 
 export default function ApiRunnerPage() {
     const [environments, setEnvironments] = useState<ApiEnvironment[]>([]);
@@ -55,8 +57,10 @@ export default function ApiRunnerPage() {
     const [response, setResponse] = useState<any>(null);
     const [error, setError] = useState<string>("");
     const [requestHistory, setRequestHistory] = useState<any[]>([]);
+    const [isExecuting, setIsExecuting] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [historyExpanded, setHistoryExpanded] = useState(false);
+    const [historyExpanded, setHistoryExpanded] = useState(true);
+    const selectedEnv = environments.find((env) => env.id === selectedEnvId);
 
     // Template states
     const [templates, setTemplates] = useState<ApiRequestTemplate[]>([]);
@@ -70,6 +74,7 @@ export default function ApiRunnerPage() {
     const [loadedTemplateInfo, setLoadedTemplateInfo] = useState<{ name: string; description: string } | null>(null);
     const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
     const [templateSearchQuery, setTemplateSearchQuery] = useState("");
+    const { toast } = useToast();
 
     // Load environments, templates, and folders
     useEffect(() => {
@@ -77,6 +82,13 @@ export default function ApiRunnerPage() {
         fetchTemplates();
         fetchFolders();
     }, []);
+
+    // Auto-expand history when executing
+    useEffect(() => {
+        if (requestHistory.length > 0) {
+            setHistoryExpanded(true);
+        }
+    }, [requestHistory.length]);
 
     const fetchEnvironments = async () => {
         try {
@@ -142,7 +154,11 @@ export default function ApiRunnerPage() {
 
     const handleSaveTemplate = async () => {
         if (!templateName.trim()) {
-            alert("Vui lòng nhập tên template");
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng nhập tên template",
+                variant: "destructive",
+            });
             return;
         }
 
@@ -151,7 +167,11 @@ export default function ApiRunnerPage() {
             try {
                 parsedPayload = JSON.parse(payload);
             } catch (e) {
-                alert("Payload không phải JSON hợp lệ");
+                toast({
+                    title: "Lỗi",
+                    description: "Payload không phải JSON hợp lệ",
+                    variant: "destructive",
+                });
                 return;
             }
 
@@ -192,7 +212,10 @@ export default function ApiRunnerPage() {
             const data = await res.json();
 
             if (data.success) {
-                alert(isUpdate ? "Template đã được cập nhật!" : "Template đã được lưu!");
+                toast({
+                    title: "Thành công",
+                    description: isUpdate ? "Template đã được cập nhật!" : "Template đã được lưu!",
+                });
                 setShowSaveDialog(false);
                 setTemplateName("");
                 setTemplateDescription("");
@@ -202,13 +225,18 @@ export default function ApiRunnerPage() {
                 fetchTemplates();
                 fetchFolders();
             } else {
-                alert("Lỗi: " + data.error);
+                toast({
+                    title: "Lỗi",
+                    description: data.error,
+                    variant: "destructive",
+                });
             }
         } catch (err) {
-            alert(
-                "Lỗi khi lưu template: " +
-                    (err instanceof Error ? err.message : "Unknown error")
-            );
+            toast({
+                title: "Lỗi",
+                description: "Lỗi khi lưu template: " + (err instanceof Error ? err.message : "Unknown error"),
+                variant: "destructive",
+            });
         }
     };
 
@@ -237,8 +265,6 @@ export default function ApiRunnerPage() {
     };
 
     const handleDeleteTemplate = async (templateId: string) => {
-        if (!confirm("Bạn có chắc muốn xóa template này?")) return;
-
         try {
             const res = await fetch(`/api/tools/templates?id=${templateId}`, {
                 method: "DELETE",
@@ -247,13 +273,25 @@ export default function ApiRunnerPage() {
             const data = await res.json();
 
             if (data.success) {
+                toast({
+                    title: "Thành công",
+                    description: "Template đã được xóa",
+                });
                 fetchTemplates();
                 fetchFolders();
             } else {
-                alert("Lỗi: " + data.error);
+                toast({
+                    title: "Lỗi",
+                    description: data.error,
+                    variant: "destructive",
+                });
             }
         } catch (err) {
-            alert("Lỗi khi xóa template");
+            toast({
+                title: "Lỗi",
+                description: "Lỗi khi xóa template",
+                variant: "destructive",
+            });
         }
     };
 
@@ -268,6 +306,8 @@ export default function ApiRunnerPage() {
             return newSet;
         });
     };
+
+
 
     const renderTemplatesByFolder = (): React.ReactNode => {
         // Filter templates by search query
@@ -330,17 +370,11 @@ export default function ApiRunnerPage() {
                                     >
                                         {template.name}
                                     </span>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteTemplate(template.id);
-                                        }}
-                                    >
-                                        <Trash2 className="w-3 h-3 text-red-600" />
-                                    </Button>
+                                    <DeleteTemplateButton 
+                                        templateId={template.id} 
+                                        templateName={template.name}
+                                        onDelete={handleDeleteTemplate}
+                                    />
                                 </div>
                             ))}
                         </>
@@ -369,17 +403,11 @@ export default function ApiRunnerPage() {
                                 >
                                     {template.name}
                                 </span>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteTemplate(template.id);
-                                    }}
-                                >
-                                    <Trash2 className="w-3 h-3 text-red-600" />
-                                </Button>
+                                <DeleteTemplateButton 
+                                    templateId={template.id} 
+                                    templateName={template.name}
+                                    onDelete={handleDeleteTemplate}
+                                />
                             </div>
                         ))}
                     </div>
@@ -405,6 +433,7 @@ export default function ApiRunnerPage() {
 
     const handleExecute = async () => {
         setLoading(true);
+        setIsExecuting(true);
         setError("");
         setResponse(null);
         setRequestHistory([]);
@@ -439,6 +468,22 @@ export default function ApiRunnerPage() {
         }
 
         try {
+            // Add initial loading entry to history
+            const loginHistoryId = Date.now();
+            setRequestHistory([{
+                id: loginHistoryId,
+                method: "POST",
+                url: `${selectedEnv?.host}/user/login`,
+                payload: { lname: userCode || dmn },
+                statusCode: null,
+                responseTime: null,
+                response: null,
+                timestamp: new Date().toISOString(),
+                isLoading: true,
+                step: "Đang đăng nhập...",
+            }]);
+
+            const startTime = Date.now();
             const res = await fetch("/api/tools/api-runner", {
                 method: "POST",
                 headers: {
@@ -459,15 +504,31 @@ export default function ApiRunnerPage() {
 
             if (data.success) {
                 setResponse(data.data.response);
-                setRequestHistory(data.data.requestHistory || []);
+                // Map history with unique IDs and completed state
+                const mappedHistory = (data.data.requestHistory || []).map((item: any, index: number) => ({
+                    ...item,
+                    id: Date.now() + index,
+                    isLoading: false,
+                    isComplete: true,
+                }));
+                setRequestHistory(mappedHistory);
             } else {
                 setError(data.error || "API call failed");
-                setRequestHistory(data.requestHistory || []);
+                // Map history with unique IDs and error state
+                const mappedHistory = (data.requestHistory || []).map((item: any, index: number) => ({
+                    ...item,
+                    id: Date.now() + index,
+                    isLoading: false,
+                    isComplete: true,
+                    hasError: item.statusCode !== 200,
+                }));
+                setRequestHistory(mappedHistory);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Request failed");
         } finally {
             setLoading(false);
+            setIsExecuting(false);
         }
     };
 
@@ -509,8 +570,6 @@ export default function ApiRunnerPage() {
             setSelectedEnvId(stagingEnv.id);
         }
     };
-
-    const selectedEnv = environments.find((env) => env.id === selectedEnvId);
 
     return (
         <div className="space-y-3">
@@ -850,81 +909,11 @@ export default function ApiRunnerPage() {
                     </CardHeader>
                     <CardContent className="p-4 pt-3">
                         {/* Request History */}
-                        {requestHistory.length > 0 && (
-                            <div className="mb-4">
-                                <details 
-                                    className="border rounded-lg bg-gray-50"
-                                    open={historyExpanded}
-                                    onToggle={(e) => setHistoryExpanded(e.currentTarget.open)}
-                                >
-                                    <summary className="cursor-pointer p-3 font-semibold text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center justify-between">
-                                        <span>Request History ({requestHistory.length})</span>
-                                        <ChevronRight className={`w-4 h-4 transition-transform ${historyExpanded ? 'rotate-90' : ''}`} />
-                                    </summary>
-                                    <div className="px-3 pb-3 space-y-3">
-                                        {requestHistory.map((req, index) => (
-                                    <div
-                                        key={index}
-                                        className="border rounded-lg p-3 bg-gray-50 space-y-2"
-                                    >
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Badge
-                                                variant={
-                                                    req.statusCode === 200
-                                                        ? "default"
-                                                        : "destructive"
-                                                }
-                                            >
-                                                {req.statusCode}
-                                            </Badge>
-                                            <Badge variant="outline">{req.method}</Badge>
-                                            <span className="text-gray-600 font-mono text-xs truncate flex-1">
-                                                {req.url}
-                                            </span>
-                                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                <Clock className="w-3 h-3" />
-                                                <span>{req.responseTime}ms</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Payload */}
-                                        {Object.keys(req.payload).length > 0 && (
-                                            <details className="text-xs">
-                                                <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
-                                                    Payload ({Object.keys(req.payload).length}{" "}
-                                                    params)
-                                                </summary>
-                                                <div className="mt-2">
-                                                    <JsonEditor
-                                                        value={JSON.stringify(req.payload, null, 2)}
-                                                        onChange={() => {}}
-                                                        height="150px"
-                                                        readOnly
-                                                    />
-                                                </div>
-                                            </details>
-                                        )}
-
-                                        {/* Response Preview */}
-                                        <details className="text-xs">
-                                            <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
-                                                Response Preview
-                                            </summary>
-                                            <div className="mt-2">
-                                                <JsonEditor
-                                                    value={JSON.stringify(req.response, null, 2)}
-                                                    onChange={() => {}}
-                                                    height="200px"
-                                                    readOnly
-                                                />
-                                            </div>
-                                        </details>
-                                    </div>
-                                        ))}
-                                    </div>
-                                </details>
-                            </div>
-                        )}
+                        <RequestHistoryList 
+                            history={requestHistory}
+                            expanded={historyExpanded}
+                            onToggle={setHistoryExpanded}
+                        />
 
                         {/* Error Message */}
                         {error && (

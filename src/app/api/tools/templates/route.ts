@@ -127,13 +127,39 @@ export const PUT = withAuth(
                 return NextResponse.json({ error: "Template ID is required" }, { status: 400 });
             }
 
+            console.log("[PUT /api/tools/templates] Updating template:", {
+                id,
+                userId: user.id,
+                userRole: user.role,
+                updates,
+            });
+
+            // First check if template exists
+            const { data: existingTemplate, error: fetchError } = await supabase
+                .from("api_request_templates")
+                .select("*")
+                .eq("id", id)
+                .single();
+
+            console.log("[PUT /api/tools/templates] Existing template:", {
+                found: !!existingTemplate,
+                createdBy: existingTemplate?.created_by,
+                error: fetchError,
+            });
+
+            if (fetchError || !existingTemplate) {
+                return NextResponse.json(
+                    { error: "Template not found" },
+                    { status: 404 }
+                );
+            }
+
             // Update template (any admin can update)
-            const { data: template, error: updateError } = await supabase
+            const { data: templates, error: updateError } = await supabase
                 .from("api_request_templates")
                 .update(updates)
                 .eq("id", id)
-                .select()
-                .single();
+                .select();
 
             if (updateError) {
                 console.error("[PUT /api/tools/templates] Update error:", updateError);
@@ -143,12 +169,14 @@ export const PUT = withAuth(
                 );
             }
 
-            if (!template) {
+            if (!templates || templates.length === 0) {
                 return NextResponse.json(
                     { error: "Template not found or access denied" },
                     { status: 404 }
                 );
             }
+
+            const template = templates[0];
 
             return createSuccessResponse(template, "Template updated successfully");
         } catch (error) {
