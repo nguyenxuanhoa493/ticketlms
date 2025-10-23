@@ -72,6 +72,11 @@ const navigation: MenuItem[] = [
                         name: "Fix lỗi tuần tự syllabus",
                         href: "/tools/api-auto?flow=fix-syllabus-sequential",
                     },
+                    {
+                        id: "update-kpi-time",
+                        name: "Cập nhật KPI Time",
+                        href: "/tools/api-auto?flow=update-kpi-time",
+                    },
                 ],
             },
         ],

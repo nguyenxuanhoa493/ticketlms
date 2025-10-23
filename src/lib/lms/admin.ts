@@ -75,6 +75,81 @@ export async function getDomainGroups(
     }
 }
 
+export interface UpdateInfoParams {
+    ntype: string;
+    iid?: string[];
+    id?: string[];
+    data_set?: Record<string, any>;
+    fields_unset?: string[];
+}
+
+export interface UpdateInfoResult {
+    success: boolean;
+    data?: any;
+    error?: string;
+}
+
+/**
+ * Update data by conditions (universal update API)
+ */
+export async function updateInfo(
+    client: LmsClient,
+    params: UpdateInfoParams
+): Promise<UpdateInfoResult> {
+    const { ntype, iid, id, data_set, fields_unset } = params;
+
+    try {
+        const payload: Record<string, any> = {
+            ntype,
+        };
+
+        if (iid && iid.length > 0) {
+            payload.iid = iid;
+        }
+        if (id && id.length > 0) {
+            payload.id = id;
+        }
+        if (data_set && Object.keys(data_set).length > 0) {
+            payload.data_set = data_set;
+        }
+        if (fields_unset && fields_unset.length > 0) {
+            payload.fields_unset = fields_unset;
+        }
+
+        const result = await client.send({
+            path: "/site/api/update-data-by-conditions",
+            method: "POST",
+            payload,
+        });
+
+        // Check HTTP request success
+        if (!result.success) {
+            return {
+                success: false,
+                error: result.error || "Failed to update data",
+            };
+        }
+
+        // Check LMS API response success field
+        if (result.data?.success === false) {
+            return {
+                success: false,
+                error: result.data?.message || result.data?.msg || "API returned success=false",
+            };
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+        };
+    }
+}
+
 /**
  * Create a new domain
  */

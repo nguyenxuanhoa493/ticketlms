@@ -1,0 +1,417 @@
+
+
+"use client";
+
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+    Search,
+    Loader2,
+    CheckCircle2,
+    AlertCircle,
+    Clock,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { BaseFlowLayout } from "./BaseFlowLayout";
+import { FlowStep } from "./FlowStep";
+
+interface UpdateKpiTimeFlowProps {
+    environmentId: string;
+    dmn: string;
+    userCode: string;
+    pass: string;
+}
+
+interface QuestionBank {
+    iid: string;
+    id: string;
+    name: string;
+}
+
+export function UpdateKpiTimeFlow({
+    environmentId,
+    dmn,
+    userCode,
+    pass,
+}: UpdateKpiTimeFlowProps) {
+    const [searchName, setSearchName] = useState("120");
+    const [multiplier, setMultiplier] = useState("3");
+    const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState("");
+    const [requestHistory, setRequestHistory] = useState<any[]>([]);
+    const [historyExpanded, setHistoryExpanded] = useState(true);
+    const [progressBanks, setProgressBanks] = useState(0);
+    const [progressQuestions, setProgressQuestions] = useState(0);
+    const [currentBank, setCurrentBank] = useState("");
+    const [currentQuestionInfo, setCurrentQuestionInfo] = useState("");
+    const [processedBanks, setProcessedBanks] = useState(0);
+    const [results, setResults] = useState<{
+        total: number;
+        updated: number;
+        failed: number;
+    } | null>(null);
+
+    const { toast } = useToast();
+
+    const handleSearch = async () => {
+        setLoading(true);
+        setLoadingMessage("Đang tìm kiếm question banks...");
+        setQuestionBanks([]);
+        setResults(null);
+
+        try {
+            const response = await fetch("/api/tools/auto-flow/update-kpi-time", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "search_question_banks",
+                    environment_id: environmentId,
+                    dmn,
+                    user_code: userCode,
+                    pass,
+                    search_name: searchName,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.requestHistory) {
+                setRequestHistory(data.requestHistory);
+            }
+
+            if (!response.ok || !data.success) {
+                toast({
+                    title: "Lỗi",
+                    description: data.error || "Không thể tìm kiếm question banks",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            const banks = data.data?.questionBanks || [];
+            setQuestionBanks(banks);
+
+            toast({
+                title: "Thành công",
+                description: `Tìm thấy ${banks.length} question banks`,
+            });
+        } catch (error) {
+            console.error("Search error:", error);
+            toast({
+                title: "Lỗi",
+                description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+            setLoadingMessage("");
+        }
+    };
+
+    const handleUpdateAll = async () => {
+        if (questionBanks.length === 0) return;
+
+        setUpdating(true);
+        setProgressBanks(0);
+        setProgressQuestions(0);
+        setProcessedBanks(0);
+        setResults(null);
+        setCurrentQuestionInfo("");
+
+        let totalUpdated = 0;
+        let totalFailed = 0;
+        let totalQuestions = 0;
+
+        try {
+            for (let i = 0; i < questionBanks.length; i++) {
+                const bank = questionBanks[i];
+                setCurrentBank(bank.name);
+                setProgressQuestions(0); // Reset question progress for new bank
+                setCurrentQuestionInfo("Đang tải danh sách questions...");
+                setLoadingMessage(`Đang xử lý ngân hàng ${i + 1}/${questionBanks.length}: ${bank.name}`);
+
+                // Small delay to ensure UI updates
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                try {
+                    // Show processing state
+                    setProgressQuestions(10);
+                    setCurrentQuestionInfo("Đang cập nhật questions...");
+
+                    const response = await fetch("/api/tools/auto-flow/update-kpi-time", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: "update_single_question_bank",
+                            environment_id: environmentId,
+                            dmn,
+                            user_code: userCode,
+                            pass,
+                            question_bank_iid: bank.iid,
+                            multiplier,
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    console.log(`[UpdateKpiTimeFlow] Bank ${i + 1}/${questionBanks.length} response:`, {
+                        success: data.success,
+                        historyCount: data.requestHistory?.length || 0,
+                        questionsProcessed: data.data?.totalQuestions || 0,
+                    });
+
+                    if (data.requestHistory) {
+                        setRequestHistory(prev => {
+                            const newHistory = [...prev, ...data.requestHistory];
+                            console.log(`[UpdateKpiTimeFlow] History updated: ${newHistory.length} items`);
+                            return newHistory;
+                        });
+                    }
+
+                    if (data.success) {
+                        const bankQuestions = data.data?.totalQuestions || 0;
+                        const bankUpdated = data.data?.updatedCount || 0;
+                        const bankFailed = data.data?.errors?.length || 0;
+                        
+                        totalQuestions += bankQuestions;
+                        totalUpdated += bankUpdated;
+                        totalFailed += bankFailed;
+                        
+                        // Show question progress (simulated - show 100% after bank completes)
+                        setProgressQuestions(100);
+                        setCurrentQuestionInfo(`${bankUpdated}/${bankQuestions} questions cập nhật thành công`);
+                    }
+                } catch (error) {
+                    console.error(`Error updating bank ${bank.name}:`, error);
+                    totalFailed++;
+                }
+
+                // Update bank progress
+                const newProcessedBanks = i + 1;
+                const newProgressBanks = Math.round(((i + 1) / questionBanks.length) * 100);
+                
+                console.log(`[UpdateKpiTimeFlow] Progress: ${newProcessedBanks}/${questionBanks.length} (${newProgressBanks}%)`);
+                
+                setProcessedBanks(newProcessedBanks);
+                setProgressBanks(newProgressBanks);
+            }
+
+            setResults({
+                total: totalQuestions,
+                updated: totalUpdated,
+                failed: totalFailed,
+            });
+
+            toast({
+                title: "Hoàn thành",
+                description: `Đã cập nhật ${totalUpdated}/${totalQuestions} questions`,
+            });
+        } catch (error) {
+            console.error("Update error:", error);
+            toast({
+                title: "Lỗi",
+                description: error instanceof Error ? error.message : "Có lỗi xảy ra",
+                variant: "destructive",
+            });
+        } finally {
+            setUpdating(false);
+            setLoadingMessage("");
+            setCurrentBank("");
+        }
+    };
+
+    return (
+        <BaseFlowLayout
+            flowDescription="Tìm kiếm question banks và cập nhật KPI time cho tất cả questions với công thức: kpi_time_mới = (kpi_time_cũ / 1000) × hệ số nhân"
+            loadingMessage={loadingMessage}
+            requestHistory={requestHistory}
+            historyExpanded={historyExpanded}
+            onHistoryToggle={setHistoryExpanded}
+            emptyStateMessage="Request history sẽ hiển thị ở đây"
+            emptyStateIcon={
+                <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            }
+            steps={
+                <>
+                    {/* Step 1: Search Question Banks */}
+                    <FlowStep
+                        title="Bước 1: Tìm kiếm Question Banks"
+                        description=""
+                    >
+                        <div className="space-y-3">
+                            <div>
+                                <Label htmlFor="searchName">Tên Question Bank</Label>
+                                <Input
+                                    id="searchName"
+                                    value={searchName}
+                                    onChange={(e) => setSearchName(e.target.value)}
+                                    placeholder="Ví dụ: 120"
+                                    disabled={loading || updating}
+                                />
+                            </div>
+
+                            <Button
+                                onClick={handleSearch}
+                                disabled={!environmentId || !dmn || !searchName || loading || updating}
+                                className="w-full"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Đang tìm kiếm...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search className="w-4 h-4 mr-2" />
+                                        Tìm kiếm Question Banks
+                                    </>
+                                )}
+                            </Button>
+
+                            {(!environmentId || !dmn) && (
+                                <p className="text-sm text-gray-500 mt-2">
+                                    Vui lòng chọn môi trường và nhập DMN để tiếp tục
+                                </p>
+                            )}
+
+                            {questionBanks.length > 0 && (
+                                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <div className="flex items-center gap-2 text-green-700">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        <span className="font-medium">
+                                            Tìm thấy {questionBanks.length} question banks
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </FlowStep>
+
+                    {/* Step 2: Update KPI Time */}
+                    {questionBanks.length > 0 && (
+                        <FlowStep
+                            title="Bước 2: Cập nhật KPI Time"
+                            description=""
+                        >
+                            <div className="space-y-3">
+                                <div>
+                                    <Label htmlFor="multiplier">Hệ số nhân</Label>
+                                    <Input
+                                        id="multiplier"
+                                        type="number"
+                                        step="0.1"
+                                        value={multiplier}
+                                        onChange={(e) => setMultiplier(e.target.value)}
+                                        placeholder="Ví dụ: 3"
+                                        disabled={loading || updating}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        KPI time mới = (KPI time cũ / 1000) × {multiplier || "?"}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={handleUpdateAll}
+                                    disabled={loading || updating || !multiplier}
+                                    className="w-full"
+                                    variant="default"
+                                >
+                                    {updating ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Đang cập nhật...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Clock className="w-4 h-4 mr-2" />
+                                            Cập nhật Tất Cả
+                                        </>
+                                    )}
+                                </Button>
+
+                                {/* Progress Banks */}
+                                {updating && (
+                                    <div className="space-y-4">
+                                        {/* Bank Progress */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-sm text-gray-600">
+                                                <span className="font-medium">Tiến độ Question Banks</span>
+                                                <span>
+                                                    {processedBanks}/{questionBanks.length}
+                                                </span>
+                                            </div>
+                                            <Progress value={progressBanks} className="h-2" />
+                                            {currentBank && (
+                                                <p className="text-xs text-gray-500">
+                                                    Đang xử lý: {currentBank}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Question Progress within current bank */}
+                                        {currentBank && (
+                                            <div className="space-y-2 pl-4 border-l-2 border-gray-200">
+                                                <div className="flex justify-between text-sm text-gray-600">
+                                                    <span>Tiến độ Questions</span>
+                                                    <span>
+                                                        {progressQuestions === 100 ? (
+                                                            <span className="text-green-600 font-medium">{progressQuestions}%</span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1">
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                {progressQuestions}%
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <Progress value={progressQuestions} className="h-2" />
+                                                {currentQuestionInfo && (
+                                                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                        {progressQuestions < 100 && (
+                                                            <Loader2 className="w-3 h-3 animate-spin inline" />
+                                                        )}
+                                                        {currentQuestionInfo}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Results */}
+                                {results && !updating && (
+                                    <div className="space-y-2">
+                                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                                            <div className="flex items-center gap-2 text-green-700">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                <span className="font-medium">
+                                                    Đã cập nhật: {results.updated}/{results.total} questions
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {results.failed > 0 && (
+                                            <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                                                <div className="flex items-center gap-2 text-red-700">
+                                                    <AlertCircle className="w-4 h-4" />
+                                                    <span className="font-medium">
+                                                        Thất bại: {results.failed}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </FlowStep>
+                    )}
+                </>
+            }
+        />
+    );
+}

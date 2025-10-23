@@ -7,6 +7,7 @@ import { BaseConfig } from "@/components/tools/BaseConfig";
 import { CloneProgramFlow } from "@/components/tools/flows/CloneProgramFlow";
 import { CreateDomainFlow } from "@/components/tools/flows/CreateDomainFlow";
 import { FixSyllabusSequentialFlow } from "@/components/tools/flows/FixSyllabusSequentialFlow";
+import { UpdateKpiTimeFlow } from "@/components/tools/flows/UpdateKpiTimeFlow";
 
 interface Environment {
     id: string;
@@ -76,6 +77,12 @@ export default function ApiAutoPage() {
             setDmn(env?.dmn || "");
             setUserCode("");
             setPass("");
+        } else if (flowParam === "update-kpi-time") {
+            // Update KPI time flow defaults
+            console.log("[Page] Setting defaults for update-kpi-time:", { dmn: env?.dmn || "" });
+            setDmn(env?.dmn || "");
+            setUserCode("");
+            setPass("");
         } else {
             // Default: use environment dmn
             setDmn(env?.dmn || "");
@@ -103,6 +110,12 @@ export default function ApiAutoPage() {
                 return {
                     name: "Fix lỗi tuần tự syllabus",
                     description: "Tìm kiếm và fix sequential learning settings cho syllabuses",
+                    group: "Admin",
+                };
+            case "update-kpi-time":
+                return {
+                    name: "Cập nhật KPI Time",
+                    description: "Tìm kiếm question banks và cập nhật KPI time cho questions",
                     group: "Admin",
                 };
             default:
@@ -152,6 +165,16 @@ export default function ApiAutoPage() {
                 return (
                     <FixSyllabusSequentialFlow
                         key="fix-syllabus-sequential"
+                        environmentId={selectedEnvironment}
+                        dmn={dmn}
+                        userCode={userCode}
+                        pass={pass}
+                    />
+                );
+            case "update-kpi-time":
+                return (
+                    <UpdateKpiTimeFlow
+                        key="update-kpi-time"
                         environmentId={selectedEnvironment}
                         dmn={dmn}
                         userCode={userCode}
