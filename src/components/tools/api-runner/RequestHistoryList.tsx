@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, Clock, Loader2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Editor from "@monaco-editor/react";
 
 interface RequestHistoryItem {
     id: number | string;
@@ -134,9 +135,23 @@ function RequestHistoryItem({ item }: { item: RequestHistoryItem }) {
                                     )}
                                 </Button>
                             </div>
-                            <pre className="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto max-h-60 overflow-y-auto">
-                                {JSON.stringify(item.payload, null, 2)}
-                            </pre>
+                            <div className="border rounded overflow-hidden">
+                                <Editor
+                                    height="200px"
+                                    defaultLanguage="json"
+                                    value={JSON.stringify(item.payload, null, 2)}
+                                    theme="vs-dark"
+                                    options={{
+                                        readOnly: true,
+                                        minimap: { enabled: false },
+                                        scrollBeyondLastLine: false,
+                                        fontSize: 12,
+                                        lineNumbers: "off",
+                                        folding: true,
+                                        wordWrap: "on",
+                                    }}
+                                />
+                            </div>
                         </div>
                     )}
 
@@ -161,9 +176,23 @@ function RequestHistoryItem({ item }: { item: RequestHistoryItem }) {
                                     )}
                                 </Button>
                             </div>
-                            <pre className="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto max-h-60 overflow-y-auto">
-                                {JSON.stringify(item.response, null, 2)}
-                            </pre>
+                            <div className="border rounded overflow-hidden">
+                                <Editor
+                                    height="300px"
+                                    defaultLanguage="json"
+                                    value={JSON.stringify(item.response, null, 2)}
+                                    theme="vs-dark"
+                                    options={{
+                                        readOnly: true,
+                                        minimap: { enabled: false },
+                                        scrollBeyondLastLine: false,
+                                        fontSize: 12,
+                                        lineNumbers: "off",
+                                        folding: true,
+                                        wordWrap: "on",
+                                    }}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
