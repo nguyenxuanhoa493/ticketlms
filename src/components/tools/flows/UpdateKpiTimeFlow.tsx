@@ -52,7 +52,9 @@ export function UpdateKpiTimeFlow({
         total: number;
         updated: number;
         failed: number;
+        errors: string[];
     } | null>(null);
+    const [showErrors, setShowErrors] = useState(false);
 
     const { toast } = useToast();
 
@@ -122,6 +124,7 @@ export function UpdateKpiTimeFlow({
         let totalUpdated = 0;
         let totalFailed = 0;
         let totalQuestions = 0;
+        let allErrors: string[] = [];
 
         try {
             for (let i = 0; i < questionBanks.length; i++) {
@@ -163,14 +166,27 @@ export function UpdateKpiTimeFlow({
                     if (data.success) {
                         const bankQuestions = data.data?.totalQuestions || 0;
                         const bankUpdated = data.data?.updatedCount || 0;
-                        const bankFailed = data.data?.errors?.length || 0;
+                        const bankErrors = data.data?.errors || [];
                         
                         totalQuestions += bankQuestions;
                         totalUpdated += bankUpdated;
-                        totalFailed += bankFailed;
+                        totalFailed += bankErrors.length;
+                        
+                        // Collect errors with bank context
+                        if (bankErrors.length > 0) {
+                            allErrors.push(`[${bank.name}]`);
+                            allErrors.push(...bankErrors);
+                        }
+                    } else {
+                        // API call failed
+                        const errorMsg = `[${bank.name}] API Error: ${data.error || 'Unknown error'}`;
+                        allErrors.push(errorMsg);
+                        totalFailed++;
                     }
                 } catch (error) {
                     console.error(`Error updating bank ${bank.name}:`, error);
+                    const errorMsg = `[${bank.name}] Request failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+                    allErrors.push(errorMsg);
                     totalFailed++;
                 }
 
@@ -181,6 +197,7 @@ export function UpdateKpiTimeFlow({
                 total: totalQuestions,
                 updated: totalUpdated,
                 failed: totalFailed,
+                errors: allErrors,
             });
 
             toast({
@@ -343,12 +360,39 @@ export function UpdateKpiTimeFlow({
 
                                         {results.failed > 0 && (
                                             <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                                                <div className="flex items-center gap-2 text-red-700">
-                                                    <AlertCircle className="w-4 h-4" />
-                                                    <span className="font-medium">
-                                                        Thất bại: {results.failed}
-                                                    </span>
+                                                <div 
+                                                    className="flex items-center justify-between cursor-pointer"
+                                                    onClick={() => setShowErrors(!showErrors)}
+                                                >
+                                                    <div className="flex items-center gap-2 text-red-700">
+                                                        <AlertCircle className="w-4 h-4" />
+                                                        <span className="font-medium">
+                                                            Thất bại: {results.failed}
+                                                        </span>
+                                                    </div>
+                                                    <button className="text-xs text-red-600 hover:text-red-800">
+                                                        {showErrors ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+                                                    </button>
                                                 </div>
+                                                
+                                                {showErrors && results.errors.length > 0 && (
+                                                    <div className="mt-3 pt-3 border-t border-red-200">
+                                                        <div className="max-h-60 overflow-y-auto space-y-1">
+                                                            {results.errors.map((error, idx) => (
+                                                                <div 
+                                                                    key={idx}
+                                                                    className={`text-xs ${
+                                                                        error.startsWith('[') && error.endsWith(']')
+                                                                            ? 'font-semibold text-red-800 mt-2'
+                                                                            : 'text-red-600 pl-2'
+                                                                    }`}
+                                                                >
+                                                                    {error}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
