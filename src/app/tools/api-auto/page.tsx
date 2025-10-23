@@ -114,7 +114,7 @@ export default function ApiAutoPage() {
                 };
             case "update-kpi-time":
                 return {
-                    name: "Cập nhật KPI Time",
+                    name: "Cập nhật Kpi time Mô phỏng",
                     description: "Tìm kiếm question banks và cập nhật KPI time cho questions",
                     group: "Admin",
                 };

@@ -288,7 +288,7 @@ export function UpdateKpiTimeFlow({
                     {/* Step 2: Update KPI Time */}
                     {questionBanks.length > 0 && (
                         <FlowStep
-                            title="Bước 2: Cập nhật KPI Time"
+                            title="Bước 2: Cập nhật Kpi time"
                             description=""
                         >
                             <div className="space-y-3">

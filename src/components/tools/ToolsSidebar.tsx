@@ -74,7 +74,7 @@ const navigation: MenuItem[] = [
                     },
                     {
                         id: "update-kpi-time",
-                        name: "Cập nhật KPI Time",
+                        name: "Cập nhật Kpi time Mô phỏng",
                         href: "/tools/api-auto?flow=update-kpi-time",
                     },
                 ],
