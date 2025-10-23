@@ -45,11 +45,9 @@ export function UpdateKpiTimeFlow({
     const [loadingMessage, setLoadingMessage] = useState("");
     const [requestHistory, setRequestHistory] = useState<any[]>([]);
     const [historyExpanded, setHistoryExpanded] = useState(true);
-    const [progressBanks, setProgressBanks] = useState(0);
-    const [progressQuestions, setProgressQuestions] = useState(0);
-    const [currentBank, setCurrentBank] = useState("");
-    const [currentQuestionInfo, setCurrentQuestionInfo] = useState("");
     const [processedBanks, setProcessedBanks] = useState(0);
+    const [totalBanks, setTotalBanks] = useState(0);
+    const [currentBank, setCurrentBank] = useState("");
     const [results, setResults] = useState<{
         total: number;
         updated: number;
@@ -117,11 +115,9 @@ export function UpdateKpiTimeFlow({
         if (questionBanks.length === 0) return;
 
         setUpdating(true);
-        setProgressBanks(0);
-        setProgressQuestions(0);
         setProcessedBanks(0);
+        setTotalBanks(questionBanks.length);
         setResults(null);
-        setCurrentQuestionInfo("");
 
         let totalUpdated = 0;
         let totalFailed = 0;
@@ -131,18 +127,9 @@ export function UpdateKpiTimeFlow({
             for (let i = 0; i < questionBanks.length; i++) {
                 const bank = questionBanks[i];
                 setCurrentBank(bank.name);
-                setProgressQuestions(0); // Reset question progress for new bank
-                setCurrentQuestionInfo("Đang tải danh sách questions...");
                 setLoadingMessage(`Đang xử lý ngân hàng ${i + 1}/${questionBanks.length}: ${bank.name}`);
 
-                // Small delay to ensure UI updates
-                await new Promise(resolve => setTimeout(resolve, 100));
-
                 try {
-                    // Show processing state
-                    setProgressQuestions(10);
-                    setCurrentQuestionInfo("Đang cập nhật questions...");
-
                     const response = await fetch("/api/tools/auto-flow/update-kpi-time", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -181,24 +168,13 @@ export function UpdateKpiTimeFlow({
                         totalQuestions += bankQuestions;
                         totalUpdated += bankUpdated;
                         totalFailed += bankFailed;
-                        
-                        // Show question progress (simulated - show 100% after bank completes)
-                        setProgressQuestions(100);
-                        setCurrentQuestionInfo(`${bankUpdated}/${bankQuestions} questions cập nhật thành công`);
                     }
                 } catch (error) {
                     console.error(`Error updating bank ${bank.name}:`, error);
                     totalFailed++;
                 }
 
-                // Update bank progress
-                const newProcessedBanks = i + 1;
-                const newProgressBanks = Math.round(((i + 1) / questionBanks.length) * 100);
-                
-                console.log(`[UpdateKpiTimeFlow] Progress: ${newProcessedBanks}/${questionBanks.length} (${newProgressBanks}%)`);
-                
-                setProcessedBanks(newProcessedBanks);
-                setProgressBanks(newProgressBanks);
+                setProcessedBanks(i + 1);
             }
 
             setResults({
@@ -334,52 +310,22 @@ export function UpdateKpiTimeFlow({
                                     )}
                                 </Button>
 
-                                {/* Progress Banks */}
+                                {/* Progress */}
                                 {updating && (
-                                    <div className="space-y-4">
-                                        {/* Bank Progress */}
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-sm text-gray-600">
-                                                <span className="font-medium">Tiến độ Question Banks</span>
-                                                <span>
-                                                    {processedBanks}/{questionBanks.length}
-                                                </span>
-                                            </div>
-                                            <Progress value={progressBanks} className="h-2" />
-                                            {currentBank && (
-                                                <p className="text-xs text-gray-500">
-                                                    Đang xử lý: {currentBank}
+                                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div className="flex items-center gap-3">
+                                            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-blue-900">
+                                                    Đang xử lý: {processedBanks}/{totalBanks} question banks
                                                 </p>
-                                            )}
-                                        </div>
-
-                                        {/* Question Progress within current bank */}
-                                        {currentBank && (
-                                            <div className="space-y-2 pl-4 border-l-2 border-gray-200">
-                                                <div className="flex justify-between text-sm text-gray-600">
-                                                    <span>Tiến độ Questions</span>
-                                                    <span>
-                                                        {progressQuestions === 100 ? (
-                                                            <span className="text-green-600 font-medium">{progressQuestions}%</span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1">
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                                {progressQuestions}%
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <Progress value={progressQuestions} className="h-2" />
-                                                {currentQuestionInfo && (
-                                                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                                                        {progressQuestions < 100 && (
-                                                            <Loader2 className="w-3 h-3 animate-spin inline" />
-                                                        )}
-                                                        {currentQuestionInfo}
+                                                {currentBank && (
+                                                    <p className="text-xs text-blue-700 mt-1">
+                                                        {currentBank}
                                                     </p>
                                                 )}
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
                                 )}
 
