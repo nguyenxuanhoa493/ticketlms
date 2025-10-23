@@ -35,7 +35,7 @@ interface ExecuteRequestParams {
 export function useLmsRequest(options: UseLmsRequestOptions = {}) {
     const [loading, setLoading] = useState(false);
     const [requestHistory, setRequestHistory] = useState<LmsRequestHistoryItem[]>([]);
-    const [historyExpanded, setHistoryExpanded] = useState(true);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
     const { toast } = useToast();
 
     const { onSuccess, onError, showToast = true } = options;

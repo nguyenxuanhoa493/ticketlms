@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Clock, Loader2 } from "lucide-react";
-import { JsonEditor } from "@/components/tools/JsonEditor";
+import { ChevronRight, Clock, Loader2, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface RequestHistoryItem {
     id: number | string;
@@ -36,11 +36,11 @@ export function RequestHistoryList({ history, expanded, onToggle }: RequestHisto
                 open={expanded}
                 onToggle={(e) => onToggle(e.currentTarget.open)}
             >
-                <summary className="cursor-pointer p-3 font-semibold text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center justify-between">
+                <summary className="cursor-pointer p-3 font-semibold text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg flex items-center justify-between">
                     <span>Request History ({history.length})</span>
                     <ChevronRight className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
                 </summary>
-                <div className="px-3 pb-3 space-y-3">
+                <div className="divide-y">
                     {history.map((req) => (
                         <RequestHistoryItem key={req.id} item={req} />
                     ))}
@@ -51,77 +51,122 @@ export function RequestHistoryList({ history, expanded, onToggle }: RequestHisto
 }
 
 function RequestHistoryItem({ item }: { item: RequestHistoryItem }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [copiedPayload, setCopiedPayload] = useState(false);
+    const [copiedResponse, setCopiedResponse] = useState(false);
+
+    const copyToClipboard = async (text: string, setCopied: (val: boolean) => void) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
+
     return (
         <div
-            className={`border rounded-lg p-3 space-y-2 ${
+            className={`${
                 item.isLoading 
-                    ? 'bg-blue-50 border-blue-200' 
+                    ? 'bg-blue-50' 
                     : item.hasError 
-                        ? 'bg-red-50 border-red-200'
-                        : 'bg-gray-50'
+                        ? 'bg-red-50'
+                        : 'bg-white hover:bg-gray-50'
             }`}
         >
-            <div className="flex items-center gap-2 text-sm">
+            {/* One-line summary */}
+            <div
+                className="p-3 cursor-pointer flex items-center gap-2"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                
                 {item.isLoading ? (
-                    <Badge variant="outline" className="bg-blue-100">
+                    <Badge variant="outline" className="bg-blue-100 flex-shrink-0">
                         <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                         {item.step || "Loading"}
                     </Badge>
                 ) : (
                     <Badge
-                        variant={
-                            item.statusCode === 200
-                                ? "default"
-                                : "destructive"
-                        }
+                        variant={item.statusCode === 200 ? "default" : "destructive"}
+                        className="flex-shrink-0"
                     >
                         {item.statusCode}
                     </Badge>
                 )}
-                <Badge variant="outline">{item.method}</Badge>
+                
+                <Badge variant="outline" className="flex-shrink-0">{item.method}</Badge>
+                
                 <span className="text-gray-600 font-mono text-xs truncate flex-1">
                     {item.url}
                 </span>
+                
                 {!item.isLoading && item.responseTime !== null && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0">
                         <Clock className="w-3 h-3" />
                         <span>{item.responseTime}ms</span>
                     </div>
                 )}
             </div>
 
-            {/* Payload */}
-            {!item.isLoading && item.payload && Object.keys(item.payload).length > 0 && (
-                <details className="text-xs">
-                    <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
-                        Payload ({Object.keys(item.payload).length} params)
-                    </summary>
-                    <div className="mt-2">
-                        <JsonEditor
-                            value={JSON.stringify(item.payload, null, 2)}
-                            onChange={() => {}}
-                            height="150px"
-                            readOnly
-                        />
-                    </div>
-                </details>
-            )}
+            {/* Expanded details */}
+            {isExpanded && !item.isLoading && (
+                <div className="px-3 pb-3 space-y-3 border-t bg-gray-50">
+                    {/* Payload */}
+                    {item.payload && Object.keys(item.payload).length > 0 && (
+                        <div className="pt-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-gray-700">Payload</span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-xs"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyToClipboard(JSON.stringify(item.payload, null, 2), setCopiedPayload);
+                                    }}
+                                >
+                                    {copiedPayload ? (
+                                        <><Check className="w-3 h-3 mr-1" /> Copied</>
+                                    ) : (
+                                        <><Copy className="w-3 h-3 mr-1" /> Copy</>
+                                    )}
+                                </Button>
+                            </div>
+                            <pre className="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto max-h-60 overflow-y-auto">
+                                {JSON.stringify(item.payload, null, 2)}
+                            </pre>
+                        </div>
+                    )}
 
-            {/* Response Preview */}
-            {!item.isLoading && item.response && (
-                <details className="text-xs">
-                    <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
-                        Response Preview
-                    </summary>
-                    <div className="mt-2">
-                        <JsonEditor
-                            value={JSON.stringify(item.response, null, 2)}
-                            onChange={() => {}}
-                            height="200px"
-                            readOnly
-                        />
-                    </div>
-                </details>
+                    {/* Response */}
+                    {item.response && (
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-gray-700">Response</span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-xs"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyToClipboard(JSON.stringify(item.response, null, 2), setCopiedResponse);
+                                    }}
+                                >
+                                    {copiedResponse ? (
+                                        <><Check className="w-3 h-3 mr-1" /> Copied</>
+                                    ) : (
+                                        <><Copy className="w-3 h-3 mr-1" /> Copy</>
+                                    )}
+                                </Button>
+                            </div>
+                            <pre className="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto max-h-60 overflow-y-auto">
+                                {JSON.stringify(item.response, null, 2)}
+                            </pre>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

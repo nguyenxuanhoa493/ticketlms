@@ -44,7 +44,7 @@ export function FixSyllabusSequentialFlow({
     const [progress, setProgress] = useState(0);
     const [processed, setProcessed] = useState(0);
     const [failed, setFailed] = useState<number[]>([]);
-    const [historyExpanded, setHistoryExpanded] = useState(true);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
 
     // Use single hook for all requests in this flow
     const lmsRequest = useLmsRequest();

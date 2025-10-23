@@ -44,7 +44,7 @@ export function UpdateKpiTimeFlow({
     const [updating, setUpdating] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState("");
     const [requestHistory, setRequestHistory] = useState<any[]>([]);
-    const [historyExpanded, setHistoryExpanded] = useState(true);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
     const [processedBanks, setProcessedBanks] = useState(0);
     const [totalBanks, setTotalBanks] = useState(0);
     const [currentBank, setCurrentBank] = useState("");
