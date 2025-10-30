@@ -12,7 +12,7 @@ import {
     Image,
     Upload,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/browser-client";
+import { getBrowserClient } from "@/lib/supabase/browser-client";
 import LinkModal from "../modals/LinkModal";
 
 interface RichTextEditorProps {
@@ -280,6 +280,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             );
 
             // Get current user session
+            const supabase = getBrowserClient();
             const {
                 data: { session },
             } = await supabase.auth.getSession();
