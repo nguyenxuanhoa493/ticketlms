@@ -16,6 +16,12 @@ import { Loader2, Check, AlertCircle, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RequestHistoryList } from "@/components/tools/api-runner/RequestHistoryList";
 import { useLmsRequest } from "@/hooks/useLmsRequest";
+import dynamic from "next/dynamic";
+
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+    ssr: false,
+    loading: () => <div className="p-4 text-sm text-gray-500">Loading editor...</div>,
+});
 
 interface DomainGroup {
     value: string;
@@ -217,13 +223,35 @@ export function CreateDomainFlow({
             errorMessage: "Không thể tạo domain",
         });
 
-        if (result.success && result.data) {
-            setResult(result.data.result);
-            // Reset form
-            setSlug("");
-            if (domainGroups.length > 0) {
-                setSelectedGroup(domainGroups[0].value);
+        console.log("[CreateDomainFlow] Full result:", result);
+        
+        // Find /school/new request in history and show its response
+        const allHistory = result.data?.requestHistory || [];
+        console.log("[CreateDomainFlow] Request history:", allHistory);
+        
+        const schoolNewRequest = allHistory.find((req: any) => 
+            req.url?.includes('/school/new')
+        );
+        
+        if (schoolNewRequest) {
+            console.log("[CreateDomainFlow] Found /school/new request:", schoolNewRequest);
+            setResult(schoolNewRequest.response);
+            
+            // Show success if status 200
+            if (schoolNewRequest.statusCode === 200) {
+                toast({
+                    title: "Thành công",
+                    description: `Đã gọi /school/new thành công (status ${schoolNewRequest.statusCode})`,
+                });
+                
+                // Reset form
+                setSlug("");
+                if (domainGroups.length > 0) {
+                    setSelectedGroup(domainGroups[0].value);
+                }
             }
+        } else {
+            console.log("[CreateDomainFlow] No /school/new request found");
         }
     };
 
@@ -371,15 +399,29 @@ export function CreateDomainFlow({
                 {result && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-green-600">
+                        <CardTitle className="flex items-center gap-2 text-blue-600">
                             <Check className="w-5 h-5" />
-                            Domain đã được tạo thành công
+                            Response từ /school/new
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <pre className="bg-gray-50 p-4 rounded-lg overflow-auto text-sm">
-                            {JSON.stringify(result, null, 2)}
-                        </pre>
+                        <div className="border rounded-lg overflow-hidden">
+                            <MonacoEditor
+                                height="400px"
+                                language="json"
+                                theme="vs-light"
+                                value={JSON.stringify(result, null, 2)}
+                                options={{
+                                    readOnly: true,
+                                    minimap: { enabled: false },
+                                    scrollBeyondLastLine: false,
+                                    fontSize: 13,
+                                    lineNumbers: "on",
+                                    folding: true,
+                                    wordWrap: "on",
+                                }}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
                 )}

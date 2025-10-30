@@ -139,8 +139,14 @@ export function useLmsRequest(options: UseLmsRequestOptions = {}) {
 
                     const error = data.error || errorMessage || "Request failed";
 
-                    // Show error toast
-                    if (showToast) {
+                    // Show error toast only if no successful /school/new request in history
+                    const hasSuccessfulSchoolNew = data.data?.requestHistory?.some(
+                        (req: any) => req.url?.includes('/school/new') && req.statusCode === 200
+                    ) || data.requestHistory?.some(
+                        (req: any) => req.url?.includes('/school/new') && req.statusCode === 200
+                    );
+
+                    if (showToast && !hasSuccessfulSchoolNew) {
                         toast({
                             title: "Lỗi",
                             description: error,
@@ -153,7 +159,14 @@ export function useLmsRequest(options: UseLmsRequestOptions = {}) {
                         onError(error);
                     }
 
-                    return { success: false, error };
+                    // Return data even on error if we have it (for displaying response)
+                    // When error, requestHistory is at root level (data.requestHistory)
+                    // So we need to create a data object with requestHistory
+                    return { 
+                        success: false, 
+                        error,
+                        data: data.data || { requestHistory: data.requestHistory }
+                    };
                 }
             } catch (error) {
                 const errorMsg = error instanceof Error ? error.message : "Unknown error";

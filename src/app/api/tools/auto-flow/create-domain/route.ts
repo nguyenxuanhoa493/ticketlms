@@ -209,23 +209,16 @@ export const POST = withAdmin(
 
                 const history = mapRequestHistory(lmsClient);
 
-                if (!result.success) {
-                    return NextResponse.json(
-                        {
-                            success: false,
-                            error: result.error,
-                            requestHistory: history,
-                        },
-                        { status: 500 }
-                    );
-                }
-
+                // Always return success with request history
+                // Let the UI decide based on /school/new status code
                 return createSuccessResponse(
                     {
                         result: result.data,
                         requestHistory: history,
+                        apiSuccess: result.success,
+                        apiError: result.error,
                     },
-                    "Domain created successfully"
+                    result.success ? "Domain created successfully" : undefined
                 );
             } else {
                 return NextResponse.json(
