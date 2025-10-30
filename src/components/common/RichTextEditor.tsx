@@ -12,7 +12,6 @@ import {
     Image,
     Upload,
 } from "lucide-react";
-import { getBrowserClient } from "@/lib/supabase/browser-client";
 import LinkModal from "../modals/LinkModal";
 
 interface RichTextEditorProps {
@@ -279,26 +278,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 file.size
             );
 
-            // Get current user session
-            const supabase = getBrowserClient();
-            const {
-                data: { session },
-            } = await supabase.auth.getSession();
-            if (!session) {
-                console.error("No session found");
-                alert("Bạn cần đăng nhập để upload ảnh");
-                return;
-            }
-
             const formData = new FormData();
             formData.append("file", file);
 
             console.log("Sending upload request...");
             const response = await fetch("/api/upload?type=image", {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${session.access_token}`,
-                },
                 body: formData,
             });
 
