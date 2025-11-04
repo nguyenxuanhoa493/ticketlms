@@ -237,8 +237,22 @@ export function CreateDomainFlow({
             console.log("[CreateDomainFlow] Found /school/new request:", schoolNewRequest);
             setResult(schoolNewRequest.response);
             
+            // Check for 504 Gateway Timeout
+            if (schoolNewRequest.statusCode === 504) {
+                toast({
+                    title: "Tên miền đang được tạo",
+                    description: `Tên miền "${slug}" của bạn đang được tạo. Vui lòng đợi 1-2 phút.`,
+                    duration: 5000,
+                });
+                
+                // Reset form
+                setSlug("");
+                if (domainGroups.length > 0) {
+                    setSelectedGroup(domainGroups[0].value);
+                }
+            }
             // Show success if status 200
-            if (schoolNewRequest.statusCode === 200) {
+            else if (schoolNewRequest.statusCode === 200) {
                 toast({
                     title: "Thành công",
                     description: `Đã gọi /school/new thành công (status ${schoolNewRequest.statusCode})`,

@@ -468,20 +468,34 @@ export default function ApiRunnerPage() {
         }
 
         try {
-            // Add initial loading entry to history
-            const loginHistoryId = Date.now();
-            setRequestHistory([{
-                id: loginHistoryId,
-                method: "POST",
-                url: `${selectedEnv?.host}/user/login`,
-                payload: { lname: userCode || dmn },
-                statusCode: null,
-                responseTime: null,
-                response: null,
-                timestamp: new Date().toISOString(),
-                isLoading: true,
-                step: "Đang đăng nhập...",
-            }]);
+            // Add initial loading entries to history for better UX
+            const baseTime = Date.now();
+            setRequestHistory([
+                {
+                    id: baseTime,
+                    method: "POST",
+                    url: `${selectedEnv?.host}/user/login`,
+                    payload: { lname: userCode || dmn },
+                    statusCode: null,
+                    responseTime: null,
+                    response: null,
+                    timestamp: new Date().toISOString(),
+                    isLoading: true,
+                    step: "Đang đăng nhập...",
+                },
+                {
+                    id: baseTime + 1,
+                    method: method,
+                    url: `${selectedEnv?.host}${path}`,
+                    payload: parsedPayload,
+                    statusCode: null,
+                    responseTime: null,
+                    response: null,
+                    timestamp: new Date().toISOString(),
+                    isLoading: true,
+                    step: "Đang gọi API...",
+                }
+            ]);
 
             const startTime = Date.now();
             const res = await fetch("/api/tools/api-runner", {
@@ -511,7 +525,11 @@ export default function ApiRunnerPage() {
                     isLoading: false,
                     isComplete: true,
                 }));
-                setRequestHistory(mappedHistory);
+                // Remove loading entries and append new history
+                setRequestHistory(prevHistory => {
+                    const withoutLoading = prevHistory.filter(item => !item.isLoading);
+                    return [...withoutLoading, ...mappedHistory];
+                });
             } else {
                 setError(data.error || "API call failed");
                 // Map history with unique IDs and error state
@@ -522,7 +540,11 @@ export default function ApiRunnerPage() {
                     isComplete: true,
                     hasError: item.statusCode !== 200,
                 }));
-                setRequestHistory(mappedHistory);
+                // Remove loading entries and append new history
+                setRequestHistory(prevHistory => {
+                    const withoutLoading = prevHistory.filter(item => !item.isLoading);
+                    return [...withoutLoading, ...mappedHistory];
+                });
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Request failed");
