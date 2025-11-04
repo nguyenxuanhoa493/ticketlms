@@ -46,6 +46,7 @@ export function CreateDomainFlow({
     const [selectedGroup, setSelectedGroup] = useState<string>("");
     const [slug, setSlug] = useState<string>("");
     const [result, setResult] = useState<any>(null);
+    const [schoolNewStatusCode, setSchoolNewStatusCode] = useState<number | null>(null);
     const { toast } = useToast();
     
     // Use ref to track if already loading
@@ -236,6 +237,7 @@ export function CreateDomainFlow({
         if (schoolNewRequest) {
             console.log("[CreateDomainFlow] Found /school/new request:", schoolNewRequest);
             setResult(schoolNewRequest.response);
+            setSchoolNewStatusCode(schoolNewRequest.statusCode);
             
             // Check for 504 Gateway Timeout
             if (schoolNewRequest.statusCode === 504) {
@@ -275,6 +277,7 @@ export function CreateDomainFlow({
         setSelectedGroup("");
         setSlug("");
         setResult(null);
+        setSchoolNewStatusCode(null);
         // Reset refs to allow re-loading
         isLoadingRef.current = false;
         loadedEnvRef.current = null;
@@ -418,7 +421,24 @@ export function CreateDomainFlow({
                             Response từ /school/new
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
+                        {/* 504 Timeout Banner */}
+                        {schoolNewStatusCode === 504 && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <h4 className="font-semibold text-amber-900 mb-1">
+                                            Tên miền đang được tạo
+                                        </h4>
+                                        <p className="text-sm text-amber-800">
+                                            Tên miền của bạn đang được tạo. Vui lòng đợi 1-2 phút và kiểm tra lại.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
                         <div className="border rounded-lg overflow-hidden">
                             <MonacoEditor
                                 height="400px"
