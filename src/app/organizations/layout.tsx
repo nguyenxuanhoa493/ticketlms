@@ -49,7 +49,7 @@ export default async function OrganizationsLayout({
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
             {/* Top Navigation */}
             <DashboardNav
                 user={{ id: user.id, email: user.email!, profile }}
@@ -57,8 +57,8 @@ export default async function OrganizationsLayout({
 
             {/* Main content with top padding for fixed nav */}
             <main className="pt-16">
-                <div className="py-6">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="py-6" suppressHydrationWarning>
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
                         {children}
                     </div>
                 </div>

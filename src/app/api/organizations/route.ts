@@ -13,7 +13,14 @@ type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 // GET - Filter organizations based on user role
 export const GET = withAuth(
     async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
-        let query = supabase.from("organizations").select("*");
+        let query = supabase.from("organizations").select(`
+            *,
+            assigned_admin:profiles!organizations_assigned_admin_id_fkey(
+                id,
+                full_name,
+                avatar_url
+            )
+        `);
 
         // Apply organization filter for non-admin users
         if (user.role !== "admin" && user.organization_id) {
@@ -69,20 +76,44 @@ export const GET = withAuth(
 export const POST = withAdmin(
     async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const body = await request.json();
-        const { name, description } = body;
+        const { name, description, status, assigned_admin_id } = body;
+
+        console.log("[POST /api/organizations] Creating organization:", {
+            name,
+            status,
+            assigned_admin_id,
+            hasDescription: !!description,
+        });
 
         const validation = validateRequiredFields(body, ["name"]);
         if (!validation.isValid) {
             return validation.error!;
         }
 
-        const { error } = await supabase.from("organizations").insert({
+        const insertData: Record<string, unknown> = {
             name: name.trim(),
             description: description?.trim() || null,
-        });
+            created_by: user.id,
+        };
 
-        if (error) throw error;
+        // Add status if provided, otherwise use default 'active'
+        if (status) {
+            insertData.status = status;
+        }
 
+        // Add assigned_admin_id if provided
+        if (assigned_admin_id) {
+            insertData.assigned_admin_id = assigned_admin_id;
+        }
+
+        const { error } = await supabase.from("organizations").insert(insertData);
+
+        if (error) {
+            console.error("[POST /api/organizations] Insert failed:", error);
+            throw error;
+        }
+
+        console.log("[POST /api/organizations] Insert successful");
         return createSuccessResponse(null, "Organization created successfully");
     }
 );
@@ -91,23 +122,49 @@ export const POST = withAdmin(
 export const PUT = withAdmin(
     async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
         const body = await request.json();
-        const { id, name, description } = body;
+        const { id, name, description, status, assigned_admin_id } = body;
+
+        console.log("[PUT /api/organizations] Updating organization:", {
+            id,
+            name,
+            status,
+            assigned_admin_id,
+            hasDescription: !!description,
+        });
 
         const validation = validateRequiredFields(body, ["id", "name"]);
         if (!validation.isValid) {
             return validation.error!;
         }
 
+        const updateData: Record<string, unknown> = {
+            name: name.trim(),
+            description: description?.trim() || null,
+        };
+
+        // Only update status if provided
+        if (status !== undefined) {
+            updateData.status = status;
+        }
+
+        // Only update assigned_admin_id if provided (can be null to unassign)
+        if (assigned_admin_id !== undefined) {
+            updateData.assigned_admin_id = assigned_admin_id;
+        }
+
+        console.log("[PUT /api/organizations] Update data:", updateData);
+
         const { error } = await supabase
             .from("organizations")
-            .update({
-                name: name.trim(),
-                description: description?.trim() || null,
-            })
+            .update(updateData)
             .eq("id", id);
 
-        if (error) throw error;
+        if (error) {
+            console.error("[PUT /api/organizations] Update failed:", error);
+            throw error;
+        }
 
+        console.log("[PUT /api/organizations] Update successful");
         return createSuccessResponse(null, "Organization updated successfully");
     }
 );

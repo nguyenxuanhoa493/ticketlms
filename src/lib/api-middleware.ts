@@ -70,10 +70,11 @@ export const withAdmin = (
     handler: (
         req: NextRequest,
         user: AuthenticatedUser,
-        supabase: TypedSupabaseClient
+        supabase: TypedSupabaseClient,
+        ...args: unknown[]
     ) => Promise<NextResponse>
 ) => {
-    return withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient) => {
+    return withAuth(async (request: NextRequest, user: AuthenticatedUser, supabase: TypedSupabaseClient, ...args: unknown[]) => {
         console.log("[withAdmin] User attempting access:", { id: user.id, email: user.email, role: user.role });
         
         if (!checkUserPermission(user, "admin")) {
@@ -84,7 +85,7 @@ export const withAdmin = (
             );
         }
         
-        return await handler(request, user, supabase);
+        return await handler(request, user, supabase, ...args);
     });
 };
 

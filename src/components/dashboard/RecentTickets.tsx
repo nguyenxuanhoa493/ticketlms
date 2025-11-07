@@ -32,61 +32,95 @@ interface RecentTicketsProps {
 export function RecentTickets({ tickets }: RecentTicketsProps) {
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Tasks Gần Đây</CardTitle>
-                <CardDescription>
+            <CardHeader className="pb-3 md:pb-4">
+                <CardTitle className="text-base md:text-lg">Tasks Gần Đây</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
                     5 tickets được tạo mới nhất
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 md:p-6">
                 {tickets && tickets.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-0 md:space-y-2">
                         {tickets.map((ticket) => (
                             <Link
                                 key={ticket.id}
                                 href={`/tickets/${ticket.id}`}
-                                className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 px-2 -mx-2 rounded transition-colors cursor-pointer"
+                                className="block py-2.5 md:py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 px-3 md:px-2 md:-mx-2 rounded transition-colors cursor-pointer"
                             >
-                                <div className="flex-1 min-w-0">
-                                    <div className="mb-1">
-                                        <span className="text-sm font-medium text-gray-900 truncate block">
+                                {/* Desktop Layout */}
+                                <div className="hidden md:flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="mb-1">
+                                            <span className="text-sm font-medium text-gray-900 truncate block">
+                                                {ticket.title}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <TicketTypeBadge
+                                                type={ticket.ticket_type}
+                                            />
+
+                                            <span className="text-gray-500">
+                                                •
+                                            </span>
+                                            <span className="text-gray-500">
+                                                {ticket.organizations
+                                                    ?.name ||
+                                                    "Chưa xác định"}
+                                            </span>
+                                            <span className="text-gray-500">
+                                                •
+                                            </span>
+                                            <span className="text-gray-500">
+                                                {new Date(
+                                                    ticket.created_at
+                                                ).toLocaleDateString(
+                                                    "vi-VN"
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 ml-3">
+                                        <TicketPriorityBadge
+                                            priority={ticket.priority}
+                                            className="text-xs"
+                                        />
+                                        <TicketStatusBadge
+                                            status={ticket.status}
+                                            className="text-xs"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Mobile Layout - 2 lines */}
+                                <div className="md:hidden">
+                                    {/* Line 1: Title */}
+                                    <div className="mb-1.5">
+                                        <span className="text-sm font-medium text-gray-900 line-clamp-2">
                                             {ticket.title}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs">
-                                        <TicketTypeBadge
-                                            type={ticket.ticket_type}
+                                    
+                                    {/* Line 2: Tags */}
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        {ticket.organizations?.name && (
+                                            <span className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                                                {ticket.organizations.name}
+                                            </span>
+                                        )}
+                                        <TicketTypeBadge type={ticket.ticket_type} />
+                                        <TicketPriorityBadge
+                                            priority={ticket.priority}
+                                            className="text-xs"
                                         />
-
-                                        <span className="text-gray-500">
-                                            •
-                                        </span>
-                                        <span className="text-gray-500">
-                                            {ticket.organizations
-                                                ?.name ||
-                                                "Chưa xác định"}
-                                        </span>
-                                        <span className="text-gray-500">
-                                            •
-                                        </span>
-                                        <span className="text-gray-500">
-                                            {new Date(
-                                                ticket.created_at
-                                            ).toLocaleDateString(
-                                                "vi-VN"
-                                            )}
+                                        <TicketStatusBadge
+                                            status={ticket.status}
+                                            className="text-xs"
+                                        />
+                                        <span className="text-xs text-gray-500">
+                                            {new Date(ticket.created_at).toLocaleDateString("vi-VN")}
                                         </span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-1 ml-3">
-                                    <TicketPriorityBadge
-                                        priority={ticket.priority}
-                                        className="text-xs"
-                                    />
-                                    <TicketStatusBadge
-                                        status={ticket.status}
-                                        className="text-xs"
-                                    />
                                 </div>
                             </Link>
                         ))}

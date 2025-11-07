@@ -46,25 +46,50 @@ interface Organization {
     id: string;
     name: string;
     description: string | null;
+    status: "active" | "inactive" | "pending";
+    assigned_admin_id: string | null;
     created_at: string;
     updated_at: string;
+    assigned_admin?: {
+        id: string;
+        full_name: string | null;
+    } | null;
 }
 
 export default function OrganizationsPage() {
-    // Hook để lắng nghe profile update events
+    const router = useRouter();
     useProfileUpdate();
 
     const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
     const [formData, setFormData] = useState({ name: "", description: "" });
     const [submitting, setSubmitting] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
     const { toast } = useToast();
 
     useEffect(() => {
         fetchOrganizations();
     }, []);
+
+    useEffect(() => {
+        let filtered = organizations;
+
+        if (searchQuery) {
+            filtered = filtered.filter((org) =>
+                org.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        if (statusFilter !== "all") {
+            filtered = filtered.filter((org) => org.status === statusFilter);
+        }
+
+        setFilteredOrgs(filtered);
+    }, [organizations, searchQuery, statusFilter]);
 
     const fetchOrganizations = async () => {
         try {
@@ -323,11 +348,57 @@ export default function OrganizationsPage() {
                 </Dialog>
             </div>
 
+            {/* Filters */}
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex space-x-4">
+                        <div className="flex-1">
+                            <Input
+                                placeholder="Tìm kiếm đơn vị..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="max-w-md"
+                            />
+                        </div>
+                        <div className="flex space-x-2">
+                            <Button
+                                variant={statusFilter === "all" ? "default" : "outline"}
+                                onClick={() => setStatusFilter("all")}
+                                size="sm"
+                            >
+                                Tất cả
+                            </Button>
+                            <Button
+                                variant={statusFilter === "active" ? "default" : "outline"}
+                                onClick={() => setStatusFilter("active")}
+                                size="sm"
+                            >
+                                Hoạt động
+                            </Button>
+                            <Button
+                                variant={statusFilter === "inactive" ? "default" : "outline"}
+                                onClick={() => setStatusFilter("inactive")}
+                                size="sm"
+                            >
+                                Ngừng hoạt động
+                            </Button>
+                            <Button
+                                variant={statusFilter === "pending" ? "default" : "outline"}
+                                onClick={() => setStatusFilter("pending")}
+                                size="sm"
+                            >
+                                Chờ xử lý
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Organizations Table */}
             <div className="bg-white shadow-sm rounded-lg border">
                 <div className="px-6 py-4 border-b border-gray-200">
                     <h2 className="text-lg font-medium text-gray-900">
-                        Danh sách đơn vị ({organizations.length})
+                        Danh sách đơn vị ({filteredOrgs.length})
                     </h2>
                 </div>
 
@@ -335,26 +406,16 @@ export default function OrganizationsPage() {
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
-                ) : organizations.length === 0 ? (
+                ) : filteredOrgs.length === 0 ? (
                     <div className="text-center py-12">
-                        <svg
-                            className="mx-auto h-12 w-12 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                            />
-                        </svg>
+                        <Building className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-sm font-medium text-gray-900">
-                            Chưa có đơn vị nào
+                            {organizations.length === 0 ? "Chưa có đơn vị nào" : "Không tìm thấy đơn vị"}
                         </h3>
                         <p className="mt-1 text-sm text-gray-500">
-                            Bắt đầu bằng cách tạo đơn vị đầu tiên.
+                            {organizations.length === 0
+                                ? "Bắt đầu bằng cách tạo đơn vị đầu tiên."
+                                : "Thử thay đổi bộ lọc hoặc tìm kiếm."}
                         </p>
                     </div>
                 ) : (
@@ -362,7 +423,8 @@ export default function OrganizationsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Tên đơn vị</TableHead>
-                                <TableHead>Mô tả</TableHead>
+                                <TableHead>Trạng thái</TableHead>
+                                <TableHead>Admin phụ trách</TableHead>
                                 <TableHead>Ngày tạo</TableHead>
                                 <TableHead className="text-right">
                                     Thao tác
@@ -370,53 +432,46 @@ export default function OrganizationsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {organizations.map((org) => (
-                                <TableRow key={org.id}>
+                            {filteredOrgs.map((org) => (
+                                <TableRow
+                                    key={org.id}
+                                    className="cursor-pointer hover:bg-gray-50"
+                                    onClick={() => router.push(`/organizations/${org.id}`)}
+                                >
                                     <TableCell className="font-medium">
-                                        {org.name}
+                                        <div className="flex items-center space-x-2">
+                                            <Building className="h-4 w-4 text-gray-400" />
+                                            <span>{org.name}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
-                                        {org.description ? (
-                                            <div className="max-w-xs">
-                                                <HtmlContent
-                                                    content={org.description}
-                                                    className="text-sm text-gray-600"
-                                                />
-                                            </div>
+                                        {org.status === "active" ? (
+                                            <Badge variant="default">Hoạt động</Badge>
+                                        ) : org.status === "inactive" ? (
+                                            <Badge variant="secondary">Ngừng hoạt động</Badge>
                                         ) : (
-                                            <span className="text-gray-400 italic">
-                                                Chưa có mô tả
-                                            </span>
+                                            <Badge variant="destructive">Chờ xử lý</Badge>
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        {new Date(
-                                            org.created_at
-                                        ).toLocaleDateString("vi-VN")}
+                                        {org.assigned_admin?.full_name || (
+                                            <span className="text-gray-400 italic">Chưa phân công</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {new Date(org.created_at).toLocaleDateString("vi-VN")}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end space-x-2">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() =>
-                                                    handleOpenDialog(org)
-                                                }
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenDialog(org);
+                                                }}
                                             >
-                                                <svg
-                                                    className="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                                    />
-                                                </svg>
-                                                Sửa
+                                                <Edit className="w-4 h-4" />
                                             </Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
@@ -424,21 +479,9 @@ export default function OrganizationsPage() {
                                                         variant="outline"
                                                         size="sm"
                                                         className="text-red-600 hover:text-red-700"
+                                                        onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        <svg
-                                                            className="w-4 h-4"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth="2"
-                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                            />
-                                                        </svg>
-                                                        Xóa
+                                                        <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
@@ -457,16 +500,14 @@ export default function OrganizationsPage() {
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>
+                                                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
                                                             Hủy
                                                         </AlertDialogCancel>
                                                         <AlertDialogAction
-                                                            onClick={() =>
-                                                                handleDelete(
-                                                                    org.id,
-                                                                    org.name
-                                                                )
-                                                            }
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDelete(org.id, org.name);
+                                                            }}
                                                             className="bg-red-600 hover:bg-red-700"
                                                         >
                                                             Xóa

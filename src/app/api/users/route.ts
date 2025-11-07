@@ -17,7 +17,7 @@ export const GET = withAdmin(async (request: NextRequest, user: AuthenticatedUse
     
     let query = supabase
         .from("profiles")
-        .select("*, organizations(id, name)", { count: "exact" })
+        .select("*, organizations!profiles_organization_id_fkey(id, name)", { count: "exact" })
         .order("created_at", { ascending: false });
     
     // Apply filters

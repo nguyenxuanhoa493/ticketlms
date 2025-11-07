@@ -57,32 +57,50 @@ export function TicketTable({
 
     // Fetch Jira statuses for all tickets with jira_link
     useEffect(() => {
-        const fetchJiraStatuses = async () => {
-            const ticketsWithJira = tickets.filter((t) => t.jira_link);
-            if (ticketsWithJira.length === 0) return;
+        const ticketsWithJira = tickets.filter((t) => t.jira_link);
+        if (ticketsWithJira.length === 0) {
+            setJiraStatuses({});
+            return;
+        }
 
-            setLoadingJira(true);
-            try {
-                const response = await fetch("/api/jira/batch-status", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        jiraLinks: ticketsWithJira.map((t) => t.jira_link),
-                    }),
-                });
+        // Debounce to prevent multiple calls
+        let isCancelled = false;
+        const timeoutId = setTimeout(() => {
+            const fetchJiraStatuses = async () => {
+                if (isCancelled) return;
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setJiraStatuses(data.statuses || {});
+                setLoadingJira(true);
+                try {
+                    const response = await fetch("/api/jira/batch-status", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            jiraLinks: ticketsWithJira.map((t) => t.jira_link),
+                        }),
+                    });
+
+                    if (response.ok && !isCancelled) {
+                        const data = await response.json();
+                        setJiraStatuses(data.statuses || {});
+                    }
+                } catch (error) {
+                    if (!isCancelled) {
+                        console.error("Failed to fetch Jira statuses:", error);
+                    }
+                } finally {
+                    if (!isCancelled) {
+                        setLoadingJira(false);
+                    }
                 }
-            } catch (error) {
-                console.error("Failed to fetch Jira statuses:", error);
-            } finally {
-                setLoadingJira(false);
-            }
-        };
+            };
 
-        fetchJiraStatuses();
+            fetchJiraStatuses();
+        }, 300); // 300ms debounce
+
+        return () => {
+            isCancelled = true;
+            clearTimeout(timeoutId);
+        };
     }, [tickets]);
 
     const handleTicketClick = (ticketId: string) => {
@@ -97,7 +115,8 @@ export function TicketTable({
 
     return (
         <div className="space-y-4">
-            <div className="rounded-md border w-full">
+            {/* Desktop Table */}
+            <div className="hidden md:block rounded-md border w-full">
                 <Table className="w-full">
                     <TableHeader>
                         <TableRow>
@@ -350,6 +369,72 @@ export function TicketTable({
                         })}
                     </TableBody>
                 </Table>
+            </div>
+
+            {/* Mobile Card List */}
+            <div className="md:hidden space-y-2 px-2">
+                {tickets?.map((ticket, index) => {
+                    const jiraStatus = ticket.jira_link ? jiraStatuses[ticket.jira_link] : null;
+                    const isJiraDone = jiraStatus?.statusCategory?.toLowerCase() === "done";
+                    
+                    return (
+                        <div
+                            key={ticket.id}
+                            className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                                isJiraDone 
+                                    ? "bg-green-50 hover:bg-green-100 border-green-200" 
+                                    : "bg-white hover:bg-gray-50"
+                            }`}
+                            onClick={() => handleTicketClick(ticket.id)}
+                        >
+                            {/* Line 1: Title */}
+                            <div className="font-medium text-sm mb-2 line-clamp-2">
+                                <span className="text-gray-500 mr-2">#{(currentPage - 1) * itemsPerPage + index + 1}</span>
+                                {ticket.title}
+                            </div>
+
+                            {/* Line 2: Tags */}
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                                {currentUser?.role === "admin" && ticket.organizations?.name && (
+                                    <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200 text-xs px-1.5 py-0">
+                                        {ticket.organizations.name}
+                                    </Badge>
+                                )}
+                                <TicketTypeBadge type={ticket.ticket_type} />
+                                <PlatformBadge platform={ticket.platform} size="sm" />
+                                <TicketPriorityBadge priority={ticket.priority} size="sm" />
+                                <TicketStatusBadge status={ticket.status} size="sm" />
+                                
+                                {currentUser?.role === "admin" && ticket.jira_link && (
+                                    <JiraStatusBadge
+                                        status={jiraStatus?.status}
+                                        statusCategory={jiraStatus?.statusCategory}
+                                        jiraLink={ticket.jira_link}
+                                        loading={loadingJira && !jiraStatus}
+                                    />
+                                )}
+
+                                {ticket.expected_completion_date && (() => {
+                                    const countdown = getDeadlineCountdown(ticket.expected_completion_date, ticket.status);
+                                    if (!countdown) return null;
+
+                                    let bgColor = "bg-gray-100";
+                                    if (countdown.isOverdue) {
+                                        bgColor = "bg-red-100";
+                                    } else if (countdown.color.includes("orange") || countdown.color.includes("yellow")) {
+                                        bgColor = "bg-orange-100";
+                                    }
+
+                                    return (
+                                        <div className={`text-xs px-1.5 py-0.5 rounded ${bgColor} ${countdown.color} font-medium`}>
+                                            {countdown.text}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Pagination */}

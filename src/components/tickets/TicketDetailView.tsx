@@ -42,10 +42,10 @@ export function TicketDetailView({
                 </div>
             </div>
 
-            {/* Row 2 - Loại ticket, Ưu tiên, Thời hạn */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Row 2 - Mobile: 2 columns, Desktop: 3 columns */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-500">
+                    <Label className="text-xs md:text-sm font-medium text-gray-500">
                         Loại ticket
                     </Label>
                     <div>
@@ -53,7 +53,7 @@ export function TicketDetailView({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-500">
+                    <Label className="text-xs md:text-sm font-medium text-gray-500">
                         Ưu tiên
                     </Label>
                     <div>
@@ -64,23 +64,7 @@ export function TicketDetailView({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-500">
-                        Thời hạn
-                    </Label>
-                    <p className="text-sm text-gray-900">
-                        {ticket?.expected_completion_date
-                            ? new Date(
-                                  ticket.expected_completion_date
-                              ).toLocaleDateString("vi-VN")
-                            : "Chưa xác định"}
-                    </p>
-                </div>
-            </div>
-
-            {/* Row 3 - Nền tảng, Trạng thái và Thời gian đóng */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-500">
+                    <Label className="text-xs md:text-sm font-medium text-gray-500">
                         Nền tảng
                     </Label>
                     <div>
@@ -91,7 +75,7 @@ export function TicketDetailView({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-500">
+                    <Label className="text-xs md:text-sm font-medium text-gray-500">
                         Trạng thái
                     </Label>
                     <div>
@@ -103,10 +87,22 @@ export function TicketDetailView({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-500">
+                    <Label className="text-xs md:text-sm font-medium text-gray-500">
+                        Thời hạn
+                    </Label>
+                    <p className="text-xs md:text-sm text-gray-900">
+                        {ticket?.expected_completion_date
+                            ? new Date(
+                                  ticket.expected_completion_date
+                              ).toLocaleDateString("vi-VN")
+                            : "Chưa xác định"}
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-xs md:text-sm font-medium text-gray-500">
                         Thời gian đóng
                     </Label>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-xs md:text-sm text-gray-900">
                         {ticket?.closed_at
                             ? new Date(ticket.closed_at).toLocaleString(
                                   "vi-VN",
@@ -141,53 +137,59 @@ export function TicketDetailView({
             </div>
 
             {/* Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
-                <div>
-                    <Label className="text-sm font-medium text-gray-500">
-                        Người tạo
-                    </Label>
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 overflow-hidden">
-                            {ticket?.created_user?.avatar_url ? (
-                                <img
-                                    src={ticket.created_user.avatar_url}
-                                    alt={
-                                        ticket.created_user.full_name || "User"
-                                    }
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                ticket?.created_user?.full_name?.charAt(0) ||
-                                "U"
-                            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pt-6 border-t border-gray-200">
+                {/* Người tạo & Ngày tạo - Same row on mobile */}
+                <div className="md:col-span-2">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label className="text-xs md:text-sm font-medium text-gray-500">
+                                Người tạo
+                            </Label>
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs md:text-sm font-medium flex-shrink-0 overflow-hidden">
+                                    {ticket?.created_user?.avatar_url ? (
+                                        <img
+                                            src={ticket.created_user.avatar_url}
+                                            alt={
+                                                ticket.created_user.full_name || "User"
+                                            }
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        ticket?.created_user?.full_name?.charAt(0) ||
+                                        "U"
+                                    )}
+                                </div>
+                                <span className="text-xs md:text-sm text-gray-900 truncate">
+                                    {ticket?.created_user?.full_name ||
+                                        "Không xác định"}
+                                </span>
+                            </div>
                         </div>
-                        <span className="text-sm text-gray-900">
-                            {ticket?.created_user?.full_name ||
-                                "Không xác định"}
-                        </span>
+                        <div>
+                            <Label className="text-xs md:text-sm font-medium text-gray-500">
+                                Ngày tạo
+                            </Label>
+                            <p className="text-xs md:text-sm text-gray-900 mt-1">
+                                {ticket &&
+                                    new Date(ticket.created_at).toLocaleString(
+                                        "vi-VN",
+                                        {
+                                            timeZone: "Asia/Ho_Chi_Minh",
+                                        }
+                                    )}
+                            </p>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <Label className="text-sm font-medium text-gray-500">
-                        Ngày tạo
-                    </Label>
-                    <p className="text-sm text-gray-900">
-                        {ticket &&
-                            new Date(ticket.created_at).toLocaleString(
-                                "vi-VN",
-                                {
-                                    timeZone: "Asia/Ho_Chi_Minh",
-                                }
-                            )}
-                    </p>
-                </div>
+                
                 {/* Admin-only information */}
                 {currentUser?.role === "admin" && (
                     <div>
-                        <Label className="text-sm font-medium text-gray-500">
+                        <Label className="text-xs md:text-sm font-medium text-gray-500">
                             Chỉ hiển thị với admin
                         </Label>
-                        <div className="space-y-1">
+                        <div className="space-y-1 mt-1">
                             {ticket?.only_show_in_admin ? (
                                 <Badge
                                     variant="destructive"

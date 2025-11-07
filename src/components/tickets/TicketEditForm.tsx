@@ -92,10 +92,10 @@ export function TicketEditForm({
                 </div>
             </div>
 
-            {/* Row 2 - Loại ticket, Ưu tiên, Thời hạn */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Row 2 - Mobile: 2 columns, Desktop: 3 columns */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 <div className="space-y-2">
-                    <Label htmlFor="ticket_type">Loại ticket</Label>
+                    <Label htmlFor="ticket_type" className="text-xs md:text-sm">Loại ticket</Label>
                     <Select
                         value={formData.ticket_type}
                         onValueChange={(value: "bug" | "task") =>
@@ -130,7 +130,7 @@ export function TicketEditForm({
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="priority">Ưu tiên</Label>
+                    <Label htmlFor="priority" className="text-xs md:text-sm">Ưu tiên</Label>
                     <Select
                         value={formData.priority}
                         onValueChange={(value: "low" | "medium" | "high") =>
@@ -180,7 +180,7 @@ export function TicketEditForm({
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="expected_completion_date">Thời hạn</Label>
+                    <Label htmlFor="expected_completion_date" className="text-xs md:text-sm">Thời hạn</Label>
                     <div className="relative">
                         <Input
                             id="expected_completion_date"
@@ -212,10 +212,10 @@ export function TicketEditForm({
                 </div>
             </div>
 
-            {/* Row 3 - Nền tảng, Trạng thái và Thời gian đóng */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Row 3 - Mobile: 2 columns, Desktop: 3 columns */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 <div className="space-y-2">
-                    <Label htmlFor="platform">Nền tảng</Label>
+                    <Label htmlFor="platform" className="text-xs md:text-sm">Nền tảng</Label>
                     <Select
                         value={formData.platform}
                         onValueChange={(value: "web" | "app" | "all") =>
@@ -256,7 +256,7 @@ export function TicketEditForm({
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="status">Trạng thái</Label>
+                    <Label htmlFor="status" className="text-xs md:text-sm">Trạng thái</Label>
                     <Select
                         value={formData.status}
                         onValueChange={(
@@ -343,7 +343,7 @@ export function TicketEditForm({
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="closed_at">Thời gian đóng</Label>
+                    <Label htmlFor="closed_at" className="text-xs md:text-sm">Thời gian đóng</Label>
                     <div className="relative">
                         <Input
                             id="closed_at"

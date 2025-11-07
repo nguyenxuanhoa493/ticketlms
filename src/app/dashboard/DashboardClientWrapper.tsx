@@ -73,7 +73,7 @@ function DashboardContent({
     useProfileUpdate();
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
             {/* Header */}
             <DashboardHeader
                 userName={profile?.full_name || undefined}
@@ -84,7 +84,7 @@ function DashboardContent({
             <DashboardStats stats={stats} userRole={profile?.role} />
 
             {/* Recent Activity - 2 Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 {/* Left Column - Recent Tickets */}
                 <RecentTickets tickets={recentTickets} />
 

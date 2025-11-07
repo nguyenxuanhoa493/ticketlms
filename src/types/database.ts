@@ -82,6 +82,8 @@ export type Database = {
                     id: string;
                     name: string;
                     description: string | null;
+                    status: "active" | "inactive" | "pending";
+                    assigned_admin_id: string | null;
                     created_by: string;
                     created_at: string;
                     updated_at: string;
@@ -90,6 +92,8 @@ export type Database = {
                     id?: string;
                     name: string;
                     description?: string | null;
+                    status?: "active" | "inactive" | "pending";
+                    assigned_admin_id?: string | null;
                     created_by: string;
                     created_at?: string;
                     updated_at?: string;
@@ -98,11 +102,102 @@ export type Database = {
                     id?: string;
                     name?: string;
                     description?: string | null;
+                    status?: "active" | "inactive" | "pending";
+                    assigned_admin_id?: string | null;
                     created_by?: string;
                     created_at?: string;
                     updated_at?: string;
                 };
             };
+            organization_activities: {
+                Row: {
+                    id: string;
+                    organization_id: string;
+                    activity_type:
+                        | "created"
+                        | "updated"
+                        | "status_changed"
+                        | "admin_assigned"
+                        | "note_added"
+                        | "todo_added"
+                        | "todo_completed"
+                        | "custom";
+                    title: string;
+                    description: string | null;
+                    metadata: Json;
+                    created_by: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    organization_id: string;
+                    activity_type:
+                        | "created"
+                        | "updated"
+                        | "status_changed"
+                        | "admin_assigned"
+                        | "note_added"
+                        | "todo_added"
+                        | "todo_completed"
+                        | "custom";
+                    title: string;
+                    description?: string | null;
+                    metadata?: Json;
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    organization_id?: string;
+                    activity_type?:
+                        | "created"
+                        | "updated"
+                        | "status_changed"
+                        | "admin_assigned"
+                        | "note_added"
+                        | "todo_added"
+                        | "todo_completed"
+                        | "custom";
+                    title?: string;
+                    description?: string | null;
+                    metadata?: Json;
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            organization_notes: {
+                Row: {
+                    id: string;
+                    organization_id: string;
+                    content: string;
+                    is_pinned: boolean;
+                    created_by: string;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    organization_id: string;
+                    content: string;
+                    is_pinned?: boolean;
+                    created_by: string;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    organization_id?: string;
+                    content?: string;
+                    is_pinned?: boolean;
+                    created_by?: string;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+
             notifications: {
                 Row: {
                     id: string;
