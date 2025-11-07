@@ -23,6 +23,8 @@ import { useTicketListOptimized } from "@/hooks/useTicketListOptimized";
 import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 
 export default function TicketsPage() {
+    console.log("[DEBUG] TicketsPage rendered");
+    
     // Hook để lắng nghe profile update events
     useProfileUpdate();
 
@@ -68,16 +70,8 @@ export default function TicketsPage() {
         handleItemsPerPageChange,
     } = useTicketListOptimized();
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Đang tải...</p>
-                </div>
-            </div>
-        );
-    }
+    // Don't show full page loading after initial mount
+    const isInitialLoading = loading && tickets.length === 0;
 
     if (hasError) {
         return (
@@ -101,24 +95,35 @@ export default function TicketsPage() {
         );
     }
 
+    if (isInitialLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Đang tải...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
+        <div className="min-h-screen bg-gray-50 py-3 md:py-6">
             <Toaster />
 
-            <div className="w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">
+            <div className="w-[95%] mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
+                <div className="mb-4 md:mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                         Quản lý Tickets
                     </h1>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4 md:space-y-6">
                     {/* Filters */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Bộ lọc và tìm kiếm</CardTitle>
+                        <CardHeader className="pb-3 md:pb-4">
+                            <CardTitle className="text-base md:text-lg">Bộ lọc và tìm kiếm</CardTitle>
                         </CardHeader>
-                        <CardContent className="w-full">
+                        <CardContent className="w-full pt-0">
                             <TicketFilters
                                 searchTerm={searchTerm}
                                 setSearchTerm={setSearchTerm}
@@ -141,17 +146,18 @@ export default function TicketsPage() {
 
                     {/* Table */}
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Danh sách Tickets</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between pb-3 md:pb-4">
+                            <CardTitle className="text-base md:text-lg">Danh sách Tickets</CardTitle>
                             <Button
                                 onClick={() => handleOpenDialog()}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm h-8 md:h-10"
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Tạo ticket mới
+                                <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                                <span className="hidden sm:inline">Tạo ticket mới</span>
+                                <span className="sm:hidden">Tạo mới</span>
                             </Button>
                         </CardHeader>
-                        <CardContent className="w-full">
+                        <CardContent className="w-full p-0 md:p-6">
                             {tickets?.length === 0 ? (
                                 <div className="text-center py-12">
                                     <div className="text-gray-400 mb-4">
@@ -189,20 +195,29 @@ export default function TicketsPage() {
                                     )}
                                 </div>
                             ) : (
-                                <TicketTable
-                                    tickets={tickets}
-                                    currentUser={currentUser}
-                                    onDelete={handleDelete}
-                                    getDeadlineCountdown={getDeadlineCountdown}
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    totalItems={totalItems}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={handlePageChange}
-                                    onItemsPerPageChange={
-                                        handleItemsPerPageChange
-                                    }
-                                />
+                                <div className="relative">
+                                    {/* Loading overlay for table */}
+                                    {loading && (
+                                        <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                        </div>
+                                    )}
+                                    
+                                    <TicketTable
+                                        tickets={tickets}
+                                        currentUser={currentUser}
+                                        onDelete={handleDelete}
+                                        getDeadlineCountdown={getDeadlineCountdown}
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        totalItems={totalItems}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={handlePageChange}
+                                        onItemsPerPageChange={
+                                            handleItemsPerPageChange
+                                        }
+                                    />
+                                </div>
                             )}
                         </CardContent>
                     </Card>

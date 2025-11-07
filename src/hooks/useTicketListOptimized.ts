@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useReducer } from "react";
 import {
     useTickets,
     useCurrentUser,
@@ -10,6 +10,22 @@ import {
 import { Ticket, TicketFormData } from "@/types";
 
 export function useTicketListOptimized() {
+    // Track component lifecycle and instance ID
+    const mountedRef = useRef(true);
+    const instanceIdRef = useRef(Math.random().toString(36).substr(2, 9));
+    
+    if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useEffect(() => {
+            console.log(`[Lifecycle] useTicketListOptimized MOUNTED (ID: ${instanceIdRef.current})`);
+            mountedRef.current = true;
+            return () => {
+                console.log(`[Lifecycle] useTicketListOptimized UNMOUNTED (ID: ${instanceIdRef.current})`);
+                mountedRef.current = false;
+            };
+        }, []);
+    }
+    
     // State cho UI
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingTicket, setEditingTicket] = useState<Ticket | undefined>(undefined);
@@ -39,15 +55,44 @@ export function useTicketListOptimized() {
     const [selectedOrganization, setSelectedOrganization] = useState("all");
     const [selectedSort, setSelectedSort] = useState("status_asc"); // Mặc định sắp xếp theo trạng thái: Mở > Đang làm > Đóng
 
-    // Pagination states
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    // Pagination - Use reducer to have more control over state updates
+    const [paginationState, setPaginationState] = useState(() => {
+        // Only run on client side
+        if (typeof window === 'undefined') {
+            return { currentPage: 1, itemsPerPage: 20 };
+        }
+        
+        // Load from sessionStorage
+        const savedPage = sessionStorage.getItem('tickets_current_page');
+        const savedLimit = sessionStorage.getItem('tickets_items_per_page');
+        
+        const initialState = {
+            currentPage: savedPage ? parseInt(savedPage, 10) : 1,
+            itemsPerPage: savedLimit ? parseInt(savedLimit, 10) : 20,
+        };
+        
+        console.log("[DEBUG] Initial pagination state:", initialState);
+        return initialState;
+    });
+    
+    const currentPage = paginationState.currentPage;
+    const itemsPerPage = paginationState.itemsPerPage;
+    
+    // Save to sessionStorage when changed
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('tickets_current_page', currentPage.toString());
+            sessionStorage.setItem('tickets_items_per_page', itemsPerPage.toString());
+            console.log("[DEBUG] Pagination state changed:", { currentPage, itemsPerPage });
+        }
+    }, [currentPage, itemsPerPage]);
 
     // Build query params
     const queryParams = useMemo(() => {
         const params: Record<string, string | number> = {
             page: currentPage,
             limit: itemsPerPage,
+            sort: selectedSort, // Luôn gửi sort parameter
         };
 
         if (appliedSearchTerm) params.search = appliedSearchTerm;
@@ -55,9 +100,8 @@ export function useTicketListOptimized() {
             params.status = selectedStatus;
         if (selectedOrganization && selectedOrganization !== "all")
             params.organization_id = selectedOrganization;
-        // Luôn gửi sort parameter để đảm bảo sắp xếp mặc định được áp dụng
-        params.sort = selectedSort;
 
+        console.log("[DEBUG] queryParams computed:", params, "from currentPage:", currentPage);
         return params;
     }, [
         currentPage,
@@ -72,6 +116,7 @@ export function useTicketListOptimized() {
     const {
         data: ticketsData,
         isLoading: ticketsLoading,
+        isFetching: ticketsFetching,
         error: ticketsError,
     } = useTickets(queryParams);
     const {
@@ -99,21 +144,13 @@ export function useTicketListOptimized() {
         ? organizationsData
         : [];
 
-    // Pagination data - đảm bảo luôn có giá trị hợp lệ
-    const pagination = ticketsData?.pagination || {
-        page: 1,
-        totalPages: 0,
-        total: 0,
-    };
-    const totalItems = pagination.total || 0;
-    const totalPages = totalItems === 0 ? 0 : pagination.totalPages || 0;
-
-    // Validation: đảm bảo currentPage không vượt quá totalPages
-    const validCurrentPage =
-        totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
-
-    // Nếu totalItems = 0, đảm bảo currentPage = 1
-    const finalCurrentPage = totalItems === 0 ? 1 : validCurrentPage;
+    // Pagination data - memoized để tránh re-calculate
+    const { totalItems, totalPages } = useMemo(() => {
+        const pagination = ticketsData?.pagination || { page: 1, totalPages: 0, total: 0 };
+        const total = pagination.total || 0;
+        const pages = total === 0 ? 0 : pagination.totalPages || 0;
+        return { totalItems: total, totalPages: pages };
+    }, [ticketsData?.pagination]);
 
     // Loading state
     const loading = ticketsLoading || userLoading || organizationsLoading;
@@ -134,28 +171,31 @@ export function useTicketListOptimized() {
     );
 
     // Handlers
-    const handleSearch = () => {
+    const handleSearch = useCallback(() => {
         setAppliedSearchTerm(searchTerm); // Apply the search term
-        setCurrentPage(1); // Reset to first page when searching
-    };
+        setPaginationState(prev => ({ ...prev, currentPage: 1 })); // Reset to page 1
+    }, [searchTerm]);
 
-    const handleClearFilters = () => {
+    const handleClearFilters = useCallback(() => {
         setSearchTerm("");
         setAppliedSearchTerm(""); // Clear applied search term
         setSelectedStatus("all");
         setSelectedOrganization("all");
         setSelectedSort("status_asc");
-        setCurrentPage(1);
-    };
+        setPaginationState({ currentPage: 1, itemsPerPage: 20 }); // Reset to defaults
+    }, []);
 
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
+    const handlePageChange = useCallback((page: number) => {
+        console.log("[DEBUG] handlePageChange called with page:", page, "Instance:", instanceIdRef.current);
+        setPaginationState(prev => {
+            console.log("[DEBUG] setPaginationState: prev =", prev, "new page =", page);
+            return { ...prev, currentPage: page };
+        });
+    }, []);
 
-    const handleItemsPerPageChange = (newItemsPerPage: number) => {
-        setItemsPerPage(newItemsPerPage);
-        setCurrentPage(1); // Reset to first page when changing items per page
-    };
+    const handleItemsPerPageChange = useCallback((newItemsPerPage: number) => {
+        setPaginationState({ currentPage: 1, itemsPerPage: newItemsPerPage }); // Reset to page 1 when changing items per page
+    }, []);
 
     const handleOpenDialog = (ticket?: Ticket) => {
         if (ticket) {
@@ -329,7 +369,7 @@ export function useTicketListOptimized() {
         selectedOrganization,
         selectedSort,
         hasActiveFilters,
-        currentPage: finalCurrentPage,
+        currentPage,
         totalPages,
         totalItems,
         itemsPerPage,

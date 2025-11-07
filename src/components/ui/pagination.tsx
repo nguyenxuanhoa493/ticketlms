@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import {
@@ -18,7 +18,7 @@ interface PaginationProps {
     onItemsPerPageChange: (itemsPerPage: number) => void;
 }
 
-export function Pagination({
+export const Pagination = memo(function Pagination({
     currentPage,
     totalPages,
     totalItems,
@@ -26,10 +26,6 @@ export function Pagination({
     onPageChange,
     onItemsPerPageChange,
 }: PaginationProps) {
-    // Validation: đảm bảo currentPage không vượt quá totalPages
-    const validCurrentPage =
-        totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
-
     const getVisiblePages = () => {
         const delta = 2;
         const range = [];
@@ -40,15 +36,15 @@ export function Pagination({
 
         // Calculate range around current page
         for (
-            let i = Math.max(2, validCurrentPage - delta);
-            i <= Math.min(totalPages - 1, validCurrentPage + delta);
+            let i = Math.max(2, currentPage - delta);
+            i <= Math.min(totalPages - 1, currentPage + delta);
             i++
         ) {
             range.push(i);
         }
 
         // Add dots before range if needed
-        if (validCurrentPage - delta > 2) {
+        if (currentPage - delta > 2) {
             rangeWithDots.push("...");
         }
 
@@ -56,7 +52,7 @@ export function Pagination({
         rangeWithDots.push(...range);
 
         // Add dots after range if needed
-        if (validCurrentPage + delta < totalPages - 1) {
+        if (currentPage + delta < totalPages - 1) {
             rangeWithDots.push("...");
         }
 
@@ -169,8 +165,8 @@ export function Pagination({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onPageChange(validCurrentPage - 1)}
-                        disabled={validCurrentPage === 1}
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
                         className="h-8 w-8 p-0"
                     >
                         <ChevronLeft className="h-4 w-4" />
@@ -190,7 +186,7 @@ export function Pagination({
                             ) : (
                                 <Button
                                     variant={
-                                        validCurrentPage === page
+                                        currentPage === page
                                             ? "default"
                                             : "outline"
                                     }
@@ -208,8 +204,8 @@ export function Pagination({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onPageChange(validCurrentPage + 1)}
-                        disabled={validCurrentPage === totalPages}
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
                         className="h-8 w-8 p-0"
                     >
                         <ChevronRight className="h-4 w-4" />
@@ -218,4 +214,4 @@ export function Pagination({
             </div>
         </div>
     );
-}
+});

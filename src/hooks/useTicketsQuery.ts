@@ -21,7 +21,8 @@ const fetchTickets = async (params: {
         searchParams.append("organization_id", params.organization_id);
     if (params.sort) searchParams.append("sort", params.sort);
 
-    const response = await fetch(`/api/tickets?${searchParams}`);
+    const url = `/api/tickets?${searchParams}`;
+    const response = await fetch(url);
     if (!response.ok) {
         if (response.status === 401) {
             throw new Error("Unauthorized - Please login again");
@@ -124,6 +125,7 @@ export function useTickets(
         queryFn: () => fetchTickets(params),
         staleTime: 2 * 60 * 1000, // 2 phút
         gcTime: 5 * 60 * 1000, // 5 phút
+        placeholderData: (previousData) => previousData, // Keep previous data while fetching
         retry: (failureCount, error) => {
             // Không retry nếu lỗi 401 (unauthorized) hoặc 403 (forbidden)
             if (
