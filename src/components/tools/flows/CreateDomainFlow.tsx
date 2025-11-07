@@ -417,13 +417,22 @@ export function CreateDomainFlow({
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-blue-600">
-                            <Check className="w-5 h-5" />
-                            Response từ /school/new
+                            {schoolNewStatusCode === 504 ? (
+                                <>
+                                    <AlertCircle className="w-5 h-5" />
+                                    Tên miền đang được tạo
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="w-5 h-5" />
+                                    Response từ /school/new
+                                </>
+                            )}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* 504 Timeout Banner */}
-                        {schoolNewStatusCode === 504 && (
+                        {/* 504 Timeout: Show message instead of response */}
+                        {schoolNewStatusCode === 504 ? (
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
                                     <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -437,25 +446,26 @@ export function CreateDomainFlow({
                                     </div>
                                 </div>
                             </div>
+                        ) : (
+                            /* 200 Success: Show response in Monaco Editor */
+                            <div className="border rounded-lg overflow-hidden">
+                                <MonacoEditor
+                                    height="400px"
+                                    language="json"
+                                    theme="vs-light"
+                                    value={JSON.stringify(result, null, 2)}
+                                    options={{
+                                        readOnly: true,
+                                        minimap: { enabled: false },
+                                        scrollBeyondLastLine: false,
+                                        fontSize: 13,
+                                        lineNumbers: "on",
+                                        folding: true,
+                                        wordWrap: "on",
+                                    }}
+                                />
+                            </div>
                         )}
-                        
-                        <div className="border rounded-lg overflow-hidden">
-                            <MonacoEditor
-                                height="400px"
-                                language="json"
-                                theme="vs-light"
-                                value={JSON.stringify(result, null, 2)}
-                                options={{
-                                    readOnly: true,
-                                    minimap: { enabled: false },
-                                    scrollBeyondLastLine: false,
-                                    fontSize: 13,
-                                    lineNumbers: "on",
-                                    folding: true,
-                                    wordWrap: "on",
-                                }}
-                            />
-                        </div>
                     </CardContent>
                 </Card>
                 )}
