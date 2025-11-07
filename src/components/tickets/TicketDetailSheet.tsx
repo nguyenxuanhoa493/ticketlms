@@ -8,13 +8,15 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Save, Edit, X, Plus } from "lucide-react";
+import { Save, Edit, X, Plus, Copy, Check } from "lucide-react";
 import { useTicketDetailQuery } from "@/hooks/useTicketDetailQuery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TicketDetailView } from "./TicketDetailView";
 import { TicketEditForm } from "./TicketEditForm";
 import { TicketComments } from "./TicketComments";
 import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface TicketDetailSheetProps {
     ticketId: string | null;
@@ -30,6 +32,8 @@ export function TicketDetailSheet({
     jiraStatuses = {},
 }: TicketDetailSheetProps) {
     const ticketData = useTicketDetailQuery(ticketId || "");
+    const { toast } = useToast();
+    const [copied, setCopied] = useState(false);
     
     // Don't render if no ticketId or data not ready
     if (!ticketId || !ticketData) {
@@ -57,6 +61,35 @@ export function TicketDetailSheet({
         handleDeleteComment,
     } = ticketData;
 
+    const handleCopyTicketInfo = () => {
+        if (!ticket) return;
+        
+        const ticketUrl = `${window.location.origin}/tickets/${ticket.id}`;
+        const statusLabels: Record<string, string> = {
+            open: "Mở",
+            in_progress: "Đang xử lý",
+            resolved: "Đã giải quyết",
+            closed: "Đã đóng",
+        };
+        
+        const copyText = `Ticket: ${ticket.title}\nĐường dẫn: ${ticketUrl}\nTrạng thái: ${statusLabels[ticket.status] || ticket.status}`;
+        
+        navigator.clipboard.writeText(copyText).then(() => {
+            setCopied(true);
+            toast({
+                title: "Đã sao chép",
+                description: "Thông tin ticket đã được sao chép vào clipboard",
+            });
+            setTimeout(() => setCopied(false), 2000);
+        }).catch(() => {
+            toast({
+                title: "Lỗi",
+                description: "Không thể sao chép vào clipboard",
+                variant: "destructive",
+            });
+        });
+    };
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent className="w-full sm:max-w-[95vw] lg:max-w-[1400px] overflow-y-auto p-0">
@@ -82,9 +115,24 @@ export function TicketDetailSheet({
                             <SheetTitle className="text-2xl font-bold">
                                 {ticket.title}
                             </SheetTitle>
-                            <p className="text-sm text-gray-500 mt-1">
-                                #{ticket.id.slice(0, 8)}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <p className="text-sm text-gray-500">
+                                    #{ticket.id.slice(0, 8)}
+                                </p>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={handleCopyTicketInfo}
+                                    title="Sao chép thông tin ticket"
+                                >
+                                    {copied ? (
+                                        <Check className="h-3.5 w-3.5 text-green-600" />
+                                    ) : (
+                                        <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                </Button>
+                            </div>
                         </SheetHeader>
 
                         {/* Grid Layout - 2 columns */}
