@@ -53,10 +53,22 @@ const HtmlContent: React.FC<HtmlContentProps> = ({
                 dangerouslySetInnerHTML={{ __html: content }}
                 style={{
                     cursor: "default",
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
                 }}
             />
 
             <style jsx global>{`
+                .html-content {
+                    word-break: break-word;
+                    overflow-wrap: anywhere;
+                }
+
+                .html-content a {
+                    word-break: break-all;
+                    overflow-wrap: anywhere;
+                }
+
                 .html-content img {
                     cursor: pointer;
                     transition: transform 0.2s ease;
