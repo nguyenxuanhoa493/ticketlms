@@ -255,9 +255,10 @@ export default function NotificationDropdown() {
                                         <p className="text-sm font-medium text-gray-900 line-clamp-2">
                                             {notification.title}
                                         </p>
-                                        <p className="text-xs text-gray-600 mt-1">
-                                            {notification.message}
-                                        </p>
+                                        <div 
+                                            className="text-xs text-gray-600 mt-1 notification-message"
+                                            dangerouslySetInnerHTML={{ __html: notification.message }}
+                                        />
                                         <p className="text-xs text-gray-400 mt-1">
                                             {formatTimeAgo(
                                                 notification.created_at

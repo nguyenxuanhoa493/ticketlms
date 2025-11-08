@@ -315,9 +315,10 @@ export default function NotificationsPage() {
                                                 <h4 className="font-medium text-gray-900">
                                                     {notification.title}
                                                 </h4>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    {notification.message}
-                                                </p>
+                                                <div 
+                                                    className="text-sm text-gray-600 mt-1 notification-message"
+                                                    dangerouslySetInnerHTML={{ __html: notification.message }}
+                                                />
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     {formatTimeAgo(
                                                         notification.created_at

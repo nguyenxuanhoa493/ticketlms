@@ -72,9 +72,10 @@ export function RecentNotifications({ notifications }: RecentNotificationsProps)
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <span className="truncate">
-                                            {notification.message}
-                                        </span>
+                                        <div 
+                                            className="truncate notification-message"
+                                            dangerouslySetInnerHTML={{ __html: notification.message }}
+                                        />
                                         <span>•</span>
                                         <span className="flex-shrink-0">
                                             {new Date(
