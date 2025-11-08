@@ -108,9 +108,66 @@ export async function POST(request: NextRequest) {
                 };
             }
 
-            const content: Array<{ type: string; content?: unknown[]; attrs?: Record<string, unknown>; text?: string }> = [];
+            const content: Array<{ type: string; content?: unknown[]; attrs?: Record<string, unknown>; text?: string; marks?: unknown[] }> = [];
 
-            // Step 1: Convert HTML to plain text first
+            // Helper function to parse HTML and extract text with formatting
+            interface TextNode {
+                text: string;
+                bold?: boolean;
+                italic?: boolean;
+            }
+
+            const parseHtmlToTextNodes = (htmlContent: string): TextNode[] => {
+                const nodes: TextNode[] = [];
+                let currentText = '';
+                let isBold = false;
+                let isItalic = false;
+
+                // Simple HTML parser that tracks bold/italic state
+                const parts = htmlContent.split(/(<[^>]+>)/g);
+                
+                for (const part of parts) {
+                    if (!part) continue;
+
+                    // Check if it's an HTML tag
+                    if (part.startsWith('<')) {
+                        const tagMatch = part.match(/<\/?(\w+)[^>]*>/);
+                        if (!tagMatch) continue;
+
+                        const tagName = tagMatch[1].toLowerCase();
+                        const isClosing = part.startsWith('</');
+
+                        if (tagName === 'strong' || tagName === 'b') {
+                            if (currentText) {
+                                nodes.push({ text: currentText, bold: isBold, italic: isItalic });
+                                currentText = '';
+                            }
+                            isBold = !isClosing;
+                        } else if (tagName === 'em' || tagName === 'i') {
+                            if (currentText) {
+                                nodes.push({ text: currentText, bold: isBold, italic: isItalic });
+                                currentText = '';
+                            }
+                            isItalic = !isClosing;
+                        } else if (tagName === 'br') {
+                            currentText += '\n';
+                        } else if (tagName === 'p' && isClosing) {
+                            currentText += '\n\n';
+                        }
+                    } else {
+                        // Regular text
+                        currentText += part;
+                    }
+                }
+
+                if (currentText) {
+                    nodes.push({ text: currentText, bold: isBold, italic: isItalic });
+                }
+
+                return nodes;
+            };
+
+            // Step 1: Convert HTML to plain text first (for images and links)
             const convertHtmlToPlainText = (htmlContent: string) => {
                 // Step 1: Convert img tags to URLs FIRST (before any other processing)
                 // Add newline after each image URL to separate multiple images
@@ -125,7 +182,7 @@ export async function POST(request: NextRequest) {
                     "$1"
                 );
 
-                // Step 3: Clean other HTML tags
+                // Step 3: Clean other HTML tags (but keep bold/italic for now)
                 result = result
                     .replace(/<br\s*\/?>/gi, "\n") // Convert <br> to \n
                     .replace(/<p[^>]*>/gi, "")
@@ -140,10 +197,6 @@ export async function POST(request: NextRequest) {
                     .replace(/<\/div>/gi, "\n") // Add newline after div
                     .replace(/<span[^>]*>/gi, "")
                     .replace(/<\/span>/gi, "")
-                    .replace(/<(strong|b)[^>]*>/gi, "*")
-                    .replace(/<\/(strong|b)>/gi, "*")
-                    .replace(/<(em|i)[^>]*>/gi, "_")
-                    .replace(/<\/(em|i)>/gi, "_")
                     .replace(/<h1[^>]*>/gi, "h1. ")
                     .replace(/<\/h1>/gi, "\n")
                     .replace(/<h2[^>]*>/gi, "h2. ")
@@ -151,10 +204,13 @@ export async function POST(request: NextRequest) {
                     .replace(/<h3[^>]*>/gi, "h3. ")
                     .replace(/<\/h3>/gi, "\n");
 
-                // Step 4: Remove any remaining HTML tags
+                // Step 4: Parse text nodes with formatting BEFORE removing all tags
+                const textNodes = parseHtmlToTextNodes(result);
+
+                // Step 5: Remove any remaining HTML tags
                 result = result.replace(/<[^>]*>/g, "");
 
-                // Step 5: Clean HTML entities and spacing
+                // Step 6: Clean HTML entities and spacing
                 result = result
                     .replace(/&nbsp;/g, " ")
                     .replace(/&amp;/g, "&")
@@ -169,11 +225,11 @@ export async function POST(request: NextRequest) {
                     .replace(/\s+\n/g, "\n") // Remove trailing spaces before newlines
                     .trim();
 
-                return result;
+                return { plainText: result, textNodes };
             };
 
             // Step 2: Convert HTML to plain text (including image URLs)
-            const plainTextResult = convertHtmlToPlainText(html);
+            const { plainText: plainTextResult, textNodes } = convertHtmlToPlainText(html);
 
             // Step 3: Extract images and links from plain text
             const images: string[] = [];
@@ -198,9 +254,89 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // Step 4: Process the plain text to create ADF content
-            const lines = plainTextResult.split("\n");
-            let currentParagraph = "";
+            // Step 4: Process text nodes to create ADF content with formatting
+            for (const node of textNodes) {
+                const text = node.text
+                    .replace(/&nbsp;/g, " ")
+                    .replace(/&amp;/g, "&")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&apos;/g, "'")
+                    .trim();
+
+                if (!text) continue;
+
+                // Check if text is an image URL
+                const isImageUrl = images.some(img => text === img);
+                if (isImageUrl) {
+                    content.push({
+                        type: "paragraph",
+                        content: [
+                            {
+                                type: "inlineCard",
+                                attrs: {
+                                    url: text,
+                                },
+                            },
+                        ],
+                    });
+                    continue;
+                }
+
+                // Check if text is a link URL
+                const isLinkUrl = links.some(link => text === link);
+                if (isLinkUrl) {
+                    content.push({
+                        type: "paragraph",
+                        content: [
+                            {
+                                type: "inlineCard",
+                                attrs: {
+                                    url: text,
+                                },
+                            },
+                        ],
+                    });
+                    continue;
+                }
+
+                // Split by newlines to create paragraphs
+                const lines = text.split('\n');
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+
+                    // Create text node with marks for bold/italic
+                    const marks: Array<{ type: string }> = [];
+                    if (node.bold) {
+                        marks.push({ type: "strong" });
+                    }
+                    if (node.italic) {
+                        marks.push({ type: "em" });
+                    }
+
+                    const textContent: { type: string; text: string; marks?: Array<{ type: string }> } = {
+                        type: "text",
+                        text: trimmedLine,
+                    };
+
+                    if (marks.length > 0) {
+                        textContent.marks = marks;
+                    }
+
+                    content.push({
+                        type: "paragraph",
+                        content: [textContent],
+                    });
+                }
+            }
+
+            // Fallback: if no content was generated, process line by line from plain text
+            if (content.length === 0) {
+                const lines = plainTextResult.split("\n");
+                let currentParagraph = "";
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
@@ -380,17 +516,18 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // Add any remaining paragraph
-            if (currentParagraph.trim()) {
-                content.push({
-                    type: "paragraph",
-                    content: [
-                        {
-                            type: "text",
-                            text: currentParagraph.trim(),
-                        },
-                    ],
-                });
+                // Add any remaining paragraph
+                if (currentParagraph.trim()) {
+                    content.push({
+                        type: "paragraph",
+                        content: [
+                            {
+                                type: "text",
+                                text: currentParagraph.trim(),
+                            },
+                        ],
+                    });
+                }
             }
 
             const result = {

@@ -97,6 +97,9 @@ export function TicketDetailSheet({
                 
                 {loading ? (
                     <div className="p-6 space-y-4">
+                        <SheetHeader>
+                            <SheetTitle>Đang tải...</SheetTitle>
+                        </SheetHeader>
                         <Skeleton className="h-8 w-3/4" />
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-full" />
@@ -104,6 +107,9 @@ export function TicketDetailSheet({
                     </div>
                 ) : hasError ? (
                     <div className="p-6 text-center py-8">
+                        <SheetHeader>
+                            <SheetTitle>Lỗi</SheetTitle>
+                        </SheetHeader>
                         <p className="text-red-600 mb-4">Không thể tải ticket</p>
                         <Button variant="outline" onClick={() => onOpenChange(false)}>
                             Đóng
@@ -181,7 +187,7 @@ export function TicketDetailSheet({
                                                             Hủy
                                                         </Button>
                                                         <Button
-                                                            type="submit"
+                                                            type="button"
                                                             size="sm"
                                                             onClick={handleSave}
                                                             disabled={saving}

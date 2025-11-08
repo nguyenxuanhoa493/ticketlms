@@ -92,7 +92,7 @@ export const POST = withAuth(
         const { params } = args[0] as { params: Promise<{ id: string }> };
         const { id: ticketId } = await params;
         const body = await request.json();
-        const { content } = body;
+        const { content, parent_id } = body;
 
         // Validate required fields
         const validation = validateRequiredFields(body, ["content"]);
@@ -103,7 +103,7 @@ export const POST = withAuth(
         // Check if user has access to this ticket
         const { data: ticket } = await supabase
             .from("tickets")
-            .select("organization_id")
+            .select("organization_id, created_by")
             .eq("id", ticketId)
             .single();
 
@@ -128,6 +128,7 @@ export const POST = withAuth(
             content: content.trim(),
             ticket_id: ticketId,
             user_id: user.id,
+            parent_id: parent_id || null,
         };
 
         const { data, error } = await executeQuery(

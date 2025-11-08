@@ -398,7 +398,16 @@ export function useTicketDetailQuery(ticketId: string) {
         await deleteCommentMutation.mutateAsync({ ticketId, commentId });
     };
 
-    const handleSave = () => {
+    const handleSave = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (updateTicketMutation.isPending) {
+            console.log("[handleSave] Mutation already in progress, skipping...");
+            return;
+        }
+        console.log("[handleSave] Calling mutation with data:", formData);
         updateTicketMutation.mutate({ ticketId, data: formData });
     };
 

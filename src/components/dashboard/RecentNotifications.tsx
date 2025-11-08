@@ -21,16 +21,16 @@ interface RecentNotificationsProps {
 }
 
 export function RecentNotifications({ notifications }: RecentNotificationsProps) {
-    const getNotificationType = (type: string) => {
+    const getNotificationIcon = (type: string) => {
         switch (type) {
             case "ticket_status_changed":
-                return "Trạng thái thay đổi";
+                return "🔄";
             case "ticket_commented":
-                return "Bình luận mới";
+                return "💬";
             case "comment_replied":
-                return "Trả lời bình luận";
+                return "↩️";
             default:
-                return type;
+                return "🔔";
         }
     };
 
@@ -48,25 +48,20 @@ export function RecentNotifications({ notifications }: RecentNotificationsProps)
                         {notifications.map((notification) => (
                             <div
                                 key={notification.id}
-                                className={`flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0 px-2 -mx-2 rounded transition-colors ${
+                                className={`flex items-start gap-3 py-3 border-b border-gray-100 last:border-b-0 px-2 -mx-2 rounded transition-colors ${
                                     notification.is_read
                                         ? "hover:bg-gray-50"
                                         : "bg-blue-50 hover:bg-blue-100"
                                 }`}
                             >
+                                <span className="text-xl flex-shrink-0">
+                                    {getNotificationIcon(notification.type)}
+                                </span>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-sm font-medium text-gray-900 truncate">
                                             {notification.title}
                                         </span>
-                                        <Badge
-                                            variant="outline"
-                                            className="text-xs"
-                                        >
-                                            {getNotificationType(
-                                                notification.type
-                                            )}
-                                        </Badge>
                                         {!notification.is_read && (
                                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                                         )}
