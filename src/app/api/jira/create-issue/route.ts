@@ -113,9 +113,10 @@ export async function POST(request: NextRequest) {
             // Step 1: Convert HTML to plain text first
             const convertHtmlToPlainText = (htmlContent: string) => {
                 // Step 1: Convert img tags to URLs FIRST (before any other processing)
+                // Add newline after each image URL to separate multiple images
                 let result = htmlContent.replace(
                     /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi,
-                    "$1"
+                    "$1\n"
                 );
 
                 // Step 2: Convert link tags to URLs
