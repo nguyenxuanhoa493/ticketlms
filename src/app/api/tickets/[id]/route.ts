@@ -121,14 +121,20 @@ export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser
         
         if (user.role !== "admin") {
             // Non-admin users cannot change organization_id
-            finalBody.organization_id = user.organization_id;
+            // Only set organization_id if it's explicitly provided in the request
+            if ('organization_id' in body) {
+                finalBody.organization_id = user.organization_id;
+            }
             // Non-admin users cannot set only_show_in_admin to true
-            finalBody.only_show_in_admin = false;
+            if ('only_show_in_admin' in body) {
+                finalBody.only_show_in_admin = false;
+            }
         }
         
-        // Ensure organization_id is never undefined - use null instead
-        if (finalBody.organization_id === undefined || finalBody.organization_id === "") {
-            finalBody.organization_id = null;
+        // Ensure organization_id is never undefined - use existing value if not provided
+        if ('organization_id' in finalBody && (finalBody.organization_id === undefined || finalBody.organization_id === "")) {
+            // If organization_id is being set to empty/undefined, preserve the existing value
+            delete finalBody.organization_id;
         }
         
         // Remove fields that shouldn't be in the update payload
