@@ -8,6 +8,7 @@ import { CloneProgramFlow } from "@/components/tools/flows/CloneProgramFlow";
 import { CreateDomainFlow } from "@/components/tools/flows/CreateDomainFlow";
 import { FixSyllabusSequentialFlow } from "@/components/tools/flows/FixSyllabusSequentialFlow";
 import { UpdateKpiTimeFlow } from "@/components/tools/flows/UpdateKpiTimeFlow";
+import { MergeDataFlow } from "@/components/tools/flows/MergeDataFlow";
 
 interface Environment {
     id: string;
@@ -83,6 +84,12 @@ export default function ApiAutoPage() {
             setDmn(env?.dmn || "");
             setUserCode("");
             setPass("");
+        } else if (flowParam === "merge-data") {
+            // Merge data flow defaults
+            console.log("[Page] Setting defaults for merge-data:", { dmn: env?.dmn || "" });
+            setDmn(env?.dmn || "");
+            setUserCode("");
+            setPass("");
         } else {
             // Default: use environment dmn
             setDmn(env?.dmn || "");
@@ -117,6 +124,12 @@ export default function ApiAutoPage() {
                     name: "Cập nhật Kpi time Mô phỏng",
                     description: "Tìm kiếm question banks và cập nhật KPI time cho questions",
                     group: "Admin",
+                };
+            case "merge-data":
+                return {
+                    name: "Merge Data",
+                    description: "Copy dữ liệu học tập, kết quả thi sang cho tài khoản khác",
+                    group: "User",
                 };
             default:
                 return {
@@ -175,6 +188,16 @@ export default function ApiAutoPage() {
                 return (
                     <UpdateKpiTimeFlow
                         key="update-kpi-time"
+                        environmentId={selectedEnvironment}
+                        dmn={dmn}
+                        userCode={userCode}
+                        pass={pass}
+                    />
+                );
+            case "merge-data":
+                return (
+                    <MergeDataFlow
+                        key="merge-data"
                         environmentId={selectedEnvironment}
                         dmn={dmn}
                         userCode={userCode}

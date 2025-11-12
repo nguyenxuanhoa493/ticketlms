@@ -79,6 +79,16 @@ const navigation: MenuItem[] = [
                     },
                 ],
             },
+            {
+                name: "User",
+                items: [
+                    {
+                        id: "merge-data",
+                        name: "Merge Data",
+                        href: "/tools/api-auto?flow=merge-data",
+                    },
+                ],
+            },
         ],
     },
     {
@@ -93,7 +103,7 @@ export function ToolsSidebar({ userRole }: ToolsSidebarProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [expandedItems, setExpandedItems] = useState<Set<string>>(
-        new Set(["API Auto", "Admin"]) // Default expand API Auto and Admin group
+        new Set(["API Auto", "Admin", "User"]) // Default expand API Auto and Admin/User groups
     );
 
     // Filter navigation based on user role
