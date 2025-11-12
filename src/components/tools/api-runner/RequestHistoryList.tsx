@@ -19,6 +19,8 @@ interface RequestHistoryItem {
     isComplete?: boolean;
     hasError?: boolean;
     step?: string;
+    loopIndex?: number;
+    loopItem?: any;
 }
 
 interface RequestHistoryListProps {
@@ -99,8 +101,15 @@ function RequestHistoryItem({ item }: { item: RequestHistoryItem }) {
                 
                 <Badge variant="outline" className="flex-shrink-0">{item.method}</Badge>
                 
+                {/* Show loop index if present */}
+                {item.loopIndex !== undefined && (
+                    <Badge variant="secondary" className="flex-shrink-0 text-xs">
+                        #{item.loopIndex + 1}
+                    </Badge>
+                )}
+                
                 <span className="text-gray-600 font-mono text-xs truncate flex-1">
-                    {item.url}
+                    {item.step || item.url}
                 </span>
                 
                 {!item.isLoading && item.responseTime !== null && (
@@ -114,9 +123,21 @@ function RequestHistoryItem({ item }: { item: RequestHistoryItem }) {
             {/* Expanded details */}
             {isExpanded && !item.isLoading && (
                 <div className="px-3 pb-3 space-y-3 border-t bg-gray-50">
+                    {/* Loop Item Info */}
+                    {item.loopItem !== undefined && (
+                        <div className="pt-3">
+                            <span className="text-xs font-semibold text-gray-700">Loop Item Data</span>
+                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                <pre className="text-xs text-gray-800 whitespace-pre-wrap">
+                                    {JSON.stringify(item.loopItem, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Payload */}
                     {item.payload && Object.keys(item.payload).length > 0 && (
-                        <div className="pt-3">
+                        <div className={item.loopItem !== undefined ? "" : "pt-3"}>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-semibold text-gray-700">Payload</span>
                                 <Button

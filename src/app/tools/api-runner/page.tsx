@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import {
     Select,
     SelectContent,
@@ -44,6 +46,78 @@ import { useToast } from "@/hooks/use-toast";
 import { RequestHistoryList } from "@/components/tools/api-runner/RequestHistoryList";
 import { DeleteTemplateButton } from "@/components/tools/api-runner/DeleteTemplateButton";
 
+// Utility function to replace @item variables in a string
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function replaceItemVariables(template: string, item: any): string {
+    return template.replace(/@item(\.[a-zA-Z0-9_]+|\[[0-9]+\](\.[a-zA-Z0-9_]+)*)*/g, (match) => {
+        try {
+            // Remove @item
+            const path = match.slice(5);
+            
+            if (!path) {
+                // Just @item
+                return JSON.stringify(item);
+            }
+            
+            // Parse path like .name or [0].name
+            let value = item;
+            const parts = path.match(/(\.[a-zA-Z0-9_]+|\[[0-9]+\])/g) || [];
+            
+            for (const part of parts) {
+                if (part.startsWith('.')) {
+                    value = value?.[part.slice(1)];
+                } else if (part.startsWith('[')) {
+                    const index = parseInt(part.slice(1, -1));
+                    value = value?.[index];
+                }
+            }
+            
+            return value !== undefined ? JSON.stringify(value) : match;
+        } catch {
+            return match;
+        }
+    });
+}
+
+// Replace variables in an object recursively
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function replaceItemVariablesInObject(obj: any, item: any): any {
+    if (typeof obj === 'string') {
+        // Check if the entire string is just a variable (e.g., "@item" or "@item.name")
+        const fullMatch = obj.match(/^@item(\.[a-zA-Z0-9_]+|\[[0-9]+\](\.[a-zA-Z0-9_]+)*)*$/);
+        if (fullMatch) {
+            // Return the actual value, not a string
+            const path = fullMatch[0].slice(5);
+            if (!path) return item;
+            
+            let value = item;
+            const parts = path.match(/(\.[a-zA-Z0-9_]+|\[[0-9]+\])/g) || [];
+            for (const part of parts) {
+                if (part.startsWith('.')) {
+                    value = value?.[part.slice(1)];
+                } else if (part.startsWith('[')) {
+                    const index = parseInt(part.slice(1, -1));
+                    value = value?.[index];
+                }
+            }
+            return value !== undefined ? value : obj;
+        }
+        
+        // Otherwise, do string replacement
+        return replaceItemVariables(obj, item);
+    } else if (Array.isArray(obj)) {
+        return obj.map(v => replaceItemVariablesInObject(v, item));
+    } else if (obj !== null && typeof obj === 'object') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result: any = {};
+        for (const key in obj) {
+            result[key] = replaceItemVariablesInObject(obj[key], item);
+        }
+        return result;
+    }
+    return obj;
+}
+
 export default function ApiRunnerPage() {
     const [environments, setEnvironments] = useState<ApiEnvironment[]>([]);
     const [selectedEnvId, setSelectedEnvId] = useState<string>("");
@@ -53,13 +127,18 @@ export default function ApiRunnerPage() {
     const [userCode, setUserCode] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [payload, setPayload] = useState<string>("{}");
+    const [loopMode, setLoopMode] = useState(false);
+    const [loopData, setLoopData] = useState<string>("[]");
     const [loading, setLoading] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [response, setResponse] = useState<any>(null);
     const [error, setError] = useState<string>("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [requestHistory, setRequestHistory] = useState<any[]>([]);
-    const [isExecuting, setIsExecuting] = useState(false);
+
     const [copied, setCopied] = useState(false);
-    const [historyExpanded, setHistoryExpanded] = useState(true);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
+    const [loopProgress, setLoopProgress] = useState({ current: 0, total: 0 });
     const selectedEnv = environments.find((env) => env.id === selectedEnvId);
 
     // Template states
@@ -83,12 +162,7 @@ export default function ApiRunnerPage() {
         fetchFolders();
     }, []);
 
-    // Auto-expand history when executing
-    useEffect(() => {
-        if (requestHistory.length > 0) {
-            setHistoryExpanded(true);
-        }
-    }, [requestHistory.length]);
+
 
     const fetchEnvironments = async () => {
         try {
@@ -166,7 +240,7 @@ export default function ApiRunnerPage() {
             let parsedPayload = {};
             try {
                 parsedPayload = JSON.parse(payload);
-            } catch (e) {
+            } catch {
                 toast({
                     title: "Lỗi",
                     description: "Payload không phải JSON hợp lệ",
@@ -433,10 +507,14 @@ export default function ApiRunnerPage() {
 
     const handleExecute = async () => {
         setLoading(true);
-        setIsExecuting(true);
         setError("");
         setResponse(null);
         setRequestHistory([]);
+        
+        // Initialize progress for loop mode
+        if (loopMode) {
+            setLoopProgress({ current: 0, total: 0 });
+        }
 
         // Validate
         if (!selectedEnvId) {
@@ -461,15 +539,44 @@ export default function ApiRunnerPage() {
         let parsedPayload = {};
         try {
             parsedPayload = JSON.parse(payload);
-        } catch (e) {
+        } catch {
             setError("Payload không phải JSON hợp lệ");
             setLoading(false);
             return;
         }
 
+        // Validate loop data if loop mode is enabled
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let parsedLoopData: any[] = [];
+        if (loopMode) {
+            try {
+                parsedLoopData = JSON.parse(loopData);
+                if (!Array.isArray(parsedLoopData)) {
+                    setError("Loop data phải là một array");
+                    setLoading(false);
+                    return;
+                }
+                if (parsedLoopData.length === 0) {
+                    setError("Loop data không được rỗng");
+                    setLoading(false);
+                    return;
+                }
+                // Set total for progress bar
+                setLoopProgress({ current: 0, total: parsedLoopData.length });
+            } catch {
+                setError("Loop data không phải JSON hợp lệ");
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
-            // Add initial loading entries to history for better UX
+            // Add initial loading state
             const baseTime = Date.now();
+            const loadingMessage = loopMode 
+                ? `Đang thực thi ${parsedLoopData.length} requests...`
+                : "Đang gọi API...";
+            
             setRequestHistory([
                 {
                     id: baseTime,
@@ -493,11 +600,10 @@ export default function ApiRunnerPage() {
                     response: null,
                     timestamp: new Date().toISOString(),
                     isLoading: true,
-                    step: "Đang gọi API...",
+                    step: loadingMessage,
                 }
             ]);
 
-            const startTime = Date.now();
             const res = await fetch("/api/tools/api-runner", {
                 method: "POST",
                 headers: {
@@ -511,6 +617,8 @@ export default function ApiRunnerPage() {
                     dmn,
                     userCode: userCode || dmn,
                     password: password || undefined,
+                    loopMode,
+                    loopData: parsedLoopData,
                 }),
             });
 
@@ -518,21 +626,29 @@ export default function ApiRunnerPage() {
 
             if (data.success) {
                 setResponse(data.data.response);
-                // Map history with unique IDs and completed state
+                
+                // Update progress to 100% for loop mode
+                if (loopMode && data.data.response?.loopMode) {
+                    setLoopProgress({ 
+                        current: data.data.response.totalItems, 
+                        total: data.data.response.totalItems 
+                    });
+                }
+                
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const mappedHistory = (data.data.requestHistory || []).map((item: any, index: number) => ({
                     ...item,
                     id: Date.now() + index,
                     isLoading: false,
                     isComplete: true,
                 }));
-                // Remove loading entries and append new history
                 setRequestHistory(prevHistory => {
                     const withoutLoading = prevHistory.filter(item => !item.isLoading);
                     return [...withoutLoading, ...mappedHistory];
                 });
             } else {
                 setError(data.error || "API call failed");
-                // Map history with unique IDs and error state
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const mappedHistory = (data.requestHistory || []).map((item: any, index: number) => ({
                     ...item,
                     id: Date.now() + index,
@@ -540,7 +656,6 @@ export default function ApiRunnerPage() {
                     isComplete: true,
                     hasError: item.statusCode !== 200,
                 }));
-                // Remove loading entries and append new history
                 setRequestHistory(prevHistory => {
                     const withoutLoading = prevHistory.filter(item => !item.isLoading);
                     return [...withoutLoading, ...mappedHistory];
@@ -550,7 +665,6 @@ export default function ApiRunnerPage() {
             setError(err instanceof Error ? err.message : "Request failed");
         } finally {
             setLoading(false);
-            setIsExecuting(false);
         }
     };
 
@@ -578,6 +692,9 @@ export default function ApiRunnerPage() {
         setUserCode("");
         setPassword("");
         setPayload("{}");
+        setLoopMode(false);
+        setLoopData("[]");
+        setLoopProgress({ current: 0, total: 0 });
         setResponse(null);
         setError("");
         setRequestHistory([]);
@@ -889,6 +1006,36 @@ export default function ApiRunnerPage() {
                             </div>
                         )}
 
+                        {/* Loop Mode */}
+                        <div className="space-y-3 border-t pt-3">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Loop Mode</Label>
+                                    <p className="text-xs text-gray-500">
+                                        Gọi API nhiều lần với dữ liệu từ list
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={loopMode}
+                                    onCheckedChange={setLoopMode}
+                                />
+                            </div>
+
+                            {loopMode && (
+                                <div className="space-y-2">
+                                    <Label>Loop Data (JSON Array)</Label>
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        Dùng biến @item, @item.name, @item[0].name trong payload
+                                    </p>
+                                    <JsonEditor
+                                        value={loopData}
+                                        onChange={setLoopData}
+                                        height="200px"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
                         {/* Payload */}
                         <div className="space-y-2">
                             <Label>Payload (JSON)</Label>
@@ -898,7 +1045,6 @@ export default function ApiRunnerPage() {
                                 height="300px"
                             />
                         </div>
-
 
                     </CardContent>
                 </Card>
@@ -930,6 +1076,52 @@ export default function ApiRunnerPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-3">
+                        {/* Loop Progress Bar */}
+                        {loopMode && loopProgress.total > 0 && (
+                            <div className={`mb-4 p-4 rounded-lg ${
+                                loading 
+                                    ? 'bg-blue-50 border border-blue-200' 
+                                    : loopProgress.current === loopProgress.total
+                                        ? 'bg-green-50 border border-green-200'
+                                        : 'bg-gray-50 border border-gray-200'
+                            }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className={`text-sm font-semibold ${
+                                        loading 
+                                            ? 'text-blue-900' 
+                                            : loopProgress.current === loopProgress.total
+                                                ? 'text-green-900'
+                                                : 'text-gray-900'
+                                    }`}>
+                                        {loading 
+                                            ? 'Đang xử lý loop...' 
+                                            : loopProgress.current === loopProgress.total
+                                                ? '✓ Hoàn thành'
+                                                : 'Loop đã dừng'
+                                        }
+                                    </span>
+                                    <span className={`text-sm ${
+                                        loading 
+                                            ? 'text-blue-700' 
+                                            : loopProgress.current === loopProgress.total
+                                                ? 'text-green-700'
+                                                : 'text-gray-700'
+                                    }`}>
+                                        {loopProgress.current} / {loopProgress.total}
+                                    </span>
+                                </div>
+                                <Progress 
+                                    value={(loopProgress.current / loopProgress.total) * 100} 
+                                    className="h-2"
+                                />
+                                {loading && (
+                                    <p className="text-xs text-blue-600 mt-2">
+                                        Vui lòng đợi, đang gọi {loopProgress.total} requests...
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Request History */}
                         <RequestHistoryList 
                             history={requestHistory}

@@ -10,6 +10,41 @@ import { TypedSupabaseClient } from "@/types/supabase";
 import { LmsClient } from "@/lib/lms-client";
 import { decrypt } from "@/lib/encryption";
 
+// Helper function to replace @item variables in an object
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function replaceItemVariablesInObject(obj: any, item: any): any {
+    if (typeof obj === 'string') {
+        const fullMatch = obj.match(/^@item(\.[a-zA-Z0-9_]+|\[[0-9]+\](\.[a-zA-Z0-9_]+)*)*$/);
+        if (fullMatch) {
+            const path = fullMatch[0].slice(5);
+            if (!path) return item;
+            
+            let value = item;
+            const parts = path.match(/(\.[a-zA-Z0-9_]+|\[[0-9]+\])/g) || [];
+            for (const part of parts) {
+                if (part.startsWith('.')) {
+                    value = value?.[part.slice(1)];
+                } else if (part.startsWith('[')) {
+                    const index = parseInt(part.slice(1, -1));
+                    value = value?.[index];
+                }
+            }
+            return value !== undefined ? value : obj;
+        }
+        return obj;
+    } else if (Array.isArray(obj)) {
+        return obj.map(v => replaceItemVariablesInObject(v, item));
+    } else if (obj !== null && typeof obj === 'object') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result: any = {};
+        for (const key in obj) {
+            result[key] = replaceItemVariablesInObject(obj[key], item);
+        }
+        return result;
+    }
+    return obj;
+}
+
 export const POST = withAdmin(
     async (
         request: NextRequest,
@@ -25,7 +60,9 @@ export const POST = withAdmin(
                 payload = {}, 
                 dmn,
                 userCode,
-                password 
+                password,
+                loopMode = false,
+                loopData = []
             } = body;
 
             console.log("[POST /api/tools/api-runner] Execute request:", {
@@ -34,6 +71,8 @@ export const POST = withAdmin(
                 method,
                 dmn,
                 userCode,
+                loopMode,
+                loopDataLength: loopData.length,
             });
 
             // Validate required fields
@@ -99,12 +138,159 @@ export const POST = withAdmin(
             if (typeof payload === "string") {
                 try {
                     parsedPayload = JSON.parse(payload);
-                } catch (e) {
+                } catch {
                     return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
                 }
             }
 
-            // Execute API call
+            // Handle loop mode
+            if (loopMode && Array.isArray(loopData) && loopData.length > 0) {
+                console.log("[POST /api/tools/api-runner] Loop mode: executing", loopData.length, "requests");
+                
+                const loginStartTime = Date.now();
+                
+                // Login once before loop
+                try {
+                    await lmsClient.login(finalUserCode, finalPassword);
+                } catch (error) {
+                    console.error("[POST /api/tools/api-runner] Login failed:", error);
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: "Login failed: " + (error instanceof Error ? error.message : "Unknown error"),
+                        },
+                        { status: 500 }
+                    );
+                }
+
+                const loginTime = Date.now() - loginStartTime;
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const allResponses: any[] = [];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const allHistory: any[] = [];
+
+                // Add login entry to history (once for the entire loop)
+                allHistory.push({
+                    method: "POST",
+                    url: `${environment.host}/user/login`,
+                    payload: { lname: finalUserCode },
+                    statusCode: 200,
+                    responseTime: loginTime,
+                    response: { message: "Login successful" },
+                    timestamp: new Date().toISOString(),
+                    step: "Login (shared for all loop requests)",
+                });
+                
+                for (let i = 0; i < loopData.length; i++) {
+                    const item = loopData[i];
+                    
+                    // Replace @item variables in payload
+                    const loopPayload = replaceItemVariablesInObject(parsedPayload, item);
+                    
+                    const iterationStartTime = Date.now();
+                    
+                    try {
+                        // Send request using existing token (send won't login again because token exists)
+                        const result = await lmsClient.send({
+                            path,
+                            method: method as "GET" | "POST" | "PUT" | "DELETE",
+                            payload: loopPayload,
+                            dmn,
+                        });
+
+                        const iterationTime = Date.now() - iterationStartTime;
+
+                        if (result.success) {
+                            allResponses.push({
+                                index: i,
+                                item,
+                                response: result.data,
+                                success: true,
+                            });
+
+                            // Add simplified history entry for this iteration
+                            allHistory.push({
+                                method,
+                                url: `${environment.host}${path}`,
+                                payload: loopPayload,
+                                statusCode: 200,
+                                responseTime: iterationTime,
+                                response: result.data,
+                                timestamp: new Date().toISOString(),
+                                step: `[${i + 1}/${loopData.length}] Request`,
+                                loopIndex: i,
+                                loopItem: item,
+                            });
+                        } else {
+                            allResponses.push({
+                                index: i,
+                                item,
+                                error: result.error,
+                                success: false,
+                            });
+
+                            allHistory.push({
+                                method,
+                                url: `${environment.host}${path}`,
+                                payload: loopPayload,
+                                statusCode: result.requestHistory?.[0]?.statusCode || 500,
+                                responseTime: iterationTime,
+                                response: { error: result.error },
+                                timestamp: new Date().toISOString(),
+                                step: `[${i + 1}/${loopData.length}] Request (Failed)`,
+                                loopIndex: i,
+                                loopItem: item,
+                                hasError: true,
+                            });
+                        }
+                    } catch (error) {
+                        const iterationTime = Date.now() - iterationStartTime;
+                        
+                        allResponses.push({
+                            index: i,
+                            item,
+                            error: error instanceof Error ? error.message : "Request failed",
+                            success: false,
+                        });
+
+                        allHistory.push({
+                            method,
+                            url: `${environment.host}${path}`,
+                            payload: loopPayload,
+                            statusCode: 0,
+                            responseTime: iterationTime,
+                            response: { error: error instanceof Error ? error.message : "Request failed" },
+                            timestamp: new Date().toISOString(),
+                            step: `[${i + 1}/${loopData.length}] Request (Error)`,
+                            loopIndex: i,
+                            loopItem: item,
+                            hasError: true,
+                        });
+                    }
+                }
+
+                console.log("[POST /api/tools/api-runner] Loop mode completed");
+
+                return createSuccessResponse(
+                    {
+                        response: {
+                            loopMode: true,
+                            totalItems: loopData.length,
+                            results: allResponses,
+                        },
+                        requestHistory: allHistory,
+                        environment: {
+                            name: environment.name,
+                            host: environment.host,
+                            dmn: dmn || environment.name.toLowerCase(),
+                        },
+                    },
+                    "Loop mode executed successfully"
+                );
+            }
+
+            // Normal mode - Execute single API call
             const result = await lmsClient.send({
                 path,
                 method: method as "GET" | "POST" | "PUT" | "DELETE",
@@ -122,17 +308,6 @@ export const POST = withAdmin(
                     { status: 500 }
                 );
             }
-
-            // Save to history (optional - implement later)
-            // await saveRequestHistory(supabase, {
-            //     user_id: user.id,
-            //     environment_id: environmentId,
-            //     path,
-            //     method,
-            //     payload: parsedPayload,
-            //     response: result.data,
-            //     metadata: result.metadata,
-            // });
 
             console.log("[POST /api/tools/api-runner] Request executed successfully");
 
