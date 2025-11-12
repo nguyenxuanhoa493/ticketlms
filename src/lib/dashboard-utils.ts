@@ -29,6 +29,8 @@ export interface Notification {
     type: "ticket_status_changed" | "ticket_commented" | "comment_replied";
     is_read: boolean;
     created_at: string;
+    ticket_id: string | null;
+    comment_id: string | null;
 }
 
 export async function getDashboardStats(

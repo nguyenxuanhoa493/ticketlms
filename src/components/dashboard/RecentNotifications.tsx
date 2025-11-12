@@ -1,3 +1,5 @@
+"use client";
+
 import {
     Card,
     CardContent,
@@ -6,6 +8,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 
 interface Notification {
     id: string;
@@ -14,6 +17,7 @@ interface Notification {
     type: "ticket_status_changed" | "ticket_commented" | "comment_replied";
     is_read: boolean;
     created_at: string;
+    ticket_id: string | null;
 }
 
 interface RecentNotificationsProps {
@@ -21,6 +25,8 @@ interface RecentNotificationsProps {
 }
 
 export function RecentNotifications({ notifications }: RecentNotificationsProps) {
+    const router = useRouter();
+
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case "ticket_status_changed":
@@ -32,6 +38,24 @@ export function RecentNotifications({ notifications }: RecentNotificationsProps)
             default:
                 return "🔔";
         }
+    };
+
+    const handleNotificationClick = async (notification: Notification) => {
+        if (!notification.ticket_id) return;
+
+        // Mark as read
+        try {
+            await fetch(`/api/notifications/${notification.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ is_read: true }),
+            });
+        } catch (error) {
+            console.error("Failed to mark notification as read:", error);
+        }
+
+        // Navigate to ticket
+        router.push(`/tickets/${notification.ticket_id}`);
     };
 
     return (
@@ -48,7 +72,10 @@ export function RecentNotifications({ notifications }: RecentNotificationsProps)
                         {notifications.map((notification) => (
                             <div
                                 key={notification.id}
+                                onClick={() => handleNotificationClick(notification)}
                                 className={`flex items-start gap-3 py-3 border-b border-gray-100 last:border-b-0 px-2 -mx-2 rounded transition-colors ${
+                                    notification.ticket_id ? "cursor-pointer" : ""
+                                } ${
                                     notification.is_read
                                         ? "hover:bg-gray-50"
                                         : "bg-blue-50 hover:bg-blue-100"
