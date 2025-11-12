@@ -50,6 +50,7 @@ export function MergeDataFlow({
     const [mergeResult, setMergeResult] = useState<{
         success: boolean;
         message?: string;
+        data?: any;
     } | null>(null);
 
     const { toast } = useToast();
@@ -167,12 +168,13 @@ export function MergeDataFlow({
 
             setMergeResult({
                 success: true,
-                message: data.message || "Copy dữ liệu thành công",
+                message: "Copy dữ liệu thành công",
+                data: data.data,
             });
 
             toast({
                 title: "Thành công",
-                description: data.message || "Copy dữ liệu thành công",
+                description: "Copy dữ liệu thành công",
             });
         } catch (error) {
             console.error("Merge error:", error);
@@ -365,38 +367,47 @@ export function MergeDataFlow({
                                         </>
                                     )}
                                 </Button>
-
-                                {/* Result */}
-                                {mergeResult && (
-                                    <div
-                                        className={`p-3 rounded-lg border ${
-                                            mergeResult.success
-                                                ? "bg-green-50 border-green-200"
-                                                : "bg-red-50 border-red-200"
-                                        }`}
-                                    >
-                                        <div
-                                            className={`flex items-center gap-2 ${
-                                                mergeResult.success
-                                                    ? "text-green-700"
-                                                    : "text-red-700"
-                                            }`}
-                                        >
-                                            {mergeResult.success ? (
-                                                <CheckCircle2 className="w-4 h-4" />
-                                            ) : (
-                                                <AlertCircle className="w-4 h-4" />
-                                            )}
-                                            <span className="font-medium">
-                                                {mergeResult.message}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </FlowStep>
                     )}
                 </>
+            }
+            responseContent={
+                mergeResult && (
+                    <div
+                        className={`p-4 rounded-lg border ${
+                            mergeResult.success
+                                ? "bg-green-50 border-green-200"
+                                : "bg-red-50 border-red-200"
+                        }`}
+                    >
+                        <div
+                            className={`flex items-center gap-2 mb-3 ${
+                                mergeResult.success
+                                    ? "text-green-700"
+                                    : "text-red-700"
+                            }`}
+                        >
+                            {mergeResult.success ? (
+                                <CheckCircle2 className="w-5 h-5" />
+                            ) : (
+                                <AlertCircle className="w-5 h-5" />
+                            )}
+                            <span className="font-semibold text-base">
+                                {mergeResult.message}
+                            </span>
+                        </div>
+                        
+                        {/* Display response data */}
+                        {mergeResult.success && mergeResult.data && (
+                            <div className="mt-3 pt-3 border-t border-green-200">
+                                <pre className="text-xs bg-white p-3 rounded border border-green-200 overflow-auto max-h-96">
+                                    {JSON.stringify(mergeResult.data, null, 2)}
+                                </pre>
+                            </div>
+                        )}
+                    </div>
+                )
             }
         />
     );
